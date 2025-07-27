@@ -1,7 +1,7 @@
 export function NextLogo() {
   return (
     <svg
-      aria-label="Next.js logotype"
+      aria-label="J.A.S. Caffeinated logotype"
       height="68"
       role="img"
       viewBox="0 0 394 79"
