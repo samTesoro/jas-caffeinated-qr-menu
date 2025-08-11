@@ -16,6 +16,7 @@ const DeleteIcon = () => (
 );
 
 import { createClient } from '@/lib/supabase/client';
+import { Button } from '../ui/button';
 
 export interface MenuItem {
   id: number;
@@ -75,29 +76,33 @@ export default function MenuItemList({ onEdit, refresh, setRefresh }: { onEdit: 
   return (
     <div>
       <div className="mb-6 flex flex-col sm:flex-row gap-2 justify-center items-center">
-        <select
-          value={category}
-          onChange={e => setCategory(e.target.value)}
-          className="w-full sm:w-auto max-w-xs px-3 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#E59C53]"
-        >
-          <option value="All">All Categories</option>
-          {categories.map(cat => (
-            <option key={cat} value={cat}>{cat}</option>
-          ))}
-        </select>
-        <input
-          type="text"
+        <div>
+        <input type="text"
           placeholder="Search items..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full sm:w-auto max-w-md px-3 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#E59C53]"
+          className="w-[350] h-[45] px-4 py-2 rounded-3xl border-white bg-white text-sm"
         />
-        <Link
-          href="/dashboard/menu/add"
-          className="bg-[#E59C53] text-black px-6 py-2 rounded shadow hover:brightness-110 transition-all duration-200 font-semibold whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-[#E59C53]"
-        >
-          Add New Item
-        </Link>
+        </div>
+        <div className="flex items-center gap-14">
+  <select
+    value={category}
+    onChange={e => setCategory(e.target.value)}
+    className="w-full text-center py-1 px-2 border-2 border-black bg-white text-black text-xs h-7"
+  >
+    <option value="All">Select category</option>
+    {categories.map(cat => (
+      <option key={cat} value={cat}>{cat}</option>
+    ))}
+  </select>
+
+  <Link href="/dashboard/menu/add">
+    <Button type="submit" variant="green" className="w-50">
+      Add New Item
+    </Button>
+  </Link>
+</div>
+
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {filteredItems.map((item) => (

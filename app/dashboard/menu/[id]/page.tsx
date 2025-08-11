@@ -27,21 +27,12 @@ export default function EditMenuItemPage({ params }: { params: Promise<{ id: str
   if (!item) return <div className="p-8 text-center">Item not found.</div>;
 
   return (
-    <div className="min-h-screen bg-white py-8 px-2">
-      <div className="max-w-3xl mx-auto rounded-lg shadow-lg min-h-[80vh] flex flex-col" style={{ backgroundColor: '#1f1f1f' }}>
-        <div className="w-full">
-          <h1 className="text-3xl font-bold text-center mb-0 w-full text-black bg-[#E59C53] py-4 shadow-md rounded-t-lg">Edit Menu Item</h1>
-        </div>
-        <div className="flex-1 px-8 pb-8 pt-2 flex items-center justify-center">
-          <div className="w-full max-w-xl">
+    <div className="min-h-screen bg-[#ebebeb]">
             <MenuItemForm
               item={item}
               onSaved={() => router.push('/dashboard/menu')}
               onCancel={() => router.push('/dashboard/menu')}
             />
           </div>
-        </div>
-      </div>
-    </div>
   );
 }
