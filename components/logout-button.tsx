@@ -1,10 +1,9 @@
 'use client'
 
 import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 
-export function LogoutButton() {
+export function LogoutButton({ children }: { children?: React.ReactNode }) {
   const router = useRouter()
 
   const logout = async () => {
@@ -13,5 +12,9 @@ export function LogoutButton() {
     router.push('/auth/login')
   }
 
-  return <Button onClick={logout}>Logout</Button>
+  return (
+    <button onClick={logout} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+      {children ? children : 'Logout'}
+    </button>
+  )
 }
