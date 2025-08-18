@@ -28,18 +28,27 @@ export default function CartPage() {
   }, []);
 
   const updateQty = async (cartitem_id: number, delta: number) => {
-  const supabase = createClient();
-  const item = cart.find(i => i.cartitem_id === cartitem_id);
-  if (!item) return;
-  const newQty = Math.max(1, item.quantity + delta);
-  const newSubtotal = item.menuitem?.price ? item.menuitem.price * newQty : 0;
-  await supabase.from('cartitem').update({ quantity: newQty, subtotal_price: newSubtotal }).eq('cartitem_id', cartitem_id);
-  setCart(cart.map(i => i.cartitem_id === cartitem_id ? { ...i, quantity: newQty, subtotal_price: newSubtotal } : i));
+    const supabase = createClient();
+    const item = cart.find(i => i.cartitem_id === cartitem_id);
+    if (!item) return;
+    const newQty = Math.max(1, item.quantity + delta);
+    const newSubtotal = item.menuitem?.price ? item.menuitem.price * newQty : 0;
+    await supabase.from('cartitem').update({ quantity: newQty, subtotal_price: newSubtotal }).eq('cartitem_id', cartitem_id);
+    setCart(cart.map(i => i.cartitem_id === cartitem_id ? { ...i, quantity: newQty, subtotal_price: newSubtotal } : i));
+    // Update total_price in cart table
+    const cart_id = localStorage.getItem('cart_id');
+    const newTotal = cart.reduce((sum, i) => sum + (i.cartitem_id === cartitem_id ? newSubtotal : i.subtotal_price || 0), 0);
+    await supabase.from('cart').update({ total_price: newTotal }).eq('cart_id', cart_id);
   };
+
   const removeItem = async (cartitem_id: number) => {
     const supabase = createClient();
     setCart(cart.filter(i => i.cartitem_id !== cartitem_id));
     await supabase.from('cartitem').delete().eq('cartitem_id', cartitem_id);
+    // Update total_price in cart table
+    const cart_id = localStorage.getItem('cart_id');
+    const newTotal = cart.filter(i => i.cartitem_id !== cartitem_id).reduce((sum, i) => sum + (i.subtotal_price || 0), 0);
+    await supabase.from('cart').update({ total_price: newTotal }).eq('cart_id', cart_id);
   };
   const total = cart.reduce((sum, i) => sum + (i.subtotal_price || 0), 0);
 

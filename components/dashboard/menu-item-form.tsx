@@ -72,19 +72,24 @@ export default function MenuItemForm({ item, onSaved, onCancel }: { item: MenuIt
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const supabase = createClient();
+    // Validate all integer fields before submitting
+    if (isNaN(Number(form.price)) || isNaN(parseInt(String(form.estimatedTime), 10))) {
+      alert('Price and Estimated Time must be valid numbers.');
+      return;
+    }
     // Map form values to DB columns
     const dbPayload = {
       name: form.name,
       category: form.category,
-      price: form.price,
+      price: Number(form.price),
       status: form.status,
       thumbnail: form.thumbnail,
       is_favorites: form.favorites === 'Yes',
       est_time: parseInt(String(form.estimatedTime), 10) || 0,
       description: null,
     };
-    if (item?.menuitem_id) {
-      await supabase.from('menuitem').update(dbPayload).eq('menuitem_id', item.menuitem_id);
+    if (item?.menuitem_id && !isNaN(Number(item.menuitem_id))) {
+      await supabase.from('menuitem').update(dbPayload).eq('menuitem_id', Number(item.menuitem_id));
     } else {
       await supabase.from('menuitem').insert([dbPayload]);
     }
