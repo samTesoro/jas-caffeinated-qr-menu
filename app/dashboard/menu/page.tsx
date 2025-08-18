@@ -1,10 +1,10 @@
 "use client";
-import MenuItemList from '@/components/dashboard/menu-item-list';
-import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import MenuItemList from "@/components/dashboard/menu-item-list";
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 /*import { LogoutButton } from '@/components/logout-button';*/
-import DashboardHeader from '@/components/dashboard/header';
-import Taskbar from '@/components/dashboard/taskbar';
+import DashboardHeader from "@/components/dashboard/header";
+import Taskbar from "@/components/dashboard/taskbar";
 
 export default function MenuPage() {
   const [refresh, setRefresh] = useState(false);
@@ -21,14 +21,22 @@ export default function MenuPage() {
 
   return (
     <div className="min-h-screen bg-[#ebebeb]">
-          <DashboardHeader showBack={false}/>
-        <div className="flex-1 px-8 pb-8 pt-2">
-          <MenuItemList
-            onEdit={(item) => { if (item) window.location.href = `/dashboard/menu/${item.id}`; }}
-            refresh={refresh}
-            setRefresh={setRefresh}
-          />
+      <DashboardHeader showBack={false} />
+      {userEmail && (
+        <div className="px-8 text-xs text-gray-500">
+          Logged in as: {userEmail}
         </div>
+      )}{" "}
+      {/* for knowing who is logged in */}
+      <div className="flex-1 px-8 pb-8 pt-2">
+        <MenuItemList
+          onEdit={(item) => {
+            if (item) window.location.href = `/dashboard/menu/${item.id}`;
+          }}
+          refresh={refresh}
+          setRefresh={setRefresh}
+        />
+      </div>
       <Taskbar />
     </div>
   );

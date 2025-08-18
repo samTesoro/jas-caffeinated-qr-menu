@@ -1,11 +1,20 @@
 import Image from "next/image";
 
-export default function DashboardHeader({ showBack = false }: { showBack?: boolean }) {
+export default function DashboardHeader({
+  showBack = false,
+}: {
+  showBack?: boolean;
+}) {
   return (
-    <div className="relative w-full" style={{ height: '170px' }}>
+    <div className="relative w-full" style={{ height: "170px" }}>
       {/*Orange Split Background*/}
       <div className="absolute top-0 left-0 w-full h-[90px] bg-[#E59C53]" />
       <div className="absolute bottom-0 left-0 w-full h-[90px] bg-[#ebebeb]" />
+
+      {/* Optional Back Button */}
+      {showBack && (
+        <button className="absolute left-4 top-4 text-black">← Back</button>
+      )}
 
       {/* Admin Text (top right) */}
       <div className="absolute top-4 right-6 text-black text-xs font-normal">
