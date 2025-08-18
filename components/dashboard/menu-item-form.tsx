@@ -97,7 +97,7 @@ export default function MenuItemForm({ item, onSaved, onCancel }: { item: MenuIt
   };
 
   return (
-    <div className="min-h-screen bg-[#ebebeb]">
+    <div className="min-h-screen bg-[#00000]">
       <DashboardHeader showBack={false}/>
       <form onSubmit={handleSubmit} className="space-y-5">
       <div className="max-w-2xl mx-auto mt-2 mb-4 px-7">
@@ -221,7 +221,7 @@ export default function MenuItemForm({ item, onSaved, onCancel }: { item: MenuIt
       type="number"
       value={form.estimatedTime}
       onChange={handleChange}
-      className="w-12 text-center py-1 px-2 border-2 border-black bg-white text-black h-8"
+      className="w-10 text-center py-1 px-2 border-2 border-black bg-white text-black h-8"
       required
     />
     <span className="text-sm text-black">mins</span>
@@ -242,7 +242,7 @@ export default function MenuItemForm({ item, onSaved, onCancel }: { item: MenuIt
     <Button className="mt-3"
       type="button"
       variant="red"
-      onClick={() => (item.menuitem_id)}
+      onClick={() => (item.id)}
     >
       Delete
     </Button>

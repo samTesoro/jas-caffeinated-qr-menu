@@ -2,10 +2,8 @@
 import MenuItemList from '@/components/dashboard/menu-item-list';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-/*import { LogoutButton } from '@/components/logout-button';*/
+import { LogoutButton } from '@/components/logout-button';
 import DashboardHeader from '@/components/dashboard/header';
-import Taskbar from '@/components/dashboard/taskbar';
-
 export default function MenuPage() {
   const [refresh, setRefresh] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -29,7 +27,6 @@ export default function MenuPage() {
             setRefresh={setRefresh}
           />
         </div>
-      <Taskbar />
-    </div>
+      </div>
   );
 }
