@@ -1,6 +1,6 @@
 "use client";
 interface MenuItem {
-  id?: number;
+  menuitem_id?: number;
   name: string;
   category: string;
   price: number;
@@ -16,7 +16,7 @@ import DashboardHeader from './header';
 import { Button } from "@/components/ui/button" 
 
 // removed broken line
-const categories = ['Main', 'Drinks', 'Dessert'];
+const categories = ['Meals', 'Coffee', 'Drinks'];
 const statuses = ['Available', 'Unavailable'];
 const favoritesOptions = ['Yes', 'No'];
 
@@ -60,7 +60,7 @@ export default function MenuItemForm({ item, onSaved, onCancel }: { item: MenuIt
     if (!file) return;
     setUploading(true);
     const supabase = createClient();
-    const filePath = `public/${Date.now()}-${file.name}`;
+  const filePath = `public/${typeof window !== 'undefined' ? Date.now() : 'ssr'}-${file.name}`;
     const { data, error } = await supabase.storage.from('thumbnails').upload(filePath, file, { upsert: true });
     if (!error && data) {
       const url = supabase.storage.from('thumbnails').getPublicUrl(filePath).data.publicUrl;
@@ -72,10 +72,21 @@ export default function MenuItemForm({ item, onSaved, onCancel }: { item: MenuIt
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const supabase = createClient();
-    if (item?.id) {
-      await supabase.from('menu_items').update(form).eq('id', item.id);
+    // Map form values to DB columns
+    const dbPayload = {
+      name: form.name,
+      category: form.category,
+      price: form.price,
+      status: form.status,
+      thumbnail: form.thumbnail,
+      is_favorites: form.favorites === 'Yes',
+      est_time: parseInt(String(form.estimatedTime), 10) || 0,
+      description: null,
+    };
+    if (item?.menuitem_id) {
+      await supabase.from('menuitem').update(dbPayload).eq('menuitem_id', item.menuitem_id);
     } else {
-      await supabase.from('menu_items').insert([form]);
+      await supabase.from('menuitem').insert([dbPayload]);
     }
     onSaved();
   };
@@ -226,7 +237,7 @@ export default function MenuItemForm({ item, onSaved, onCancel }: { item: MenuIt
     <Button className="mt-3"
       type="button"
       variant="red"
-      onClick={() => (item.id)}
+      onClick={() => (item.menuitem_id)}
     >
       Delete
     </Button>

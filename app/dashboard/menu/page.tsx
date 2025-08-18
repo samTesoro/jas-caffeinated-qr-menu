@@ -24,7 +24,7 @@ export default function MenuPage() {
           <DashboardHeader showBack={false}/>
         <div className="flex-1 px-8 pb-8 pt-2">
           <MenuItemList
-            onEdit={(item) => { if (item) window.location.href = `/dashboard/menu/${item.id}`; }}
+            onEdit={(item) => { if (item) window.location.href = `/dashboard/menu/${item.menuitem_id}`; }}
             refresh={refresh}
             setRefresh={setRefresh}
           />

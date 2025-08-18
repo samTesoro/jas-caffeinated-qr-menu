@@ -19,7 +19,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Button } from '../ui/button';
 
 export interface MenuItem {
-  id: number;
+  menuitem_id: number;
   name: string;
   category: string;
   price: number;
@@ -38,7 +38,7 @@ export default function MenuItemList({ onEdit, refresh, setRefresh }: { onEdit: 
   useEffect(() => {
     const supabase = createClient();
     supabase
-      .from('menu_items')
+      .from('menuitem')
       .select('*')
       .then(({ data }) => {
         setItems(data || []);
@@ -52,9 +52,22 @@ export default function MenuItemList({ onEdit, refresh, setRefresh }: { onEdit: 
   }, [refresh]);
 
   const handleDelete = async (id: number) => {
-    const supabase = createClient();
-    await supabase.from('menu_items').delete().eq('id', id);
-    setRefresh(!refresh);
+  const supabase = createClient();
+  // First, delete all cartitems referencing this menuitem
+  const { error: cartitemError } = await supabase.from('cartitem').delete().eq('menuitem_id', id);
+  if (cartitemError) {
+    alert('Failed to delete related cartitems: ' + (cartitemError.message || JSON.stringify(cartitemError)));
+    console.error('Cartitem delete error:', cartitemError);
+    return;
+  }
+  // Then, delete the menuitem itself
+  const { error: menuitemError } = await supabase.from('menuitem').delete().eq('menuitem_id', id);
+  if (menuitemError) {
+    alert('Delete failed: ' + (menuitemError.message || JSON.stringify(menuitemError)));
+    console.error('Delete error:', menuitemError);
+    return;
+  }
+  setRefresh(!refresh);
   };
 
   const filteredItems = items.filter(item => {
@@ -106,11 +119,11 @@ export default function MenuItemList({ onEdit, refresh, setRefresh }: { onEdit: 
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {filteredItems.map((item) => (
-          <div key={item.id} className="relative bg-gray-100 rounded-xl shadow p-3 flex flex-col h-full">
+          <div key={String(item.menuitem_id)} className="relative bg-gray-100 rounded-xl shadow p-3 flex flex-col h-full">
             <button
               className="absolute top-3 right-3 z-10 text-red-500 bg-white rounded-full p-2 shadow hover:bg-red-100 transition"
               title="Delete"
-              onClick={() => handleDelete(item.id)}
+              onClick={() => handleDelete(item.menuitem_id)}
             >
               <DeleteIcon />
             </button>
@@ -139,7 +152,7 @@ export default function MenuItemList({ onEdit, refresh, setRefresh }: { onEdit: 
                 <button
                   className="bg-[#b6f7b0] rounded-full p-3 flex items-center justify-center shadow hover:bg-green-200 transition ml-2"
                   title="Edit"
-                  onClick={() => onEdit(item)}
+                  onClick={() => onEdit({ ...item })}
                 >
                   <EditIcon />
                 </button>
