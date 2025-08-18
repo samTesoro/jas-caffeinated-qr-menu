@@ -15,8 +15,20 @@ export default function EditMenuItemPage({ params }: { params: Promise<{ id: str
 
   useEffect(() => {
     const fetchItem = async () => {
+      // Debug log for params
+      console.log('EditMenuItemPage params:', params);
+      if (!id || isNaN(Number(id))) {
+        console.error('Invalid menuitem_id:', id, 'params:', params);
+        setItem(null);
+        setLoading(false);
+        return;
+      }
       const supabase = createClient();
-      const { data } = await supabase.from('menu_items').select('*').eq('id', id).single();
+      // Always use menuitem_id for Supabase queries
+      const { data, error } = await supabase.from('menuitem').select('*').eq('menuitem_id', Number(id)).single();
+      if (error) {
+        console.error('Supabase fetch error:', error);
+      }
       setItem(data);
       setLoading(false);
     };

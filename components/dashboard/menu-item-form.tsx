@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { MdOutlineCloudUpload } from "react-icons/md";
 
 interface MenuItem {
-  id?: number;
+  menuitem_id?: number;
   name: string;
   category: string;
   price: number;
@@ -17,9 +17,16 @@ interface MenuItem {
   estimatedTime?: number;
 }
 
+<<<<<<< HEAD
 const categories = ["Main", "Drinks", "Dessert"];
 const statuses = ["Available", "Unavailable"];
 const favoritesOptions = ["Yes", "No"];
+=======
+// removed broken line
+const categories = ['Meals', 'Coffee', 'Drinks'];
+const statuses = ['Available', 'Unavailable'];
+const favoritesOptions = ['Yes', 'No'];
+>>>>>>> 43ee3bebc715cf6216b198f0d9ed0820c527030d
 
 export default function MenuItemForm({
   item,
@@ -68,11 +75,16 @@ export default function MenuItemForm({
     if (!file) return;
     setUploading(true);
     const supabase = createClient();
+<<<<<<< HEAD
     const filePath = `public/${Date.now()}-${file.name}`;
     const { data, error } = await supabase.storage
       .from("thumbnails")
       .upload(filePath, file, { upsert: true });
 
+=======
+  const filePath = `public/${typeof window !== 'undefined' ? Date.now() : 'ssr'}-${file.name}`;
+    const { data, error } = await supabase.storage.from('thumbnails').upload(filePath, file, { upsert: true });
+>>>>>>> 43ee3bebc715cf6216b198f0d9ed0820c527030d
     if (!error && data) {
       const url = supabase.storage.from("thumbnails").getPublicUrl(filePath)
         .data.publicUrl;
@@ -83,10 +95,33 @@ export default function MenuItemForm({
 
   const saveItem = async () => {
     const supabase = createClient();
+<<<<<<< HEAD
     if (item?.id) {
       await supabase.from("menu_items").update(form).eq("id", item.id);
     } else {
       await supabase.from("menu_items").insert([form]);
+=======
+    // Validate all integer fields before submitting
+    if (isNaN(Number(form.price)) || isNaN(parseInt(String(form.estimatedTime), 10))) {
+      alert('Price and Estimated Time must be valid numbers.');
+      return;
+    }
+    // Map form values to DB columns
+    const dbPayload = {
+      name: form.name,
+      category: form.category,
+      price: Number(form.price),
+      status: form.status,
+      thumbnail: form.thumbnail,
+      is_favorites: form.favorites === 'Yes',
+      est_time: parseInt(String(form.estimatedTime), 10) || 0,
+      description: null,
+    };
+    if (item?.menuitem_id && !isNaN(Number(item.menuitem_id))) {
+      await supabase.from('menuitem').update(dbPayload).eq('menuitem_id', Number(item.menuitem_id));
+    } else {
+      await supabase.from('menuitem').insert([dbPayload]);
+>>>>>>> 43ee3bebc715cf6216b198f0d9ed0820c527030d
     }
     setShowConfirmModal(false);
     onSaved();
@@ -336,5 +371,69 @@ export default function MenuItemForm({
         </div>
       )}
     </div>
+<<<<<<< HEAD
+=======
+{/* upload box */}
+    <label
+      htmlFor="thumbnailUpload"
+      className="cursor-pointer border-2 border-dashed border-gray-400 flex  flex-1 py-2 px-4 rounded-lg bg-white text-black text-sm font-medium hover:bg-gray-100 transition"
+    >
+      Upload Files
+    </label>
+    <input
+      id="thumbnailUpload"
+      name="thumbnail"
+      type="file"
+      accept="image/*"
+      onChange={handleImage}
+      className="hidden"
+    />
+  </div>
+
+  {uploading && <div className="mt-2 text-sm text-gray-500">Uploading...</div>}
+</div>
+
+          <div className="flex-1 flex flex-col items-center mb-5">
+  <label className="block text-black mb-2 font-bold text-sm text-center">
+    Est. Time
+  </label>
+  <div className="flex items-center gap-2">
+    <input
+      name="estimatedTime"
+      type="number"
+      value={form.estimatedTime}
+      onChange={handleChange}
+      className="w-12 text-center py-1 px-2 border-2 border-black bg-white text-black h-8"
+      required
+    />
+    <span className="text-sm text-black">mins</span>
+  </div>
+</div>
+          <div className="flex flex-col items-center gap-3">
+  
+  <div className="flex justify-center gap-7 w-[90%]">
+    <Button type="button" variant="orange" onClick={onCancel}>
+      Back
+    </Button>
+    <Button type="submit" variant="green">
+      {item ? 'Confirm' : 'Add'}
+    </Button>
+  </div>
+
+  {item && (
+    <Button className="mt-3"
+      type="button"
+      variant="red"
+      onClick={() => (item.menuitem_id)}
+    >
+      Delete
+    </Button>
+  )}
+</div>
+
+          </div>
+    </form>
+    </div>
+>>>>>>> 43ee3bebc715cf6216b198f0d9ed0820c527030d
   );
 }

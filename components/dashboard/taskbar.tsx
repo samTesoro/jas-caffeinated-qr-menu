@@ -18,7 +18,9 @@ export default function Taskbar() {
 
   const handleStarClick = () => {
     setStarActive(true);
-    window.location.href = "/dashboard/favorites";
+    if (typeof window !== 'undefined') {
+      window.location.href = "/dashboard/favorites";
+    }
   };
 
   return (
