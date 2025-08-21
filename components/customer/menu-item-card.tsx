@@ -1,29 +1,78 @@
-import React from 'react';
+"use client";
+import React, { useState } from "react";
+import MenuItemCard from "./menu-item-card";
+import ItemDetailModal from "./item-detail-modal";
 
-export default function MenuItemCard({ item, onClick }: { item: any, onClick: () => void }) {
+import { useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
+
+export default function MenuList({
+  activeTab,
+  cart,
+  setCart,
+}: {
+  activeTab: string;
+  cart: any[];
+  setCart: (cart: any[]) => void;
+}) {
+  const [selectedItem, setSelectedItem] = useState<any | null>(null);
+  const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("menuitem")
+      .select("*")
+      .then(({ data }) => {
+        setMenuItems(data || []);
+      });
+  }, []);
+
+  let filtered;
+  if (search.trim() !== "") {
+    filtered = menuItems.filter(
+      (i) =>
+        i.status === "Available" &&
+        i.name.toLowerCase().includes(search.toLowerCase())
+    );
+  } else {
+    filtered =
+      activeTab === "Favorites"
+        ? menuItems.filter((i) => i.is_favorites && i.status === "Available")
+        : menuItems.filter(
+            (i) => i.category === activeTab && i.status === "Available"
+          );
+  }
+
   return (
-    <div className="relative bg-gray-100 rounded-xl shadow p-3 flex flex-col h-full cursor-pointer" onClick={onClick}>
-      <img
-        src={item.thumbnail || '/default-food.png'}
-        alt={item.name}
-        className="w-full h-48 object-cover rounded-lg mb-3"
-      />
-      <div className="bg-white rounded-lg p-4 flex flex-col justify-between min-h-[90px] relative">
-        <div className="font-bold text-lg text-black mb-1">{item.name}</div>
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-sm text-gray-500">₱{Number(item.price).toFixed(2)}</span>
-        </div>
-        <button
-          className="bg-orange-400 text-white rounded-full p-3 flex items-center justify-center shadow hover:bg-orange-500 transition absolute bottom-3 right-3"
-          title="Add"
-          onClick={onClick}
-          style={{ width: '40px', height: '40px' }}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
-        </button>
+    <div className="px-4 pt-4 pb-24">
+      <div className="mb-6 flex flex-col sm:flex-row gap-2 justify-center items-center">
+        <input
+          type="text"
+          placeholder="Search items..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-[350px] h-[45px] px-4 py-2 rounded-3xl border-white bg-white text-black text-sm"
+        />
       </div>
+      <div className="grid grid-cols-2 gap-4">
+        {filtered.map((item) => (
+          <MenuItemCard
+            key={item.menuitem_id ? String(item.menuitem_id) : item.name}
+            item={item}
+            onClick={() => setSelectedItem(item)}
+          />
+        ))}
+      </div>
+      {selectedItem && (
+        <ItemDetailModal
+          item={selectedItem}
+          onClose={() => setSelectedItem(null)}
+          cart={cart}
+          setCart={setCart}
+        />
+      )}
     </div>
   );
 }

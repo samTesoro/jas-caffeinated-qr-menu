@@ -1,10 +1,14 @@
 import Image from "next/image";
 
+interface DashboardHeaderProps {
+  showBack?: boolean;
+  mode?: "admin" | "customer";
+}
+
 export default function DashboardHeader({
   showBack = false,
-}: {
-  showBack?: boolean;
-}) {
+  mode = "admin",
+}: DashboardHeaderProps) {
   return (
     <div className="relative w-full" style={{ height: "170px" }}>
       {/*Orange Split Background*/}
@@ -16,9 +20,8 @@ export default function DashboardHeader({
         <button className="absolute left-4 top-4 text-black">← Back</button>
       )}
 
-      {/* Admin Text (top right) */}
       <div className="absolute top-4 right-6 text-black text-xs font-normal">
-        Admin
+        {mode === "admin" ? "Admin" : "Table: "}
       </div>
 
       <div className="absolute inset-0 flex items-center justify-center">
