@@ -1,78 +1,39 @@
 "use client";
-import React, { useState } from "react";
-import MenuItemCard from "./menu-item-card";
-import ItemDetailModal from "./item-detail-modal";
+import React from "react";
 
-import { useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
+interface MenuItemCardProps {
+  item: {
+    menuitem_id?: number;
+    name: string;
+    category: string;
+    price: number;
+    status: string;
+    thumbnail?: string;
+    favorites?: string;
+    estimatedTime?: number;
+    description?: string;
+  };
+  onClick?: () => void;
+}
 
-export default function MenuList({
-  activeTab,
-  cart,
-  setCart,
-}: {
-  activeTab: string;
-  cart: any[];
-  setCart: (cart: any[]) => void;
-}) {
-  const [selectedItem, setSelectedItem] = useState<any | null>(null);
-  const [menuItems, setMenuItems] = useState<any[]>([]);
-  const [search, setSearch] = useState("");
-
-  useEffect(() => {
-    const supabase = createClient();
-    supabase
-      .from("menuitem")
-      .select("*")
-      .then(({ data }) => {
-        setMenuItems(data || []);
-      });
-  }, []);
-
-  let filtered;
-  if (search.trim() !== "") {
-    filtered = menuItems.filter(
-      (i) =>
-        i.status === "Available" &&
-        i.name.toLowerCase().includes(search.toLowerCase())
-    );
-  } else {
-    filtered =
-      activeTab === "Favorites"
-        ? menuItems.filter((i) => i.is_favorites && i.status === "Available")
-        : menuItems.filter(
-            (i) => i.category === activeTab && i.status === "Available"
-          );
-  }
-
+export default function MenuItemCard({ item, onClick }: MenuItemCardProps) {
   return (
-    <div className="px-4 pt-4 pb-24">
-      <div className="mb-6 flex flex-col sm:flex-row gap-2 justify-center items-center">
-        <input
-          type="text"
-          placeholder="Search items..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-[350px] h-[45px] px-4 py-2 rounded-3xl border-white bg-white text-black text-sm"
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        {filtered.map((item) => (
-          <MenuItemCard
-            key={item.menuitem_id ? String(item.menuitem_id) : item.name}
-            item={item}
-            onClick={() => setSelectedItem(item)}
-          />
-        ))}
-      </div>
-      {selectedItem && (
-        <ItemDetailModal
-          item={selectedItem}
-          onClose={() => setSelectedItem(null)}
-          cart={cart}
-          setCart={setCart}
+    <div
+      className="bg-white rounded-lg shadow p-4 flex flex-col items-center cursor-pointer hover:shadow-lg transition"
+      onClick={onClick}
+    >
+      {item.thumbnail && (
+        <img
+          src={item.thumbnail}
+          alt={item.name}
+          className="w-20 h-20 object-cover rounded mb-2"
         />
       )}
+      <div className="font-bold text-lg text-black mb-1">{item.name}</div>
+      <div className="text-sm text-gray-600 mb-1">{item.category}</div>
+      <div className="text-sm text-gray-600 mb-1">{item.description}</div>
+      <div className="text-orange-700 font-bold">${item.price}</div>
+      <div className="text-xs text-gray-500 mt-1">{item.status}</div>
     </div>
   );
 }

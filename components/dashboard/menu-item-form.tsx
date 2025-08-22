@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import DashboardHeader from "./header";
@@ -15,6 +16,7 @@ interface MenuItem {
   thumbnail?: string;
   favorites?: string;
   estimatedTime?: number;
+  description?: string;
 }
 
 // removed broken line
@@ -39,22 +41,30 @@ export default function MenuItemForm({
     thumbnail: item?.thumbnail || "",
     favorites: item?.favorites || "No",
     estimatedTime: item?.estimatedTime || 0,
+    description: item?.description || "",
   });
 
   const [uploading, setUploading] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
+  // Only set form state when item changes, not on every render
   useEffect(() => {
-    setForm({
-      name: item?.name || "",
-      category: item?.category || "",
-      price: item?.price || 0,
-      status: item?.status || "Available",
-      thumbnail: item?.thumbnail || "",
-      favorites: item?.favorites || "No",
-      estimatedTime: item?.estimatedTime || 0,
-    });
+    if (item) {
+      setForm({
+        name: item.name || "",
+        category: item.category || "",
+        price: item.price || 0,
+        status: item.status || "Available",
+        thumbnail: item.thumbnail || "",
+        favorites: item.favorites || "No",
+        estimatedTime: item.estimatedTime || 0,
+        description: item.description || "",
+      });
+    }
+    // Do not reset form if item is null (adding new item)
   }, [item]);
 
   const handleChange = (
@@ -84,16 +94,17 @@ export default function MenuItemForm({
   };
 
   const saveItem = async () => {
+    setSaving(true);
+    setErrorMsg(null);
     const supabase = createClient();
-    // Validate all integer fields before submitting
     if (
       isNaN(Number(form.price)) ||
       isNaN(parseInt(String(form.estimatedTime), 10))
     ) {
-      alert("Price and Estimated Time must be valid numbers.");
+      setErrorMsg("Price and Estimated Time must be valid numbers.");
+      setSaving(false);
       return;
     }
-    // Map form values to DB columns
     const dbPayload = {
       name: form.name,
       category: form.category,
@@ -102,24 +113,38 @@ export default function MenuItemForm({
       thumbnail: form.thumbnail,
       is_favorites: form.favorites === "Yes",
       est_time: parseInt(String(form.estimatedTime), 10) || 0,
-      description: null,
+      description: form.description || null,
     };
+    let error;
     if (item?.menuitem_id && !isNaN(Number(item.menuitem_id))) {
-      await supabase
+      ({ error } = await supabase
         .from("menuitem")
         .update(dbPayload)
-        .eq("menuitem_id", Number(item.menuitem_id));
+        .eq("menuitem_id", Number(item.menuitem_id)));
     } else {
-      await supabase.from("menuitem").insert([dbPayload]);
+      ({ error } = await supabase.from("menuitem").insert([dbPayload]));
+    }
+    setSaving(false);
+    if (error) {
+      setErrorMsg(error.message || "Failed to save item.");
+      return;
     }
     setShowConfirmModal(false);
     onSaved();
   };
 
   const deleteItem = async () => {
+    setSaving(true);
+    setErrorMsg(null);
     const supabase = createClient();
+    let error;
     if (item?.menuitem_id) {
-      await supabase.from("menu_items").delete().eq("id", item.menuitem_id);
+      ({ error } = await supabase.from("menuitem").delete().eq("menuitem_id", item.menuitem_id));
+    }
+    setSaving(false);
+    if (error) {
+      setErrorMsg(error.message || "Failed to delete item.");
+      return;
     }
     setShowDeleteModal(false);
     onSaved();
@@ -127,6 +152,14 @@ export default function MenuItemForm({
 
   return (
     <div className="min-h-screen bg-[#ebebeb]">
+      {saving && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 shadow text-center font-bold text-orange-600">Processing...</div>
+        </div>
+      )}
+      {errorMsg && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-red-100 text-red-700 px-4 py-2 rounded shadow z-50">{errorMsg}</div>
+      )}
       <DashboardHeader showBack={false} />
 
       <form
@@ -134,7 +167,7 @@ export default function MenuItemForm({
           e.preventDefault();
           setShowConfirmModal(true);
         }}
-        className="space-y-5"
+        className={cn("space-y-5")}
       >
         <div className="max-w-2xl mx-auto mt-2 mb-4 px-7">
           <h2 className="text-xl font-bold mb-2 text-black">
@@ -153,6 +186,17 @@ export default function MenuItemForm({
               onChange={handleChange}
               className="w-full py-1 px-2 border-2 border-black bg-white text-black h-8"
               required
+            />
+          </div>
+          <div>
+            <label className="block text-black mb-2 font-bold text-sm">
+              Description
+            </label>
+            <input
+              name="description"
+              value={form.description}
+              onChange={handleChange}
+              className="w-full py-1 px-2 border-2 border-black bg-white text-black h-8"
             />
           </div>
 
