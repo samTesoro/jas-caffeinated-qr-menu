@@ -63,7 +63,7 @@ export default function ItemCard({
   return (
     <div
       key={item.menuitem_id}
-      className="bg-gray-100 rounded-lg shadow p-1.5 flex flex-col w-full max-w-[180px] sm:max-w-[220px] md:max-w-[250px] relative"
+      className="bg-gray-100 rounded-lg shadow p-1.5 flex flex-col w-full max-w-[180px] sm:max-w-[220px] md:max-w-[500px] relative"
     >
       {/* Thumbnail */}
       <div

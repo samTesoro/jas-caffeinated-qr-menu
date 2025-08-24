@@ -99,7 +99,7 @@ export default function MenuItemList({
       </div>
 
       {/* Menu Item Grid */}
-      <div className="grid grid-cols-2 gap-7 sm:gap-2">
+      <div className="grid grid-cols-2 gap-7 sm:gap-2flex justify-items-center">
         {filteredItems.map((item) => (
           <ItemCard
             key={item.menuitem_id}
