@@ -139,7 +139,10 @@ export default function MenuItemForm({
     const supabase = createClient();
     let error;
     if (item?.menuitem_id) {
-      ({ error } = await supabase.from("menuitem").delete().eq("menuitem_id", item.menuitem_id));
+      ({ error } = await supabase
+        .from("menuitem")
+        .delete()
+        .eq("menuitem_id", item.menuitem_id));
     }
     setSaving(false);
     if (error) {
@@ -154,11 +157,15 @@ export default function MenuItemForm({
     <div className="min-h-screen bg-[#ebebeb]">
       {saving && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 shadow text-center font-bold text-orange-600">Processing...</div>
+          <div className="bg-white rounded-lg p-6 shadow text-center font-bold text-orange-600">
+            Processing...
+          </div>
         </div>
       )}
       {errorMsg && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-red-100 text-red-700 px-4 py-2 rounded shadow z-50">{errorMsg}</div>
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-red-100 text-red-700 px-4 py-2 rounded shadow z-50">
+          {errorMsg}
+        </div>
       )}
       <DashboardHeader showBack={false} />
 

@@ -23,7 +23,7 @@ export default function MenuPage() {
     <div className="min-h-screen bg-[#ebebeb]">
       <DashboardHeader showBack={false} />
       {userEmail && (
-        <div className="px-8 text-xs text-gray-500">
+        <div className="px-8 text-xs text-gray-600 md:text-center mb-2">
           Logged in as: {userEmail}
         </div>
       )}{" "}
