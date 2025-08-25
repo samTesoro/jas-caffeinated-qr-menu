@@ -73,3 +73,10 @@
   width: 25px;
   height: 25px;
 }
+
+.disabled {
+  color: gray;
+  pointer-events: none; 
+  cursor: not-allowed;
+  opacity: 0.5;
+}
