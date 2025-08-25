@@ -68,7 +68,7 @@ export default function MenuItemList({
       {/* Search + Category + Add button */}
       <div className="mb-6 flex flex-col sm:flex-row gap-2 justify-center items-center">
         <div className="relative w-[350px] mb-3">
-          <Search className="absolute right-4 mx-2 top-1/2 -translate-y-1/2 h-4 w-4 text-black " />
+          <Search className="absolute right-4 mx-2 top-1/2 -translate-y-1/2 h-4 w-4 text-black" />
           <input
             type="text"
             value={search}
@@ -80,7 +80,7 @@ export default function MenuItemList({
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="w-full text-center py-1 px-2 border-2 border-black bg-white text-black text-xs h-7 md:grid-rows-2"
+            className="w-full text-center py-1 px-2 border-2 border-black bg-white text-black text-xs h-7"
           >
             <option value="All">Select category</option>
             {categories.map((cat) => (
@@ -97,7 +97,9 @@ export default function MenuItemList({
           </Link>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-6 place-items-center">
+
+      {/* Menu Item Grid */}
+      <div className="grid grid-cols-2 gap-7 sm:gap-2">
         {filteredItems.map((item) => (
           <ItemCard
             key={item.menuitem_id}

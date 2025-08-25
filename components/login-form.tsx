@@ -7,7 +7,7 @@ import DashboardHeader from "@/components/dashboard/header";
 // import { Input } from "@/components/ui/input";
 // import { Label } from "@/components/ui/label";
 // import { Button } from "@/components/ui/button";
-// import Link from "next/link";
+import Link from "next/link";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -86,6 +86,11 @@ export function LoginForm() {
             </button>
           </div>
         </form>
+        <p className="mt-4 text-center text-sm">
+          <Link href="/auth/create-account" className="text-black underline">
+            (For superadmin) Create Account
+          </Link>
+        </p>
       </div>
     </div>
   );
