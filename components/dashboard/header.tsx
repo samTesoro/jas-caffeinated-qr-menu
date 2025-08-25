@@ -6,7 +6,6 @@ interface DashboardHeaderProps {
 }
 
 export default function DashboardHeader({
-  showBack = false,
   mode = "admin",
 }: DashboardHeaderProps) {
   return (
@@ -14,11 +13,6 @@ export default function DashboardHeader({
       {/*Orange Split Background*/}
       <div className="absolute top-0 left-0 w-full h-[90px] bg-[#E59C53]" />
       <div className="absolute bottom-0 left-0 w-full h-[90px] bg-[#ebebeb]" />
-
-      {/* Optional Back Button */}
-      {showBack && (
-        <button className="absolute left-4 top-4 text-black">← Back</button>
-      )}
 
       <div className="absolute top-4 right-6 text-black text-xs font-normal">
         {mode === "admin" ? "Admin" : "Table: "}
