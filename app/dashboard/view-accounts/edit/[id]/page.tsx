@@ -1,14 +1,16 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Taskbar from "@/components/dashboard/taskbar";
 import DashboardHeader from "@/components/dashboard/header";
-import { Button } from "@/components/ui/button"; // ✅ assuming you have shadcn Button
+import { Button } from "@/components/ui/button";
 
-export default function CreateAccountPage() {
+export default function EditAccountPage() {
   const supabase = createClient();
   const router = useRouter();
+  const { id } = useParams();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -18,24 +20,40 @@ export default function CreateAccountPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ modal state
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  useEffect(() => {
+    const fetchAccount = async () => {
+      const { data, error } = await supabase
+        .from("adminusers")
+        .select("*")
+        .eq("id", id)
+        .single();
+      if (data) {
+        setUsername(data.username || "");
+        setPassword(data.password || "");
+        setViewOrders(!!data.view_orders);
+        setViewOrderHistory(!!data.view_history);
+        setViewMenu(!!data.view_menu);
+      }
+      if (error) setError(error.message);
+    };
+    if (id) fetchAccount();
+  }, [id, supabase]);
 
-  const handleSubmit = async () => {
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
     setError(null);
-
-    // Save to adminusers table
-    const { error } = await supabase.from("adminusers").insert({
-      username,
-      password,
-      view_orders: viewOrders,
-      view_history: viewOrderHistory,
-      view_menu: viewMenu,
-    });
-
+    const { error } = await supabase
+      .from("adminusers")
+      .update({
+        username,
+        password,
+        view_orders: viewOrders,
+        view_history: viewOrderHistory,
+        view_menu: viewMenu,
+      })
+      .eq("id", id);
     setLoading(false);
-
     if (error) {
       setError(error.message);
     } else {
@@ -45,18 +63,14 @@ export default function CreateAccountPage() {
 
   return (
     <main className="min-h-screen bg-[#ebebeb] flex flex-col items-center">
-      <DashboardHeader showBack={false} />
+      <DashboardHeader showBack={true} />
       <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          setShowConfirmModal(true); // ✅ instead of immediate submit
-        }}
+        onSubmit={handleUpdate}
         className="w-[90%] max-w-xs mt-4 space-y-4"
       >
         <h2 className="text-center text-xl text-black font-bold">
-          Create a new account
+          Edit Account
         </h2>
-
         <div>
           <label className="block text-lg text-black mb-1.5">Username</label>
           <input
@@ -67,7 +81,6 @@ export default function CreateAccountPage() {
             className="text-black w-full border px-2 py-1 bg-[#D9D9D9]"
           />
         </div>
-
         <div>
           <label className="block text-lg text-black mb-1.5">Password</label>
           <input
@@ -78,7 +91,6 @@ export default function CreateAccountPage() {
             className="text-black w-full border px-2 py-1 bg-[#D9D9D9]"
           />
         </div>
-
         <div className="mt-2">
           <p className="block text-lg text-black mb-1.5">Access Permissions</p>
           <label className="flex gap-2 text-lg text-black">
@@ -106,18 +118,15 @@ export default function CreateAccountPage() {
             Allow “View and Edit Menu”
           </label>
         </div>
-
         {error && <p className="text-red-600 text-sm">{error}</p>}
-
         <div className="flex justify-center gap-10">
           <button
             type="submit"
             className="px-2 border bg-[#ebebeb] text-black mt-10"
             disabled={loading}
           >
-            {loading ? "Creating..." : "Confirm"}
+            {loading ? "Updating..." : "Update"}
           </button>
-
           <button
             type="button"
             onClick={() => router.push("/dashboard/view-accounts")}
@@ -127,62 +136,6 @@ export default function CreateAccountPage() {
           </button>
         </div>
       </form>
-
-      {showConfirmModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-          <div className="bg-white rounded-xl p-6 w-[350px] text-center space-y-4">
-            <p className="text-lg font-bold text-black">
-              Confirm Admin Account?
-            </p>
-
-            <div className="text-left text-black space-y-2">
-              <p>
-                <span>Username:</span>{" "}
-                <span className="font-bold">{username}</span>
-              </p>
-              <p>
-                <span>Password:</span>{" "}
-                <span className="font-bold">{password}</span>
-              </p>
-              <p>
-                <span>Allow &quot;View Orders&quot;:</span>{" "}
-                <span className="font-bold">{viewOrders ? "Yes" : "No"}</span>
-              </p>
-              <p>
-                <span>Allow &quot;View Order History&quot;:</span>{" "}
-                <span className="font-bold">
-                  {viewOrderHistory ? "Yes" : "No"}
-                </span>
-              </p>
-              <p>
-                <span>Allow &quot;View and Edit Menu&quot;:</span>{" "}
-                <span className="font-bold">{viewMenu ? "Yes" : "No"}</span>
-              </p>
-            </div>
-
-            <div className="flex justify-between">
-              <Button
-                variant="red"
-                type="button"
-                onClick={() => setShowConfirmModal(false)}
-              >
-                No
-              </Button>
-              <Button
-                variant="green"
-                type="button"
-                onClick={() => {
-                  setShowConfirmModal(false);
-                  handleSubmit();
-                }}
-              >
-                Yes
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="w-full flex-1 flex flex-col justify-end">
         <Taskbar />
       </div>

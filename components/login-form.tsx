@@ -10,7 +10,7 @@ import DashboardHeader from "@/components/dashboard/header";
 import Link from "next/link";
 
 export function LoginForm() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -22,17 +22,21 @@ export function LoginForm() {
     setIsLoading(true);
     setError(null);
 
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) throw error;
-      router.push("/dashboard/menu");
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
-    } finally {
+    // Check adminusers table for username/password
+    const { data, error } = await supabase
+      .from("adminusers")
+      .select("*")
+      .eq("username", username)
+      .eq("password", password)
+      .single();
+
       setIsLoading(false);
+      if (error || !data) {
+        setError("Invalid username or password");
+      } else {
+        // Set admin_session cookie for middleware authentication
+        document.cookie = `admin_session=${data.id}; path=/;`; // You can use any value, here we use user id
+        router.push("/dashboard/menu");
     }
   };
 
@@ -51,11 +55,11 @@ export function LoginForm() {
               Username
             </label>
             <input
-              id="email"
-              type="email"
+              id="username"
+              type="text"
               required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               className="w-full py-1 px-2 border border-black bg-[#D9D9D9] text-black justify-center h-8"
             />
           </div>

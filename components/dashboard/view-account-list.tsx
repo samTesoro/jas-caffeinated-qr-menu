@@ -53,7 +53,7 @@ export default function ViewAccounts() {
 
   useEffect(() => {
     const fetchUsers = async () => {
-      const { data, error } = await supabase.from("users").select("*");
+      const { data, error } = await supabase.from("adminusers").select("*");
       if (!error && data) {
         setUsers(data as User[]);
       }
@@ -70,15 +70,13 @@ export default function ViewAccounts() {
       <div className="max-h-[400px] overflow-y-auto space-y-3 border p-2">
         {users.map((user) => (
           <div key={user.id} className="border p-3 bg-white rounded shadow-sm">
-            <p>
-              <strong>Username:</strong> {user.username}{" "}
-              <strong>Password:</strong> {user.password}
+            <p className="text-black">
+              <strong className="text-black">Username:</strong> <span className="text-black">{user.username}</span> {" "}
+              <strong className="text-black">Password:</strong> <span className="text-black">{user.password}</span>
             </p>
-            <p>Allow “View Orders”?: {user.view_orders ? "Yes" : "No"}</p>
-            <p>
-              Allow “View Order History”?: {user.view_history ? "Yes" : "No"}
-            </p>
-            <p>Allow “View and Edit Menu”?: {user.view_menu ? "Yes" : "No"}</p>
+            <p className="text-black">Allow “View Orders”?: <span className="text-black">{user.view_orders ? "Yes" : "No"}</span></p>
+            <p className="text-black">Allow “View Order History”?: <span className="text-black">{user.view_history ? "Yes" : "No"}</span></p>
+            <p className="text-black">Allow “View and Edit Menu”?: <span className="text-black">{user.view_menu ? "Yes" : "No"}</span></p>
 
             <div className="flex gap-2 mt-2">
               <button
