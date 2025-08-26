@@ -84,10 +84,10 @@ export default function Taskbar({
 
         {/* Favorites (★) */}
         <button
-          aria-label="Favorites"
+          aria-label="Reviews"
           onClick={
             permissions.view_reviews
-              ? () => (window.location.href = "/dashboard/favorites")
+              ? () => (window.location.href = "/dashboard/reviews")
               : undefined
           }
           className={`${styles.starButton} ${
