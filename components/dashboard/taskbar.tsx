@@ -4,13 +4,12 @@ import { usePathname } from "next/navigation";
 import styles from "./taskbar.module.css";
 import Image from "next/image";
 import { LogoutButton } from "@/components/logout-button";
-import { useState } from "react";
 
 type Permissions = {
   view_orders?: boolean;
   view_history?: boolean;
   view_menu?: boolean;
-  view_favorites?: boolean;
+  view_reviews?: boolean;
   create_account?: boolean;
 };
 
@@ -19,7 +18,7 @@ export default function Taskbar({
     view_orders: true,
     view_history: true,
     view_menu: true,
-    view_favorites: true,
+    view_reviews: true,
     create_account: true,
   },
 }: {
@@ -45,25 +44,30 @@ export default function Taskbar({
     },
   ];
 
-  // Star (favorites/reviews) permission
-  const canFavorites = permissions.view_favorites;
-  // Create account permission
-  const canCreateAccount = permissions.create_account;
-
   return (
     <footer className={styles.taskbar}>
       <div className={styles.backButton}>
         <LogoutButton>
-          <Image src="/back-button.png" alt="Back" className={styles.backIcon} width={25} height={25} />
+          <Image
+            src="/back-button.png"
+            alt="Back"
+            className={styles.backIcon}
+            width={25}
+            height={25}
+          />
         </LogoutButton>
       </div>
+
       <nav className={styles.nav}>
+        {/* Regular nav links */}
         {links.map((link) =>
           link.perm ? (
             <Link
               key={link.href}
               href={link.href}
-              className={`${styles.link} ${pathname === link.href ? styles.active : ""}`}
+              className={`${styles.link} ${
+                pathname === link.href ? styles.active : ""
+              }`}
             >
               {link.label}
             </Link>
@@ -78,33 +82,49 @@ export default function Taskbar({
           )
         )}
 
-        {/* Favorites/Star */}
+        {/* Favorites (★) */}
         <button
-          className={`${styles.starButton} ${pathname === "/dashboard/favorites" ? styles.starActive : ""} ${!canFavorites ? styles.disabled : ""}`}
-          onClick={canFavorites ? () => (window.location.href = "/dashboard/favorites") : undefined}
           aria-label="Favorites"
-          disabled={!canFavorites}
+          onClick={
+            permissions.view_reviews
+              ? () => (window.location.href = "/dashboard/favorites")
+              : undefined
+          }
+          className={`${styles.starButton} ${
+            pathname === "/dashboard/reviews" ? styles.starActive : ""
+          } ${!permissions.view_reviews ? styles.disabled : ""}`}
+          disabled={!permissions.view_reviews}
         >
           ★
         </button>
 
-        {/* View Account */}
+        {/* Create/View Accounts */}
         <button
           aria-label="View Account"
-          onClick={canCreateAccount ? () => (window.location.href = "/dashboard/view-accounts") : undefined}
-          className={`${styles.starButton} ${pathname === "/dashboard/view-accounts" ? styles.starActive : ""} ${!canCreateAccount ? styles.disabled : ""}`}
-          disabled={!canCreateAccount}
+          onClick={
+            permissions.create_account
+              ? () => (window.location.href = "/dashboard/view-accounts")
+              : undefined
+          }
+          className={`${styles.starButton} ${
+            pathname === "/dashboard/view-accounts" ||
+            pathname === "/auth/create-account"
+              ? styles.starActive
+              : ""
+          } ${!permissions.create_account ? styles.disabled : ""}`}
+          disabled={!permissions.create_account}
         >
           <Image
             src={
-              pathname === "/dashboard/view-accounts" || pathname === "/auth/create-account"
+              pathname === "/dashboard/view-accounts" ||
+              pathname === "/auth/create-account"
                 ? "/create-account-selected.png"
                 : "/create-account.png"
             }
             alt="Create Account"
             width={24}
             height={24}
-            style={{ opacity: canCreateAccount ? 1 : 0.5 }}
+            style={{ opacity: permissions.create_account ? 1 : 0.5 }}
           />
         </button>
       </nav>
