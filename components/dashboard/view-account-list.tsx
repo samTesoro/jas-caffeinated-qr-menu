@@ -61,6 +61,10 @@ export default function ViewAccounts() {
     username: string;
   }>(null);
 
+  //yelle: search and filter states
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("");
+
   useEffect(() => {
     const fetchUsers = async () => {
       const { data, error } = await supabase.from("adminusers").select("*");
@@ -71,6 +75,12 @@ export default function ViewAccounts() {
     };
     fetchUsers();
   }, []);
+
+  const filteredUsers = users.filter((u) => {
+    const matchesSearch = u.username.toLowerCase().includes(search.toLowerCase());
+    const matchesCategory = category ? (u as any)[category] === true : true;
+    return matchesSearch && matchesCategory;
+  })
 
   const handleDelete = async (id: string) => {
     const { error } = await supabase.from("adminusers").delete().eq("id", id);
@@ -87,19 +97,45 @@ export default function ViewAccounts() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4 text-black">View Accounts</h1>
+
+      <div className="w-full mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
+          {/* Search */}
+          <input
+            type="text"
+            placeholder="Search username..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="border rounded p-2 text-black bg-white flex-1 min-w-0"
+          />
+
+          {/* Filter */}
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="border rounded p-2 text-black bg-[#D9D9D9] w-full sm:w-auto"
+          >
+            <option value="">All Categories</option>
+            <option value="view_orders">View Orders</option>
+            <option value="view_history">View Order History</option>
+            <option value="view_menu">View & Edit Menu</option>
+            <option value="view_reviews">View Reviews</option>
+            <option value="manage_menu">Manage Menu</option>
+          </select>
+        </div>
+      </div>
+
+
       <div className="max-h-[400px] overflow-y-auto space-y-3 border p-2">
-        {users.map((user) => (
+      {filteredUsers.length > 0 ? (
+        filteredUsers.map((user) => (
           <div
             key={user.id}
             className="border p-3 bg-white rounded shadow-sm text-sm"
           >
-            <p className="text-black">
+            <p className="text-black mb-3">
               <strong className="text-black font-normal">Username:</strong>{" "}
               <span className="text-black font-bold">{user.username}</span>
-            </p>
-            <p className="text-black mb-3">
-              <strong className="text-black font-normal">Password:</strong>{" "}
-              <span className="text-black font-bold">{user.password}</span>
             </p>
             <p className="text-black">
               Allow “View Orders”?:{" "}
@@ -146,8 +182,12 @@ export default function ViewAccounts() {
               </span>
             </p>
           </div>
-        ))}
-      </div>
+        ))
+      ) : (
+        <p className="text-center text-gray-500 py-4">No accounts found</p>
+      )}
+    </div>
+
 
       <div className="flex justify-center items-center mt-7">
         <button
