@@ -20,7 +20,7 @@ export default function MenuPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#ebebeb]">
+    <div className="min-h-screen bg-[#ebebeb] pb-10">
       <DashboardHeader showBack={false} />
       {userEmail && (
         <div className="px-8 text-xs text-gray-600 md:text-center mb-2">
