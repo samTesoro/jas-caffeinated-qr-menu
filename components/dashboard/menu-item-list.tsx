@@ -51,7 +51,7 @@ export default function MenuItemList({
   const filteredItems = items.filter((item) => {
     const matchesSearch = item.name
       .toLowerCase()
-      .includes(search.toLowerCase());
+      .startsWith(search.toLowerCase());
     let matchesCategory = true;
     if (category === "Available" || category === "Unavailable") {
       matchesCategory = item.status === category;

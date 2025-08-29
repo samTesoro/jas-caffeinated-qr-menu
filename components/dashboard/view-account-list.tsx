@@ -67,7 +67,7 @@ export default function ViewAccounts() {
   }, []);
 
   const filteredUsers = users.filter((u) => {
-    const matchesSearch = u.username.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = u.username.toLowerCase().startsWith(search.toLowerCase());
     const matchesCategory = category ? (u as any)[category] === true : true;
     return matchesSearch && matchesCategory;
   });
