@@ -7,7 +7,7 @@ import DashboardHeader from "@/components/dashboard/header";
 // import { Input } from "@/components/ui/input";
 // import { Label } from "@/components/ui/label";
 // import { Button } from "@/components/ui/button";
-import Link from "next/link";
+// import Link from "next/link";
 
 export function LoginForm() {
   const [username, setUsername] = useState("");
@@ -30,13 +30,13 @@ export function LoginForm() {
       .eq("password", password)
       .single();
 
-      setIsLoading(false);
-      if (error || !data) {
-        setError("Invalid username or password");
-      } else {
-        // Set admin_session cookie for middleware authentication
-        document.cookie = `admin_session=${data.id}; path=/;`; // You can use any value, here we use user id
-        router.push("/dashboard/menu");
+    setIsLoading(false);
+    if (error || !data) {
+      setError("Invalid username or password");
+    } else {
+      // Set admin_session cookie for middleware authentication
+      document.cookie = `admin_session=${data.id}; path=/;`; // You can use any value, here we use user id
+      router.push("/dashboard/menu");
     }
   };
 
