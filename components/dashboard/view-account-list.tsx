@@ -57,7 +57,7 @@ const BlockIcon = ({ color = "black" }: { color?: string }) => (
 );
 
 type User = {
-  id: string;
+  user_id: string;
   username: string;
   password: string;
   view_orders: boolean;
@@ -65,9 +65,31 @@ type User = {
   view_menu: boolean;
   view_reviews: boolean;
   manage_menu: boolean;
+  is_blocked?: boolean;
 };
 
 export default function ViewAccounts() {
+  // Block a user by setting is_blocked to true in Supabase
+  const handleBlock = async (user_id: string) => {
+    const { error } = await supabase.from("adminusers").update({ is_blocked: true }).eq("user_id", user_id);
+    if (!error) {
+      setUsers((prev) => prev.map((u) => u.user_id === user_id ? { ...u, is_blocked: true } : u));
+      setBlockUser(null);
+    } else {
+      console.error("Block error:", error.message);
+    }
+  };
+
+  // Unblock a user by setting is_blocked to false in Supabase
+  const handleUnblock = async (user_id: string) => {
+    const { error } = await supabase.from("adminusers").update({ is_blocked: false }).eq("user_id", user_id);
+    if (!error) {
+      setUsers((prev) => prev.map((u) => u.user_id === user_id ? { ...u, is_blocked: false } : u));
+      setUnblockUser(null);
+    } else {
+      console.error("Unblock error:", error.message);
+    }
+  };
   const supabase = createClient();
   const router = useRouter();
 
@@ -75,15 +97,15 @@ export default function ViewAccounts() {
   const [loading, setLoading] = useState(true);
 
   const [deleteUser, setDeleteUser] = useState<null | {
-    id: string;
+    user_id: string;
     username: string;
   }>(null);
   const [blockUser, setBlockUser] = useState<null | {
-    id: string;
+    user_id: string;
     username: string;
   }>(null);
   const [unblockUser, setUnblockUser] = useState<null | {
-    id: string;
+    user_id: string;
     username: string;
   }>(null);
   const [blockedUsers, setBlockedUsers] = useState<string[]>([]);
@@ -106,32 +128,31 @@ export default function ViewAccounts() {
     const matchesSearch = u.username
       .toLowerCase()
       .startsWith(search.toLowerCase());
-    const matchesCategory = category ? (u as any)[category] === true : true;
+    let matchesCategory = true;
+    if (category === "blocked") {
+      matchesCategory = u.is_blocked === true;
+    } else if (category === "unblocked") {
+      matchesCategory = u.is_blocked !== true;
+    } else if (category) {
+      matchesCategory = (u as any)[category] === true;
+    }
     return matchesSearch && matchesCategory;
   });
 
-  const handleDelete = async (id: string) => {
-    const { error } = await supabase.from("adminusers").delete().eq("id", id);
+  const handleDelete = async (user_id: string) => {
+    const { error } = await supabase.from("adminusers").delete().eq("user_id", user_id);
     if (!error) {
-      setUsers((prev) => prev.filter((u) => u.id !== id));
+      setUsers((prev) => prev.filter((u) => u.user_id !== user_id));
       setDeleteUser(null);
     } else {
       console.error("Delete error:", error.message);
     }
   };
 
-  const handleBlock = (id: string) => {
-    setBlockedUsers((prev) => [...prev, id]);
+  const handleBlockLocal = (user_id: string) => {
+    setBlockedUsers((prev) => [...prev, user_id]);
     setBlockUser(null);
   };
-
-  const handleUnblock = (id: string) => {
-    setBlockedUsers((prev) => prev.filter((userId) => userId !== id));
-    setUnblockUser(null);
-  };
-
-  if (loading)
-    return <p className="text-center mt-4 text-black">Loading accounts...</p>;
 
   return (
     <div className="p-6">
@@ -154,9 +175,10 @@ export default function ViewAccounts() {
             <option value="">All Categories</option>
             <option value="view_orders">View Orders</option>
             <option value="view_history">View Order History</option>
-            <option value="view_menu">View & Edit Menu</option>
+            <option value="view_menu">View and Edit Menu</option>
             <option value="view_reviews">View Reviews</option>
-            <option value="manage_menu">Manage Menu</option>
+            <option value="blocked">Blocked</option>
+            <option value="unblocked">Unblocked</option>
           </select>
         </div>
       </div>
@@ -164,18 +186,23 @@ export default function ViewAccounts() {
       <div className="max-h-[400px] overflow-y-auto space-y-3 border p-2">
         {filteredUsers.length > 0 ? (
           filteredUsers.map((user) => {
-            const isBlocked = blockedUsers.includes(user.id);
+            const isBlocked = user.is_blocked === true;
             return (
               <div
-                key={user.id}
+                key={user.user_id}
                 className={`border p-3 bg-white rounded shadow-sm text-sm ${
                   isBlocked ? "opacity-70" : ""
                 }`}
               >
-                <p className="text-black mb-3">
-                  <strong className="text-black font-normal">Username:</strong>{" "}
-                  <span className="text-black font-bold">{user.username}</span>
-                </p>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-black">
+                    <strong className="text-black font-normal">Username:</strong>{" "}
+                    <span className="text-black font-bold">{user.username}</span>
+                  </p>
+                  {isBlocked && (
+                    <span className="bg-red-600 text-white text-xs px-2 py-1 rounded font-bold ml-2">Blocked</span>
+                  )}
+                </div>
 
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
@@ -209,7 +236,7 @@ export default function ViewAccounts() {
                   <div className="flex flex-col gap-2 self-end ml-4 lg:flex-row lg:gap-3">
                     <button
                       onClick={() =>
-                        router.push(`/dashboard/view-accounts/edit/${user.id}`)
+                        router.push(`/dashboard/view-accounts/edit/${user.user_id}`)
                       }
                       className="bg-[#A7F586] w-6 h-6 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shadow"
                     >
@@ -217,7 +244,7 @@ export default function ViewAccounts() {
                     </button>
                     <button
                       onClick={() =>
-                        setDeleteUser({ id: user.id, username: user.username })
+                        setDeleteUser({ user_id: user.user_id, username: user.username })
                       }
                       className="bg-red-400 w-6 h-6 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shadow"
                     >
@@ -227,11 +254,11 @@ export default function ViewAccounts() {
                       onClick={() =>
                         isBlocked
                           ? setUnblockUser({
-                              id: user.id,
+                              user_id: user.user_id,
                               username: user.username,
                             })
                           : setBlockUser({
-                              id: user.id,
+                              user_id: user.user_id,
                               username: user.username,
                             })
                       }
@@ -274,7 +301,7 @@ export default function ViewAccounts() {
                 No
               </Button>
               <Button
-                onClick={() => handleDelete(deleteUser.id)}
+                onClick={() => handleDelete(deleteUser.user_id)}
                 variant="green"
               >
                 Yes
@@ -296,7 +323,7 @@ export default function ViewAccounts() {
               <Button onClick={() => setBlockUser(null)} variant="red">
                 No
               </Button>
-              <Button onClick={() => handleBlock(blockUser.id)} variant="green">
+              <Button onClick={() => handleBlock(blockUser.user_id)} variant="green">
                 Yes
               </Button>
             </div>
@@ -317,7 +344,7 @@ export default function ViewAccounts() {
                 No
               </Button>
               <Button
-                onClick={() => handleUnblock(unblockUser.id)}
+                onClick={() => handleUnblock(unblockUser.user_id)}
                 variant="green"
               >
                 Yes
