@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import DashboardHeader from "@/components/ui/header";
 
 export default function CartPage() {
   const [cart, setCart] = useState<any[]>([]);
@@ -78,23 +79,8 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-[#ebebeb] flex flex-col">
-      {/* Header */}
-      <div className="relative w-full" style={{ height: "170px" }}>
-        <div className="absolute top-0 left-0 w-full h-[90px] bg-[#E59C53]" />
-        <div className="absolute bottom-0 left-0 w-full h-[90px] bg-[#ebebeb]" />
-        <div className="absolute top-4 right-6 text-black text-xs font-normal">
-          Table: 06
-        </div>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <img
-            src="/logo-caffeinated.png"
-            alt="Logo"
-            width={200}
-            height={75}
-            style={{ objectFit: "contain" }}
-          />
-        </div>
-      </div>
+      <DashboardHeader mode="customer" />
+
       <div className="flex-1 px-6 pb-8 pt-2 w-full max-w-md mx-auto">
         <h2 className="font-bold text-black text-2xl mb-2 mt-2">Cart</h2>
         <hr className="mb-6 border-black/30" />
@@ -157,7 +143,6 @@ export default function CartPage() {
           </button>
         </div>
       </div>
-      {/* Responsive bottom nav or taskbar can be added here if needed */}
     </div>
   );
 }

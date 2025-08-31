@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
-import DashboardHeader from "./header";
+import DashboardHeader from "../ui/header";
 import { Button } from "@/components/ui/button";
 import { MdOutlineCloudUpload } from "react-icons/md";
 

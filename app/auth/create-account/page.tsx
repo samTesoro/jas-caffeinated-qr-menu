@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Taskbar from "@/components/dashboard/taskbar";
-import DashboardHeader from "@/components/dashboard/header";
+import DashboardHeader from "@/components/ui/header";
 import { Button } from "@/components/ui/button"; // ✅ assuming you have shadcn Button
 
 export default function CreateAccountPage() {

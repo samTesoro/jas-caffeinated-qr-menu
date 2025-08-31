@@ -3,7 +3,7 @@ import MenuItemList from "@/components/dashboard/menu-item-list";
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 /*import { LogoutButton } from '@/components/logout-button';*/
-import DashboardHeader from "@/components/dashboard/header";
+import DashboardHeader from "@/components/ui/header";
 import Taskbar from "@/components/dashboard/taskbar";
 
 export default function MenuPage() {
@@ -42,4 +42,3 @@ export default function MenuPage() {
     </div>
   );
 }
-
