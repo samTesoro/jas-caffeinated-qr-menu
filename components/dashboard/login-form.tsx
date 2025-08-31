@@ -108,7 +108,11 @@ export function LoginForm() {
             </button>
           </div>
         </form>
-  {/* Removed superadmin create account button */}
+        <p className="mt-4 text-center text-sm">
+          <Link href="/auth/create-account" className="text-black underline">
+            (For superadmin) Create Account
+          </Link>
+        </p>
       </div>
     </div>
   );
