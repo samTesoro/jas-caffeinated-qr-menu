@@ -109,6 +109,11 @@ export default function ItemDetailModal({
           <div className="text-black mb-2 text-lg">
             ₱{item.price}.00 <span className="text-xs">Base price</span>
           </div>
+          {item.description && (
+            <div className="text-black/70 mb-2 text-base">
+              {item.description}
+            </div>
+          )}
           <hr className="my-3 border-black/30" />
           <label className="block text-black font-bold text-base mb-1">
             Note to restaurant{" "}
