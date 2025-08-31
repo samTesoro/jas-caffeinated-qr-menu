@@ -1,9 +1,7 @@
 "use client";
-import React, { useState } from "react";
-import MenuItemCard from "./menu-item-card";
+import React, { useState, useEffect } from "react";
+import MenuItemCard from "../ui/menu-item-card";
 import ItemDetailModal from "./item-detail-modal";
-
-import { useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function MenuList({
@@ -18,16 +16,21 @@ export default function MenuList({
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    setLoading(true);
+    setSearch("");
+    setSelectedItem(null);
     const supabase = createClient();
     supabase
       .from("menuitem")
       .select("*")
       .then(({ data }) => {
         setMenuItems(data || []);
+        setLoading(false);
       });
-  }, []);
+  }, [activeTab]); // Refetch and reset on tab change
 
   let filtered;
   if (search.trim() !== "") {
@@ -56,15 +59,21 @@ export default function MenuList({
           className="w-[350px] h-[45px] px-4 py-2 rounded-3xl border-white bg-white text-black text-sm"
         />
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        {filtered.map((item) => (
-          <MenuItemCard
-            key={item.menuitem_id ? String(item.menuitem_id) : item.name}
-            item={item}
-            onClick={() => setSelectedItem(item)}
-          />
-        ))}
-      </div>
+      {loading ? (
+        <div className="text-center text-gray-500 py-8">Loading items...</div>
+      ) : (
+        <div className="grid grid-cols-2 gap-4">
+          {filtered.map((item) => (
+            <MenuItemCard
+              key={item.menuitem_id ? String(item.menuitem_id) : item.name}
+              item={item}
+              setModalItem={setSelectedItem}
+              mode="customer"
+              onAdd={() => setSelectedItem(item)}
+            />
+          ))}
+        </div>
+      )}
       {selectedItem && (
         <ItemDetailModal
           item={selectedItem}

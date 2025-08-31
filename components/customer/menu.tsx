@@ -1,70 +1,59 @@
 "use client";
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 80d8e93c04dfa099fcbf596d7fa0549fdd616c70
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import MenuTabs from "./menu-tabs";
-import CustomerTaskbar from "./taskbar";
+import MenuTaskbar from "./menu-taskbar";
 import MenuList from "./menu-list";
 import Cart from "./cart";
 import ConfirmModal from "./confirm-modal";
-<<<<<<< HEAD
+
+function getTabFromUrl() {
+  if (typeof window !== "undefined") {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab") as
+      | "Meals"
+      | "Coffee"
+      | "Drinks"
+      | "Favorites";
+    return tab || "Meals";
+  }
+  return "Meals";
+}
 
 export default function CustomerMenu({ tableId }: { tableId: string }) {
   const [activeTab, setActiveTab] = useState<
     "Meals" | "Coffee" | "Drinks" | "Favorites"
-  >("Meals");
-  React.useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const tab = params.get("tab") as
-        | "Meals"
-        | "Coffee"
-        | "Drinks"
-        | "Favorites";
-      if (tab && tab !== activeTab) setActiveTab(tab);
-    }
-  }, [typeof window !== "undefined" && window.location.search]);
-=======
-import React, { useState } from 'react';
-import MenuTabs from './menu-tabs';
-import CustomerTaskbar from './taskbar';
-import MenuList from './menu-list';
-import Cart from './cart';
-import ConfirmModal from './confirm-modal';
-=======
->>>>>>> 80d8e93c04dfa099fcbf596d7fa0549fdd616c70
-
-export default function CustomerMenu({ tableId }: { tableId: string }) {
-  const [activeTab, setActiveTab] = useState<
-    "Meals" | "Coffee" | "Drinks" | "Favorites"
-  >("Meals");
-  React.useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const tab = params.get("tab") as
-        | "Meals"
-        | "Coffee"
-        | "Drinks"
-        | "Favorites";
-      if (tab && tab !== activeTab) setActiveTab(tab);
-    }
-<<<<<<< HEAD
-  }, [typeof window !== 'undefined' && window.location.search]);
->>>>>>> 183fafce45b4d4d8d5e98f92f795eacf6e97cc9c
-=======
-  }, [typeof window !== "undefined" && window.location.search]);
->>>>>>> 80d8e93c04dfa099fcbf596d7fa0549fdd616c70
+  >(getTabFromUrl());
   const [cart, setCart] = useState<any[]>([]);
   const [showCart, setShowCart] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
+  // Always sync activeTab with URL changes
+  useEffect(() => {
+    const updateTabFromUrl = () => {
+      setActiveTab(getTabFromUrl());
+    };
+    window.addEventListener("popstate", updateTabFromUrl);
+    window.addEventListener("pushstate", updateTabFromUrl);
+    window.addEventListener("replacestate", updateTabFromUrl);
+    return () => {
+      window.removeEventListener("popstate", updateTabFromUrl);
+      window.removeEventListener("pushstate", updateTabFromUrl);
+      window.removeEventListener("replacestate", updateTabFromUrl);
+    };
+  }, []);
+
+  // When tab is changed via MenuTabs, update both state and URL
+  const handleTabChange = (tab: "Meals" | "Coffee" | "Drinks" | "Favorites") => {
+    setActiveTab(tab);
+    if (typeof window !== "undefined") {
+      const url = tab === "Meals" ? "/customer" : `/customer?tab=${tab}`;
+      window.history.pushState({}, "", url);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#ebebeb]">
+    <div className="min-h-screen bg-[#ebebeb] flex flex-col relative" style={{paddingBottom:'160px'}}>
       {/* Dashboard-style header */}
-<<<<<<< HEAD
-<<<<<<< HEAD
       <div className="relative w-full" style={{ height: "170px" }}>
         <div className="absolute top-0 left-0 w-full h-[90px] bg-[#E59C53]" />
         <div className="absolute bottom-0 left-0 w-full h-[90px] bg-[#ebebeb]" />
@@ -79,59 +68,18 @@ export default function CustomerMenu({ tableId }: { tableId: string }) {
             height={75}
             style={{ objectFit: "contain" }}
           />
-=======
-      <div className="relative w-full" style={{ height: '170px' }}>
-=======
-      <div className="relative w-full" style={{ height: "170px" }}>
->>>>>>> 80d8e93c04dfa099fcbf596d7fa0549fdd616c70
-        <div className="absolute top-0 left-0 w-full h-[90px] bg-[#E59C53]" />
-        <div className="absolute bottom-0 left-0 w-full h-[90px] bg-[#ebebeb]" />
-        <div className="absolute top-4 right-6 text-black text-xs font-normal">
-          Table: {tableId}
-        </div>
-        <div className="absolute inset-0 flex items-center justify-center">
-<<<<<<< HEAD
-          <img src="/logo-caffeinated.png" alt="Logo" width={200} height={75} style={{objectFit:'contain'}} />
->>>>>>> 183fafce45b4d4d8d5e98f92f795eacf6e97cc9c
-=======
-          <img
-            src="/logo-caffeinated.png"
-            alt="Logo"
-            width={200}
-            height={75}
-            style={{ objectFit: "contain" }}
-          />
->>>>>>> 80d8e93c04dfa099fcbf596d7fa0549fdd616c70
         </div>
       </div>
       <div className="flex-1 px-8 pb-8 pt-2">
-        <MenuTabs activeTab={activeTab} setActiveTab={setActiveTab} />
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 80d8e93c04dfa099fcbf596d7fa0549fdd616c70
         <MenuList
           activeTab={activeTab}
           cart={cart}
           setCart={setCart as (cart: any[]) => void}
         />
         {showConfirm && <ConfirmModal onClose={() => setShowConfirm(false)} />}
-<<<<<<< HEAD
       </div>
-      {/* Dashboard-style taskbar */}
-      <CustomerTaskbar />
-=======
-        <MenuList activeTab={activeTab} cart={cart} setCart={setCart as (cart: any[]) => void} />
-        {showConfirm && <ConfirmModal onClose={()=>setShowConfirm(false)} />}
-      </div>
-      {/* Dashboard-style taskbar */}
-  <CustomerTaskbar />
->>>>>>> 183fafce45b4d4d8d5e98f92f795eacf6e97cc9c
-=======
-      </div>
-      {/* Dashboard-style taskbar */}
-      <CustomerTaskbar />
->>>>>>> 80d8e93c04dfa099fcbf596d7fa0549fdd616c70
+  {/* Unified menu-taskbar with tabs and cart button */}
+  <MenuTaskbar activeTab={activeTab} setActiveTab={handleTabChange} />
     </div>
   );
 }
