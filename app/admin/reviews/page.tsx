@@ -1,7 +1,7 @@
 "use client";
-import Taskbar from "@/components/dashboard/taskbar";
+import Taskbar from "@/components/admin/taskbar-admin";
 
-export default function OrdersPage() {
+export default function FavoritesPage() {
   return (
     <div className="min-h-screen bg-[#ebebeb] flex flex-col items-center justify-center">
       <Taskbar />

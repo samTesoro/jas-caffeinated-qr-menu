@@ -1,58 +1,31 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import MenuTabs from "./menu-tabs";
-import MenuTaskbar from "./menu-taskbar";
+import React, { useState } from "react";
+import MenuTaskbar from "./customer-taskbar";
 import MenuList from "./menu-list";
 import Cart from "./cart";
 import ConfirmModal from "./confirm-modal";
 
-function getTabFromUrl() {
-  if (typeof window !== "undefined") {
-    const params = new URLSearchParams(window.location.search);
-    const tab = params.get("tab") as
-      | "Meals"
-      | "Coffee"
-      | "Drinks"
-      | "Favorites";
-    return tab || "Meals";
-  }
-  return "Meals";
-}
-
 export default function CustomerMenu({ tableId }: { tableId: string }) {
   const [activeTab, setActiveTab] = useState<
     "Meals" | "Coffee" | "Drinks" | "Favorites"
-  >(getTabFromUrl());
+  >("Meals");
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get("tab") as
+        | "Meals"
+        | "Coffee"
+        | "Drinks"
+        | "Favorites";
+      if (tab && tab !== activeTab) setActiveTab(tab);
+    }
+  }, [typeof window !== "undefined" && window.location.search]);
   const [cart, setCart] = useState<any[]>([]);
   const [showCart, setShowCart] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // Always sync activeTab with URL changes
-  useEffect(() => {
-    const updateTabFromUrl = () => {
-      setActiveTab(getTabFromUrl());
-    };
-    window.addEventListener("popstate", updateTabFromUrl);
-    window.addEventListener("pushstate", updateTabFromUrl);
-    window.addEventListener("replacestate", updateTabFromUrl);
-    return () => {
-      window.removeEventListener("popstate", updateTabFromUrl);
-      window.removeEventListener("pushstate", updateTabFromUrl);
-      window.removeEventListener("replacestate", updateTabFromUrl);
-    };
-  }, []);
-
-  // When tab is changed via MenuTabs, update both state and URL
-  const handleTabChange = (tab: "Meals" | "Coffee" | "Drinks" | "Favorites") => {
-    setActiveTab(tab);
-    if (typeof window !== "undefined") {
-      const url = tab === "Meals" ? "/customer" : `/customer?tab=${tab}`;
-      window.history.pushState({}, "", url);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-[#ebebeb] flex flex-col relative" style={{paddingBottom:'160px'}}>
+    <div className="min-h-screen bg-[#ebebeb]">
       {/* Dashboard-style header */}
       <div className="relative w-full" style={{ height: "170px" }}>
         <div className="absolute top-0 left-0 w-full h-[90px] bg-[#E59C53]" />
@@ -78,8 +51,8 @@ export default function CustomerMenu({ tableId }: { tableId: string }) {
         />
         {showConfirm && <ConfirmModal onClose={() => setShowConfirm(false)} />}
       </div>
-  {/* Unified menu-taskbar with tabs and cart button */}
-  <MenuTaskbar activeTab={activeTab} setActiveTab={handleTabChange} />
+      {/* Dashboard-style taskbar */}
+      <MenuTaskbar />
     </div>
   );
 }

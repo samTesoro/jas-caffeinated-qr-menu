@@ -1,10 +1,10 @@
 "use client";
-import MenuItemList from "@/components/dashboard/menu-item-list";
+import MenuItemList from "@/components/admin/menu-item-list";
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 /*import { LogoutButton } from '@/components/logout-button';*/
 import DashboardHeader from "@/components/ui/header";
-import Taskbar from "@/components/dashboard/taskbar";
+import Taskbar from "@/components/admin/taskbar-admin";
 
 export default function MenuPage() {
   const [refresh, setRefresh] = useState(false);
@@ -39,7 +39,7 @@ export default function MenuPage() {
         <MenuItemList
           onEdit={(item) => {
             if (item)
-              window.location.href = `/dashboard/menu/${item.menuitem_id}`;
+              window.location.href = `/admin/menu/${item.menuitem_id}`;
           }}
           refresh={refresh}
           setRefresh={setRefresh}

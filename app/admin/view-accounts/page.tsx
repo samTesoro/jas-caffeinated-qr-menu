@@ -1,7 +1,7 @@
 "use client";
-import Taskbar from "@/components/dashboard/taskbar";
+import Taskbar from "@/components/admin/taskbar-admin";
 import DashboardHeader from "@/components/ui/header";
-import ViewAccounts from "@/components/dashboard/view-account-list";
+import ViewAccounts from "@/components/admin/view-account-list";
 
 export default function ViewAccountsPage() {
   return (

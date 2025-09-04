@@ -1,5 +1,5 @@
 "use client";
-import Taskbar from "@/components/dashboard/taskbar";
+import Taskbar from "@/components/admin/taskbar-admin";
 
 export default function HistoryPage() {
   return (

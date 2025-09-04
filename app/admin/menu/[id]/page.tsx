@@ -1,9 +1,9 @@
 "use client";
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import MenuItemForm from '@/components/dashboard/menu-item-form';
+import MenuItemForm from '@/components/admin/menu-item-form';
 import { createClient } from '@/lib/supabase/client';
-import type { MenuItem } from '@/components/dashboard/menu-item-list';
+import type { MenuItem } from '@/components/admin/menu-item-list';
 
 import React from 'react';
 
@@ -42,8 +42,8 @@ export default function EditMenuItemPage({ params }: { params: Promise<{ id: str
     <div className="min-h-screen bg-[#ebebeb]">
             <MenuItemForm
               item={item}
-              onSaved={() => router.push('/dashboard/menu')}
-              onCancel={() => router.push('/dashboard/menu')}
+              onSaved={() => router.push('/admin/menu')}
+              onCancel={() => router.push('/admin/menu')}
             />
           </div>
   );

@@ -28,17 +28,17 @@ export default function Taskbar({
 
   const links = [
     {
-      href: "/dashboard/orders",
+      href: "/admin/orders",
       label: "Orders",
       perm: permissions.view_orders,
     },
     {
-      href: "/dashboard/menu",
+      href: "/admin/menu",
       label: "Menu",
       perm: permissions.view_menu,
     },
     {
-      href: "/dashboard/history",
+      href: "/admin/history",
       label: "History",
       perm: permissions.view_history,
     },
@@ -71,7 +71,7 @@ export default function Taskbar({
             >
               {link.label}
             </Link>
-          ) : (
+          ) : ( 
             <span
               key={link.href}
               className={`${styles.link} ${styles.disabled}`}

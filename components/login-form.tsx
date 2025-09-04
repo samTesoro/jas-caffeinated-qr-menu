@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import DashboardHeader from "@/components/dashboard/header";
+import DashboardHeader from "@/components/ui/header";
 // import { Input } from "@/components/ui/input";
 // import { Label } from "@/components/ui/label";
 // import { Button } from "@/components/ui/button";
@@ -54,7 +54,7 @@ export function LoginForm() {
     } else {
       // Set admin_session cookie for middleware authentication
       document.cookie = `admin_session=${data.id}; path=/;`; // You can use any value, here we use user id
-      router.push("/dashboard/menu");
+      router.push("/admin/menu");
     }
   };
 

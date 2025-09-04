@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import Taskbar from "@/components/dashboard/taskbar";
+import Taskbar from "@/components/admin/taskbar-admin";
 import DashboardHeader from "@/components/ui/header";
 import { Button } from "@/components/ui/button"; // ✅ assuming you have shadcn Button
 

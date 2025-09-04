@@ -90,7 +90,7 @@ export default function MenuItemList({
             ))}
           </select>
 
-          <Link href="/dashboard/menu/add">
+          <Link href="/admin/menu/add">
             <Button type="submit" variant="green" className="w-50 rounded-lg">
               Add New Item
             </Button>
