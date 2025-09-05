@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import MenuItemCard from "../ui/menu-item-card";
 import ItemDetailModal from "./item-detail-modal";
 import { createClient } from "@/lib/supabase/client";
+import { Search } from "lucide-react";
 
 export default function MenuList({
   activeTab,
@@ -53,32 +54,30 @@ export default function MenuList({
       {/* Search + Category */}
       <div className="mb-6 flex flex-col sm:flex-row gap-2 justify-center items-center">
         <div className="flex items-center gap-3">
-          <div className="relative flex items-center justify-center" style={{ width: '45px', height: '45px' }}>
-            <div className="bg-gray-300 rounded-full flex items-center justify-center" style={{ width: '45px', height: '45px' }}>
+          <div
+            className="relative flex items-center justify-center"
+            style={{ width: "45px", height: "45px" }}
+          >
+            <div
+              className="bg-gray-300 rounded-full flex items-center justify-center"
+              style={{ width: "45px", height: "45px" }}
+            >
               <img
                 src="/notifications-icon.png"
                 alt="Notifications"
-                width={28}
-                height={28}
-                style={{ objectFit: 'contain' }}
+                width={25}
+                height={25}
+                style={{ objectFit: "contain" }}
               />
             </div>
           </div>
-          <div className="relative w-[350px]">
+          <div className="relative w-[280px]">
+            <Search className="absolute right-4 mx-2 top-1/2 -translate-y-1/2 h-4 w-4 text-black" />
             <input
               type="text"
-              placeholder="Search items..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-[45px] px-4 py-2 pr-12 rounded-3xl border-white bg-white text-black text-sm"
-            />
-            <img
-              src="/search-icon.png"
-              alt="Search"
-              width={35}
-              height={35}
-              className="absolute right-4 top-1/2 transform -translate-y-1/2"
-              style={{ objectFit: 'contain' }}
+              className="w-full h-[45px] pl-8 pr-4 py-2 rounded-3xl border-white bg-white text-sm text-black"
             />
           </div>
         </div>

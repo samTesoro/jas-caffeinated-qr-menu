@@ -65,9 +65,8 @@ export default function MenuItemList({
 
   return (
     <div>
-      {/* Search + Category + Add button */}
-      <div className="mb-6 flex flex-col sm:flex-row gap-2 justify-center items-center">
-        <div className="relative w-[350px] mb-3">
+      <div className="sm:mb-6 md:mb-10 flex flex-col items-center gap-4">
+        <div className="relative w-[350px]">
           <Search className="absolute right-4 mx-2 top-1/2 -translate-y-1/2 h-4 w-4 text-black" />
           <input
             type="text"
@@ -76,7 +75,8 @@ export default function MenuItemList({
             className="w-full h-[45px] pl-8 pr-4 py-2 rounded-3xl border-white bg-white text-sm text-black"
           />
         </div>
-        <div className="flex items-center gap-14">
+
+        <div className="flex flex-row gap-10 sm:justify-between sm:items-center sm:w-[100px] md:w-full max-w-[350px] mb-6">
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
@@ -90,8 +90,12 @@ export default function MenuItemList({
             ))}
           </select>
 
-          <Link href="/admin/menu/add">
-            <Button type="submit" variant="green" className="w-50 rounded-lg">
+          <Link href="/admin/menu/add" className="w-full sm:w-auto">
+            <Button
+              type="submit"
+              variant="green"
+              className="w-full sm:w-50 rounded-lg"
+            >
               Add New Item
             </Button>
           </Link>
@@ -99,7 +103,7 @@ export default function MenuItemList({
       </div>
 
       {/* Menu Item Grid */}
-      <div className="grid grid-cols-2 gap-7 sm:gap-2 place-items-center">
+      <div className="grid grid-cols-2 gap-7 sm:gap-2 place-items-center mb-10">
         {filteredItems.map((item) => (
           <ItemCard
             key={item.menuitem_id}
