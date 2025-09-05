@@ -49,20 +49,44 @@ export default function MenuList({
   }
 
   return (
-    <div className="px-4 pt-4 pb-24">
+    <div>
+      {/* Search + Category */}
       <div className="mb-6 flex flex-col sm:flex-row gap-2 justify-center items-center">
-        <input
-          type="text"
-          placeholder="Search items..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-[350px] h-[45px] px-4 py-2 rounded-3xl border-white bg-white text-black text-sm"
-        />
+        <div className="flex items-center gap-3">
+          <div className="relative flex items-center justify-center" style={{ width: '45px', height: '45px' }}>
+            <div className="bg-gray-300 rounded-full flex items-center justify-center" style={{ width: '45px', height: '45px' }}>
+              <img
+                src="/notifications-icon.png"
+                alt="Notifications"
+                width={28}
+                height={28}
+                style={{ objectFit: 'contain' }}
+              />
+            </div>
+          </div>
+          <div className="relative w-[350px]">
+            <input
+              type="text"
+              placeholder="Search items..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full h-[45px] px-4 py-2 pr-12 rounded-3xl border-white bg-white text-black text-sm"
+            />
+            <img
+              src="/search-icon.png"
+              alt="Search"
+              width={35}
+              height={35}
+              className="absolute right-4 top-1/2 transform -translate-y-1/2"
+              style={{ objectFit: 'contain' }}
+            />
+          </div>
+        </div>
       </div>
       {loading ? (
         <div className="text-center text-gray-500 py-8">Loading items...</div>
       ) : (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-7 sm:gap-2 place-items-center">
           {filtered.map((item) => (
             <MenuItemCard
               key={item.menuitem_id ? String(item.menuitem_id) : item.name}

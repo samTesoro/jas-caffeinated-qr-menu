@@ -30,6 +30,7 @@
   color: white;
   text-decoration: none;
   font-size: 18px;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
   padding: 12px 0;
   flex: 1;
   text-align: center;
@@ -39,6 +40,7 @@
 .active {
   color: #E59C53;
   font-weight: bold;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
 }
 
 .starButton {
@@ -79,4 +81,13 @@
   pointer-events: none; 
   cursor: not-allowed;
   opacity: 0.5;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+}
+
+.icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
 }

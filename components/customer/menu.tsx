@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import MenuTaskbar from "./customer-taskbar";
+import MenuTaskbar from "./taskbar-customer";
 import MenuList from "./menu-list";
 import Cart from "./cart";
 import ConfirmModal from "./confirm-modal";
