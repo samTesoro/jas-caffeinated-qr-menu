@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
-import MenuTaskbar from "./taskbar-customer";
+import MenuTabs from "./menu-tabs";
+import CustomerTaskbar from "./taskbar";
 import MenuList from "./menu-list";
 import Cart from "./cart";
 import ConfirmModal from "./confirm-modal";
@@ -44,6 +45,7 @@ export default function CustomerMenu({ tableId }: { tableId: string }) {
         </div>
       </div>
       <div className="flex-1 px-8 pb-8 pt-2">
+        <MenuTabs activeTab={activeTab} setActiveTab={setActiveTab} />
         <MenuList
           activeTab={activeTab}
           cart={cart}
@@ -52,7 +54,7 @@ export default function CustomerMenu({ tableId }: { tableId: string }) {
         {showConfirm && <ConfirmModal onClose={() => setShowConfirm(false)} />}
       </div>
       {/* Dashboard-style taskbar */}
-      <MenuTaskbar />
+      <CustomerTaskbar />
     </div>
   );
 }
