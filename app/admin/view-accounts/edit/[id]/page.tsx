@@ -26,7 +26,7 @@ export default function EditAccountPage() {
       const { data, error } = await supabase
         .from("adminusers")
         .select("*")
-        .eq("id", id)
+        .eq("user_id", id)
         .single();
       if (data) {
         setUsername(data.username || "");
@@ -54,12 +54,12 @@ export default function EditAccountPage() {
         view_menu: viewMenu,
         view_reviews: viewReviews,
       })
-      .eq("id", id);
+      .eq("user_id", id);
     setLoading(false);
     if (error) {
       setError(error.message);
     } else {
-      router.push("/dashboard/view-accounts");
+      router.push("/admin/view-accounts");
     }
   };
 
@@ -144,7 +144,7 @@ export default function EditAccountPage() {
           </button>
           <button
             type="button"
-            onClick={() => router.push("/dashboard/view-accounts")}
+            onClick={() => router.push("/admin/view-accounts")}
             className="px-2 border bg-[#ebebeb] text-black mt-10 w-[80px] focus:outline-none focus:ring-0"
           >
             Back

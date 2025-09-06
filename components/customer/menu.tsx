@@ -5,10 +5,16 @@ import MenuList from "./menu-list";
 import Cart from "./cart";
 import ConfirmModal from "./confirm-modal";
 
-export default function CustomerMenu({ tableId }: { tableId: string }) {
+interface CustomerMenuProps {
+  tableId: string;
+  customerId?: number | null;
+  initialTab?: "Meals" | "Coffee" | "Drinks" | "Favorites";
+}
+
+export default function CustomerMenu({ tableId, customerId, initialTab = "Meals" }: CustomerMenuProps) {
   const [activeTab, setActiveTab] = useState<
     "Meals" | "Coffee" | "Drinks" | "Favorites"
-  >("Meals");
+  >(initialTab);
   React.useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -48,6 +54,7 @@ export default function CustomerMenu({ tableId }: { tableId: string }) {
           activeTab={activeTab}
           cart={cart}
           setCart={setCart as (cart: any[]) => void}
+          customerId={customerId}
         />
         {showConfirm && <ConfirmModal onClose={() => setShowConfirm(false)} />}
       </div>

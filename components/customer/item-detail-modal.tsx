@@ -2,35 +2,57 @@
 import React, { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
+interface ItemDetailModalProps {
+  item: any;
+  onClose: () => void;
+  cart: any[];
+  setCart: (cart: any[]) => void;
+  customerId?: number | null;
+}
+
 export default function ItemDetailModal({
   item,
   onClose,
   cart,
   setCart,
-}: {
-  item: any;
-  onClose: () => void;
-  cart: any[];
-  setCart: (cart: any[]) => void;
-}) {
+  customerId,
+}: ItemDetailModalProps) {
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
 
   const addToCart = async () => {
     const supabase = createClient();
-    let cart_id = localStorage.getItem("cart_id");
-    if (!cart_id) {
-      // Create a new cart in Supabase
+    let cid = customerId;
+    if (!cid) {
+      alert("No customer ID found. Please refresh or scan the QR code again.");
+      return;
+    }
+    // Always fetch or create open cart for this customer
+    let cart_id: number | null = null;
+    const { data: existingCart, error: cartFetchError } = await supabase
+      .from("cart")
+      .select("cart_id")
+      .eq("customer_id", cid)
+      .eq("checked_out", false)
+      .maybeSingle();
+    if (cartFetchError) {
+      alert("Failed to fetch cart: " + JSON.stringify(cartFetchError));
+      return;
+    }
+    if (existingCart && existingCart.cart_id) {
+      cart_id = existingCart.cart_id;
+    } else {
+      // Create a new cart in Supabase for this customer
       const { data, error } = await supabase
         .from("cart")
-        .insert([{ total_price: 0, time_created: new Date().toISOString() }])
-        .select("cart_id");
-      if (error || !data || !data[0]?.cart_id) {
+        .insert([{ total_price: 0, time_created: new Date().toISOString(), customer_id: cid, checked_out: false }])
+        .select("cart_id")
+        .single();
+      if (error || !data || !data.cart_id) {
         alert("Failed to create cart: " + JSON.stringify(error));
         return;
       }
-      cart_id = data[0].cart_id;
-      localStorage.setItem("cart_id", String(cart_id));
+      cart_id = data.cart_id;
     }
     // Check for existing cartitem with same menuitem_id and cart_id
     const { data: existingItems, error: fetchError } = await supabase
@@ -68,7 +90,7 @@ export default function ItemDetailModal({
         quantity: qty,
         subtotal_price: item.price * qty,
         menuitem_id: item.menuitem_id,
-        cart_id: Number(cart_id),
+        cart_id: cart_id,
       };
       const { error: itemError } = await supabase
         .from("cartitem")
@@ -104,7 +126,7 @@ export default function ItemDetailModal({
           alt={item.name}
           className="w-full h-48 object-cover rounded-b-none md:rounded-lg mb-0"
         />
-        <div className="flex-1 flex flex-col px-6 pt-4 pb-6">
+        <div className="flex-1 flex flex-col px-6 pt-4 pb-6 overflow-y-auto" style={{ minHeight: 0 }}>
           <div className="font-bold text-black text-xl mb-1">{item.name}</div>
           <div className="text-black mb-2 text-lg">
             ₱{item.price}.00 <span className="text-xs">Base price</span>
@@ -140,8 +162,10 @@ export default function ItemDetailModal({
               +
             </button>
           </div>
+        </div>
+        <div className="flex justify-center p-4 bg-white sticky bottom-0 left-0 w-full z-10 mb-32 md:mb-0">
           <button
-            className="w-full bg-orange-400 text-white py-4 rounded-xl font-bold text-lg mt-auto"
+            className="w-11/12 max-w-xs bg-orange-400 text-white py-4 rounded-xl font-bold text-lg shadow-lg"
             onClick={addToCart}
           >
             Add to Cart - ₱{item.price * qty}.00

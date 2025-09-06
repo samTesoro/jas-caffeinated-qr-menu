@@ -5,15 +5,19 @@ import ItemDetailModal from "./item-detail-modal";
 import { createClient } from "@/lib/supabase/client";
 import { Search } from "lucide-react";
 
+interface MenuListProps {
+  activeTab: string;
+  cart: any[];
+  setCart: (cart: any[]) => void;
+  customerId?: number | null;
+}
+
 export default function MenuList({
   activeTab,
   cart,
   setCart,
-}: {
-  activeTab: string;
-  cart: any[];
-  setCart: (cart: any[]) => void;
-}) {
+  customerId,
+}: MenuListProps) {
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [search, setSearch] = useState("");
@@ -103,6 +107,7 @@ export default function MenuList({
           onClose={() => setSelectedItem(null)}
           cart={cart}
           setCart={setCart}
+          customerId={customerId}
         />
       )}
     </div>

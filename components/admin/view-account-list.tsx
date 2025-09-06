@@ -236,7 +236,7 @@ export default function ViewAccounts() {
                   <div className="flex flex-col gap-2 self-end ml-4 lg:flex-row lg:gap-3">
                     <button
                       onClick={() =>
-                        router.push(`/dashboard/view-accounts/edit/${user.user_id}`)
+                        router.push(`/admin/view-accounts/edit/${user.user_id}`)
                       }
                       className="bg-[#A7F586] w-6 h-6 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shadow"
                     >

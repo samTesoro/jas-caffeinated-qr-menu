@@ -87,7 +87,7 @@ export default function Taskbar({
           aria-label="Reviews"
           onClick={
             permissions.view_reviews
-              ? () => (window.location.href = "/dashboard/reviews")
+              ? () => (window.location.href = "/admin/reviews")
               : undefined
           }
           className={`${styles.starButton} ${
@@ -103,11 +103,11 @@ export default function Taskbar({
           aria-label="View Account"
           onClick={
             permissions.create_account
-              ? () => (window.location.href = "/dashboard/view-accounts")
+              ? () => (window.location.href = "/admin/view-accounts")
               : undefined
           }
           className={`${styles.starButton} ${
-            pathname === "/dashboard/view-accounts" ||
+            pathname === "/admin/view-accounts" ||
             pathname === "/auth/create-account"
               ? styles.starActive
               : ""
@@ -116,7 +116,7 @@ export default function Taskbar({
         >
           <Image
             src={
-              pathname === "/dashboard/view-accounts" ||
+              pathname === "/admin/view-accounts" ||
               pathname === "/auth/create-account"
                 ? "/create-account-selected.png"
                 : "/create-account.png"

@@ -1,10 +1,6 @@
 "use client";
-import Taskbar from "@/components/customer/taskbar-customer";
+import CustomerMenu from "@/components/customer/menu";
 
 export default function CoffeePage() {
-  return (
-    <div className="min-h-screen bg-[#ebebeb] flex flex-col items-center justify-center">
-      <Taskbar />
-    </div>
-  );
+  return <CustomerMenu tableId="demo" initialTab="Coffee" />;
 }
