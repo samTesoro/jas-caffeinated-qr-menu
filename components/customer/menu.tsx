@@ -1,7 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import MenuTabs from "./menu-tabs";
-import CustomerTaskbar from "./taskbar";
+import MenuTaskbar from "./taskbar-customer";
 import MenuList from "./menu-list";
 import Cart from "./cart";
 import ConfirmModal from "./confirm-modal";
@@ -12,7 +11,11 @@ interface CustomerMenuProps {
   initialTab?: "Meals" | "Coffee" | "Drinks" | "Favorites";
 }
 
-export default function CustomerMenu({ tableId, customerId, initialTab = "Meals" }: CustomerMenuProps) {
+export default function CustomerMenu({
+  tableId,
+  customerId,
+  initialTab = "Meals",
+}: CustomerMenuProps) {
   const [activeTab, setActiveTab] = useState<
     "Meals" | "Coffee" | "Drinks" | "Favorites"
   >(initialTab);
@@ -51,7 +54,6 @@ export default function CustomerMenu({ tableId, customerId, initialTab = "Meals"
         </div>
       </div>
       <div className="flex-1 px-8 pb-8 pt-2">
-        <MenuTabs activeTab={activeTab} setActiveTab={setActiveTab} />
         <MenuList
           activeTab={activeTab}
           cart={cart}
@@ -61,7 +63,7 @@ export default function CustomerMenu({ tableId, customerId, initialTab = "Meals"
         {showConfirm && <ConfirmModal onClose={() => setShowConfirm(false)} />}
       </div>
       {/* Dashboard-style taskbar */}
-      <CustomerTaskbar />
+      <MenuTaskbar />
     </div>
   );
 }

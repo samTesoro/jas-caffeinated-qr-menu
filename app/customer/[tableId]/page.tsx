@@ -1,22 +1,15 @@
-<<<<<<< HEAD
+"use client";
+
+import { useEffect, useState } from "react";
 import CustomerMenu from "@/components/customer/menu";
+import { createClient } from "@/lib/supabase/client";
+import React from "react";
 
 export default function CustomerPage({
   params,
 }: {
   params: { tableId: string };
 }) {
-  return <CustomerMenu tableId={params.tableId} />;
-=======
-
-"use client";
-
-import { useEffect, useState } from "react";
-import CustomerMenu from '@/components/customer/menu';
-import { createClient } from "@/lib/supabase/client";
-import React from "react";
-
-export default function CustomerPage({ params }: { params: { tableId: string } }) {
   const { tableId } = params;
   const [isActive, setIsActive] = useState<boolean | null>(null);
   const [customerId, setCustomerId] = useState<number | null>(null);
@@ -38,8 +31,8 @@ export default function CustomerPage({ params }: { params: { tableId: string } }
       } else {
         setIsActive(data.is_active);
         setCustomerId(data.customer_id);
-        if (typeof window !== 'undefined' && data.customer_id) {
-          localStorage.setItem('customer_id', String(data.customer_id));
+        if (typeof window !== "undefined" && data.customer_id) {
+          localStorage.setItem("customer_id", String(data.customer_id));
         }
       }
       setLoading(false);
@@ -55,5 +48,4 @@ export default function CustomerPage({ params }: { params: { tableId: string } }
       </div>
     );
   return <CustomerMenu tableId={String(tableId)} customerId={customerId} />;
->>>>>>> 8d01a6caf1f5163b16817fef7e8e57d1500147dd
 }

@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 
 export default function ItemDetailModal({
   item,
@@ -17,15 +17,30 @@ export default function ItemDetailModal({
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
 
+  const BackIcon = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="white"
+      className="w-7 h-7"
+    >
+      <path
+        fillRule="evenodd"
+        d="M19 12a1 1 0 0 1-1 1H8.414l3.293 3.293a1 1 0 1 1-1.414 
+           1.414l-5-5a1 1 0 0 1 0-1.414l5-5a1 1 0 0 1 
+           1.414 1.414L8.414 11H18a1 1 0 0 1 1 1z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+
   const addToCart = async () => {
     const supabase = createClient();
-    // Get or create session_id for this browser session
-    let session_id = sessionStorage.getItem('session_id');
+    let session_id = sessionStorage.getItem("session_id");
     if (!session_id) {
       session_id = uuidv4();
-      sessionStorage.setItem('session_id', session_id);
+      sessionStorage.setItem("session_id", session_id);
     }
-    // Find or create open cart for this session
     let cart_id = null;
     const { data: cartData, error: cartError } = await supabase
       .from("cart")
@@ -41,7 +56,6 @@ export default function ItemDetailModal({
     if (cartData && cartData.cart_id) {
       cart_id = cartData.cart_id;
     } else {
-      // No open cart, create one
       const { data: newCart, error: newCartError } = await supabase
         .from("cart")
         .insert({ session_id, total_price: 0, checked_out: false })
@@ -53,7 +67,6 @@ export default function ItemDetailModal({
       }
       cart_id = newCart.cart_id;
     }
-    // Check for existing cartitem with same menuitem_id and cart_id
     const { data: existingItems, error: fetchError } = await supabase
       .from("cartitem")
       .select("*")
@@ -64,7 +77,6 @@ export default function ItemDetailModal({
       return;
     }
     if (existingItems && existingItems.length > 0) {
-      // Merge: update quantity and subtotal_price
       const existing = existingItems[0];
       const newQty = existing.quantity + qty;
       const newSubtotal = item.price * newQty;
@@ -84,7 +96,6 @@ export default function ItemDetailModal({
         )
       );
     } else {
-      // Insert new cartitem
       const cartItem = {
         quantity: qty,
         subtotal_price: item.price * qty,
@@ -106,58 +117,72 @@ export default function ItemDetailModal({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 z-30 flex items-center justify-center">
       <div
-        className="bg-white w-full h-full max-w-md mx-auto rounded-none md:rounded-lg md:h-auto md:p-8 p-0 relative flex flex-col"
-        style={{ maxHeight: "100vh" }}
+        className="bg-white w-full h-full max-w-md mx-auto rounded-none md:rounded-lg md:h-auto md:p-8 p-0 relative flex flex-col md:mb-[100px]"
+        style={{ maxHeight: "100vh md:max-h-[85vh]" }}
       >
         <button
-          className="absolute top-4 left-4 text-orange-400 text-2xl z-10"
+          className="absolute top-4 left-4 z-10 flex items-center justify-center rounded-full w-10 h-10"
           onClick={onClose}
-          style={{
-            background: "rgba(255,255,255,0.7)",
-            borderRadius: "50%",
-            padding: "6px",
-          }}
+          style={{ backgroundColor: "#F87171" }}
         >
-          ←
+          <BackIcon />
         </button>
+
         <img
           src={item.thumbnail}
           alt={item.name}
-          className="w-full h-48 object-cover rounded-b-none md:rounded-lg mb-0"
+          className="w-full h-[280px] md:h-[200px] object-cover rounded-b-none md:rounded-sm mb-4"
         />
-        <div className="flex-1 flex flex-col px-6 pt-4 pb-6">
-          <div className="font-bold text-black text-xl mb-1">{item.name}</div>
-          <div className="text-black mb-2 text-lg">
-            ₱{item.price}.00 <span className="text-xs">Base price</span>
+
+        <div className="flex-1 flex flex-col px-6 pt-4 pb-3 overflow-y-auto">
+          {/* Name + Price */}
+          <div className="flex items-center justify-between">
+            <div className="font-bold text-black text-xl">{item.name}</div>
+            <div className="text-right">
+              <div className="text-black text-lg font-semibold">
+                ₱{item.price}.00
+              </div>
+              <span className="text-xs text-gray-500">Base price</span>
+            </div>
           </div>
-          <hr className="my-3 border-black/30" />
-          <label className="block text-black font-bold text-base mb-1">
-            Note to restaurant{" "}
+
+          <hr className="my-5 border-black" />
+
+          {/* Note */}
+          <div className="flex items-center justify-between mb-3">
+            <label className="block text-black font-bold text-lg">
+              Note to restaurant
+            </label>
             <span className="text-gray-400 text-xs">Optional</span>
-          </label>
+          </div>
+
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            className="w-full border rounded-xl p-3 mb-5 text-base bg-[#f7f7f7]"
+            className="w-full border rounded-xl p-3 mb-5 text-md bg-[#f7f7f7] text-black resize-y h-[120px] overflow-y-auto"
             placeholder="Add your request (subject to restaurant’s discretion)"
           />
-          <div className="flex items-center justify-center gap-4 mb-6">
+
+          {/* Quantity */}
+          <div className="flex items-center justify-center gap-7 mb-6">
             <button
-              className="bg-green-300 rounded-full w-10 h-10 text-2xl"
+              className="bg-green-300 rounded-full w-8 h-8 text-2xl"
               onClick={() => setQty((q) => Math.max(1, q - 1))}
             >
               -
             </button>
             <span className="font-bold text-black text-2xl">{qty}</span>
             <button
-              className="bg-green-400 rounded-full w-10 h-10 text-2xl"
+              className="bg-green-400 rounded-full w-8 h-8 text-2xl"
               onClick={() => setQty((q) => q + 1)}
             >
               +
             </button>
           </div>
+
+          {/* Add to Cart Button */}
           <button
-            className="w-full bg-orange-400 text-white py-4 rounded-xl font-bold text-lg mt-auto"
+            className="w-full bg-orange-400 text-white py-3 px-3 md:py-3 md:px-2 rounded-xl font-semibold text-lg mt-auto mb-[120px] sm:mb-0"
             onClick={addToCart}
           >
             Add to Cart - ₱{item.price * qty}.00
