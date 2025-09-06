@@ -1,4 +1,17 @@
 import React from "react";
+import { createClient } from "@/lib/supabase/client";
+
+type CartItem = {
+  cartitem_id: number;
+  quantity: number;
+  subtotal_price: number;
+  menuitem_id: number;
+  menuitem: {
+    name: string;
+    price: number;
+    thumbnail?: string;
+  };
+};
 
 export default function Cart({
   cart,
@@ -6,16 +19,14 @@ export default function Cart({
   onClose,
   onConfirm,
 }: {
-  cart: any[];
-  setCart: (cart: any[]) => void;
+  cart: CartItem[];
+  setCart: (cart: CartItem[]) => void;
   onClose: () => void;
   onConfirm: () => void;
 }) {
-  const [loading, setLoading] = React.useState(false);
   React.useEffect(() => {
     const fetchCart = async () => {
-      setLoading(true);
-      const supabase = require("@/lib/supabase/client").createClient();
+      const supabase = createClient();
       let cart_id = null;
       let customer_id = null;
       if (typeof window !== "undefined") {
@@ -24,7 +35,7 @@ export default function Cart({
       }
       if (!customer_id) {
         setCart([]);
-        setLoading(false);
+
         return;
       }
       // Find the latest open cart for this customer
@@ -39,7 +50,7 @@ export default function Cart({
         if (cartError) {
           alert("Supabase fetch error: " + JSON.stringify(cartError));
           setCart([]);
-          setLoading(false);
+
           return;
         }
         if (cartData && cartData.cart_id) {
@@ -49,7 +60,7 @@ export default function Cart({
       }
       if (!cart_id) {
         setCart([]);
-        setLoading(false);
+
         return;
       }
       // Join cartitem with menuitem for display
@@ -62,14 +73,19 @@ export default function Cart({
       if (error) {
         alert("Supabase fetch error: " + JSON.stringify(error));
       }
-      setCart(data || []);
-      setLoading(false);
+      setCart(
+        (data || []).map((item) => ({
+          ...item,
+          menuitem: Array.isArray(item.menuitem) ? item.menuitem[0] : item.menuitem,
+        }))
+      );
+
     };
     fetchCart();
-  }, []);
+  }, [setCart]);
 
   const updateQty = async (cartitem_id: number, delta: number) => {
-    const supabase = require("@/lib/supabase/client").createClient();
+    const supabase = createClient();
     const item = cart.find((i) => i.cartitem_id === cartitem_id);
     if (!item) return;
     const newQty = Math.max(1, item.quantity + delta);
@@ -87,7 +103,7 @@ export default function Cart({
     );
   };
   const removeItem = async (cartitem_id: number) => {
-    const supabase = require("@/lib/supabase/client").createClient();
+    const supabase = createClient();
     setCart(cart.filter((i) => i.cartitem_id !== cartitem_id));
     await supabase.from("cartitem").delete().eq("cartitem_id", cartitem_id);
   };
