@@ -41,7 +41,7 @@ export default function CreateAccountPage() {
     if (error) {
       setError(error.message);
     } else {
-      router.push("/dashboard/view-accounts");
+      router.push("/admin/view-accounts");
     }
   };
 
@@ -130,7 +130,7 @@ export default function CreateAccountPage() {
 
           <button
             type="button"
-            onClick={() => router.push("/dashboard/view-accounts")}
+            onClick={() => router.push("/admin/view-accounts")}
             className="px-2 border bg-[#ebebeb] text-black mt-10 w-[80px]"
           >
             Back

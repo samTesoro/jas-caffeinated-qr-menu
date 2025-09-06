@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { v4 as uuidv4 } from 'uuid';
 
 export default function ItemDetailModal({
   item,
@@ -18,19 +19,39 @@ export default function ItemDetailModal({
 
   const addToCart = async () => {
     const supabase = createClient();
-    let cart_id = localStorage.getItem("cart_id");
-    if (!cart_id) {
-      // Create a new cart in Supabase
-      const { data, error } = await supabase
+    // Get or create session_id for this browser session
+    let session_id = sessionStorage.getItem('session_id');
+    if (!session_id) {
+      session_id = uuidv4();
+      sessionStorage.setItem('session_id', session_id);
+    }
+    // Find or create open cart for this session
+    let cart_id = null;
+    const { data: cartData, error: cartError } = await supabase
+      .from("cart")
+      .select("cart_id")
+      .eq("session_id", session_id)
+      .eq("checked_out", false)
+      .order("time_created", { ascending: false })
+      .maybeSingle();
+    if (cartError) {
+      alert("Failed to fetch cart: " + JSON.stringify(cartError));
+      return;
+    }
+    if (cartData && cartData.cart_id) {
+      cart_id = cartData.cart_id;
+    } else {
+      // No open cart, create one
+      const { data: newCart, error: newCartError } = await supabase
         .from("cart")
-        .insert([{ total_price: 0, time_created: new Date().toISOString() }])
-        .select("cart_id");
-      if (error || !data || !data[0]?.cart_id) {
-        alert("Failed to create cart: " + JSON.stringify(error));
+        .insert({ session_id, total_price: 0, checked_out: false })
+        .select("cart_id")
+        .single();
+      if (newCartError || !newCart) {
+        alert("Failed to create cart: " + JSON.stringify(newCartError));
         return;
       }
-      cart_id = data[0].cart_id;
-      localStorage.setItem("cart_id", String(cart_id));
+      cart_id = newCart.cart_id;
     }
     // Check for existing cartitem with same menuitem_id and cart_id
     const { data: existingItems, error: fetchError } = await supabase
@@ -68,7 +89,7 @@ export default function ItemDetailModal({
         quantity: qty,
         subtotal_price: item.price * qty,
         menuitem_id: item.menuitem_id,
-        cart_id: Number(cart_id),
+        cart_id: cart_id,
       };
       const { error: itemError } = await supabase
         .from("cartitem")
@@ -109,11 +130,6 @@ export default function ItemDetailModal({
           <div className="text-black mb-2 text-lg">
             ₱{item.price}.00 <span className="text-xs">Base price</span>
           </div>
-          {item.description && (
-            <div className="text-black/70 mb-2 text-base">
-              {item.description}
-            </div>
-          )}
           <hr className="my-3 border-black/30" />
           <label className="block text-black font-bold text-base mb-1">
             Note to restaurant{" "}
