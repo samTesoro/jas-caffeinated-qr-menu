@@ -1,16 +1,13 @@
 "use client";
 
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import DashboardHeader from "@/components/ui/header";
-
 import { createClient } from "@/lib/supabase/client";
+import DashboardHeader from "@/components/ui/header";
+import { v4 as uuidv4 } from 'uuid';
 
-interface CartPageProps {
-  tableId?: string | string[];
-}
-
-export default function CartPage({ tableId }: CartPageProps = {}) {
+export default function CartPage() {
   const [cart, setCart] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -19,32 +16,18 @@ export default function CartPage({ tableId }: CartPageProps = {}) {
     const fetchCart = async () => {
       setLoading(true);
       const supabase = createClient();
-      // 1. Get customer_id for this table
-      let customer_id: number | null = null;
-      if (tableId) {
-        const { data: customerData, error: customerError } = await supabase
-          .from("customer")
-          .select("customer_id")
-          .eq("table_num", Number(tableId))
-          .single();
-        if (customerError || !customerData) {
-          setCart([]);
-          setLoading(false);
-          return;
-        }
-        customer_id = customerData.customer_id;
+      // Get or create session_id for this browser session
+      let session_id = sessionStorage.getItem('session_id');
+      if (!session_id) {
+        session_id = uuidv4();
+        sessionStorage.setItem('session_id', session_id);
       }
-      if (!customer_id) {
-        setCart([]);
-        setLoading(false);
-        return;
-      }
-      // 2. Find or create open cart for this customer
-      let cart_id: number | null = null;
+      // Find or create open cart for this session
+      let cart_id = null;
       const { data: cartData, error: cartError } = await supabase
         .from("cart")
         .select("cart_id")
-        .eq("customer_id", customer_id)
+        .eq("session_id", session_id)
         .eq("checked_out", false)
         .order("time_created", { ascending: false })
         .maybeSingle();
@@ -59,7 +42,7 @@ export default function CartPage({ tableId }: CartPageProps = {}) {
         // No open cart, create one
         const { data: newCart, error: newCartError } = await supabase
           .from("cart")
-          .insert({ customer_id, total_price: 0 })
+          .insert({ session_id, total_price: 0, checked_out: false })
           .select("cart_id")
           .single();
         if (newCartError || !newCart) {
@@ -69,7 +52,7 @@ export default function CartPage({ tableId }: CartPageProps = {}) {
         }
         cart_id = newCart.cart_id;
       }
-      // 3. Fetch cart items for this cart
+      // Fetch cart items for this cart
       const { data, error } = await supabase
         .from("cartitem")
         .select(
@@ -85,7 +68,7 @@ export default function CartPage({ tableId }: CartPageProps = {}) {
       setLoading(false);
     };
     fetchCart();
-  }, [tableId]);
+  }, []);
 
   const updateQty = async (cartitem_id: number, delta: number) => {
     const supabase = createClient();
@@ -97,90 +80,73 @@ export default function CartPage({ tableId }: CartPageProps = {}) {
       .from("cartitem")
       .update({ quantity: newQty, subtotal_price: newSubtotal })
       .eq("cartitem_id", cartitem_id);
-    // Refetch cart and items from Supabase
-    if (tableId) {
-      // Re-run fetchCart logic
-      setLoading(true);
-      const { data: customerData } = await supabase
-        .from("customer")
-        .select("customer_id")
-        .eq("table_num", Number(tableId))
-        .single();
-      if (!customerData) return;
-      const customer_id = customerData.customer_id;
-      const { data: cartData } = await supabase
-        .from("cart")
-        .select("cart_id")
-        .eq("customer_id", customer_id)
-        .eq("checked_out", false)
-        .order("time_created", { ascending: false })
-        .maybeSingle();
-      if (!cartData) return;
-      const cart_id = cartData.cart_id;
-      // Update total_price in cart table
-      const { data: items } = await supabase
-        .from("cartitem")
-        .select("subtotal_price")
-        .eq("cart_id", cart_id);
-      const newTotal = (items || []).reduce((sum, i) => sum + (i.subtotal_price || 0), 0);
-      await supabase
-        .from("cart")
-        .update({ total_price: newTotal })
-        .eq("cart_id", cart_id);
-      // Refetch cart items
-      const { data: newCartItems } = await supabase
-        .from("cartitem")
-        .select(
-          "cartitem_id, quantity, subtotal_price, menuitem_id, menuitem:menuitem_id (name, price, thumbnail)"
-        )
-        .eq("cart_id", cart_id);
-      setCart(newCartItems || []);
-      setLoading(false);
-    }
+    // Refetch cart_id for this session
+    let session_id = sessionStorage.getItem('session_id');
+    if (!session_id) return;
+    const { data: cartData } = await supabase
+      .from("cart")
+      .select("cart_id")
+      .eq("session_id", session_id)
+      .eq("checked_out", false)
+      .order("time_created", { ascending: false })
+      .maybeSingle();
+    if (!cartData) return;
+    const cart_id = cartData.cart_id;
+    // Update total_price in cart table
+    const { data: items } = await supabase
+      .from("cartitem")
+      .select("subtotal_price")
+      .eq("cart_id", cart_id);
+    const newTotal = (items || []).reduce((sum, i) => sum + (i.subtotal_price || 0), 0);
+    await supabase
+      .from("cart")
+      .update({ total_price: newTotal })
+      .eq("cart_id", cart_id);
+    // Refetch cart items
+    const { data: newCartItems } = await supabase
+      .from("cartitem")
+      .select(
+        "cartitem_id, quantity, subtotal_price, menuitem_id, menuitem:menuitem_id (name, price, thumbnail)"
+      )
+      .eq("cart_id", cart_id);
+    setCart(newCartItems || []);
+    setLoading(false);
   };
 
   const removeItem = async (cartitem_id: number) => {
     const supabase = createClient();
     await supabase.from("cartitem").delete().eq("cartitem_id", cartitem_id);
-    // Refetch cart and items from Supabase
-    if (tableId) {
-      setLoading(true);
-      const { data: customerData } = await supabase
-        .from("customer")
-        .select("customer_id")
-        .eq("table_num", Number(tableId))
-        .single();
-      if (!customerData) return;
-      const customer_id = customerData.customer_id;
-      const { data: cartData } = await supabase
-        .from("cart")
-        .select("cart_id")
-        .eq("customer_id", customer_id)
-        .eq("checked_out", false)
-        .order("time_created", { ascending: false })
-        .maybeSingle();
-      if (!cartData) return;
-      const cart_id = cartData.cart_id;
-      // Update total_price in cart table
-      const { data: items } = await supabase
-        .from("cartitem")
-        .select("subtotal_price")
-        .eq("cart_id", cart_id);
-      const newTotal = (items || []).reduce((sum, i) => sum + (i.subtotal_price || 0), 0);
-      await supabase
-        .from("cart")
-        .update({ total_price: newTotal })
-        .eq("cart_id", cart_id);
-      // Refetch cart items
-      const { data: newCartItems } = await supabase
-        .from("cartitem")
-        .select(
-          "cartitem_id, quantity, subtotal_price, menuitem_id, menuitem:menuitem_id (name, price, thumbnail)"
-        )
-        .eq("cart_id", cart_id);
-      setCart(newCartItems || []);
-      setLoading(false);
-    }
+    // Refetch cart_id for this session
+    let session_id = sessionStorage.getItem('session_id');
+    if (!session_id) return;
+    const { data: cartData } = await supabase
+      .from("cart")
+      .select("cart_id")
+      .eq("session_id", session_id)
+      .eq("checked_out", false)
+      .order("time_created", { ascending: false })
+      .maybeSingle();
+    if (!cartData) return;
+    const cart_id = cartData.cart_id;
+    // Update total_price in cart table
+    const { data: items } = await supabase
+      .from("cartitem")
+      .select("subtotal_price")
+      .eq("cart_id", cart_id);
+    const newTotal = (items || []).reduce((sum, i) => sum + (i.subtotal_price || 0), 0);
+    await supabase
+      .from("cart")
+      .update({ total_price: newTotal })
+      .eq("cart_id", cart_id);
+    // Refetch cart items
+    const { data: newCartItems } = await supabase
+      .from("cartitem")
+      .select(
+        "cartitem_id, quantity, subtotal_price, menuitem_id, menuitem:menuitem_id (name, price, thumbnail)"
+      )
+      .eq("cart_id", cart_id);
+    setCart(newCartItems || []);
+    setLoading(false);
   };
   const total = cart.reduce((sum, i) => sum + (i.subtotal_price || 0), 0);
 

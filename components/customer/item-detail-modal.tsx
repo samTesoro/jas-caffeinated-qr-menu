@@ -1,58 +1,57 @@
 "use client";
 import React, { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-
-interface ItemDetailModalProps {
-  item: any;
-  onClose: () => void;
-  cart: any[];
-  setCart: (cart: any[]) => void;
-  customerId?: number | null;
-}
+import { v4 as uuidv4 } from 'uuid';
 
 export default function ItemDetailModal({
   item,
   onClose,
   cart,
   setCart,
-  customerId,
-}: ItemDetailModalProps) {
+}: {
+  item: any;
+  onClose: () => void;
+  cart: any[];
+  setCart: (cart: any[]) => void;
+}) {
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
 
   const addToCart = async () => {
     const supabase = createClient();
-    let cid = customerId;
-    if (!cid) {
-      alert("No customer ID found. Please refresh or scan the QR code again.");
-      return;
+    // Get or create session_id for this browser session
+    let session_id = sessionStorage.getItem('session_id');
+    if (!session_id) {
+      session_id = uuidv4();
+      sessionStorage.setItem('session_id', session_id);
     }
-    // Always fetch or create open cart for this customer
-    let cart_id: number | null = null;
-    const { data: existingCart, error: cartFetchError } = await supabase
+    // Find or create open cart for this session
+    let cart_id = null;
+    const { data: cartData, error: cartError } = await supabase
       .from("cart")
       .select("cart_id")
-      .eq("customer_id", cid)
+      .eq("session_id", session_id)
       .eq("checked_out", false)
+      .order("time_created", { ascending: false })
       .maybeSingle();
-    if (cartFetchError) {
-      alert("Failed to fetch cart: " + JSON.stringify(cartFetchError));
+    if (cartError) {
+      alert("Failed to fetch cart: " + JSON.stringify(cartError));
       return;
     }
-    if (existingCart && existingCart.cart_id) {
-      cart_id = existingCart.cart_id;
+    if (cartData && cartData.cart_id) {
+      cart_id = cartData.cart_id;
     } else {
-      // Create a new cart in Supabase for this customer
-      const { data, error } = await supabase
+      // No open cart, create one
+      const { data: newCart, error: newCartError } = await supabase
         .from("cart")
-        .insert([{ total_price: 0, time_created: new Date().toISOString(), customer_id: cid, checked_out: false }])
+        .insert({ session_id, total_price: 0, checked_out: false })
         .select("cart_id")
         .single();
-      if (error || !data || !data.cart_id) {
-        alert("Failed to create cart: " + JSON.stringify(error));
+      if (newCartError || !newCart) {
+        alert("Failed to create cart: " + JSON.stringify(newCartError));
         return;
       }
-      cart_id = data.cart_id;
+      cart_id = newCart.cart_id;
     }
     // Check for existing cartitem with same menuitem_id and cart_id
     const { data: existingItems, error: fetchError } = await supabase
@@ -126,16 +125,11 @@ export default function ItemDetailModal({
           alt={item.name}
           className="w-full h-48 object-cover rounded-b-none md:rounded-lg mb-0"
         />
-        <div className="flex-1 flex flex-col px-6 pt-4 pb-6 overflow-y-auto" style={{ minHeight: 0 }}>
+        <div className="flex-1 flex flex-col px-6 pt-4 pb-6">
           <div className="font-bold text-black text-xl mb-1">{item.name}</div>
           <div className="text-black mb-2 text-lg">
             ₱{item.price}.00 <span className="text-xs">Base price</span>
           </div>
-          {item.description && (
-            <div className="text-black/70 mb-2 text-base">
-              {item.description}
-            </div>
-          )}
           <hr className="my-3 border-black/30" />
           <label className="block text-black font-bold text-base mb-1">
             Note to restaurant{" "}
@@ -162,10 +156,8 @@ export default function ItemDetailModal({
               +
             </button>
           </div>
-        </div>
-        <div className="flex justify-center p-4 bg-white sticky bottom-0 left-0 w-full z-10 mb-32 md:mb-0">
           <button
-            className="w-11/12 max-w-xs bg-orange-400 text-white py-4 rounded-xl font-bold text-lg shadow-lg"
+            className="w-full bg-orange-400 text-white py-4 rounded-xl font-bold text-lg mt-auto"
             onClick={addToCart}
           >
             Add to Cart - ₱{item.price * qty}.00
