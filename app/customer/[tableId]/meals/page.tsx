@@ -1,5 +1,6 @@
 import CustomerMenu from '@/components/customer/menu';
 
-export default function MealsPage({ params }: { params: { tableId: string } }) {
-  return <CustomerMenu tableId={params.tableId} initialTab="Meals" />;
+export default async function MealsPage({ params }: { params: { tableId: string } }) {
+  const { tableId } = params;
+  return <CustomerMenu tableId={tableId} initialTab="Meals" />;
 }
