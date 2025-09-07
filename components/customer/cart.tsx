@@ -28,39 +28,35 @@ export default function Cart({
     const fetchCart = async () => {
       const supabase = createClient();
       let cart_id = null;
-      let customer_id = null;
+      let session_id = null;
       if (typeof window !== "undefined") {
-        customer_id = localStorage.getItem("customer_id");
+        session_id = localStorage.getItem("session_id");
         cart_id = localStorage.getItem("cart_id");
       }
-      if (!customer_id) {
+      if (!session_id) {
         setCart([]);
-
         return;
       }
-      // Find the latest open cart for this customer
+      // Find the latest open cart for this session
       if (!cart_id) {
         const { data: cartData, error: cartError } = await supabase
           .from("cart")
           .select("cart_id")
-          .eq("customer_id", customer_id)
+          .eq("session_id", session_id)
           .eq("checked_out", false)
-          .order("time_created", { ascending: false })
-          .maybeSingle();
+          .order("time_created", { ascending: false });
         if (cartError) {
           alert("Supabase fetch error: " + JSON.stringify(cartError));
           setCart([]);
-
           return;
         }
-        if (cartData && cartData.cart_id) {
-          cart_id = cartData.cart_id;
+        if (cartData && Array.isArray(cartData) && cartData.length > 0) {
+          cart_id = cartData[0].cart_id;
           localStorage.setItem("cart_id", String(cart_id));
         }
       }
       if (!cart_id) {
         setCart([]);
-
         return;
       }
       // Join cartitem with menuitem for display
