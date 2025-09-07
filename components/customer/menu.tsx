@@ -5,16 +5,20 @@ import MenuTaskbar from "./taskbar-customer";
 import MenuList from "./menu-list";
 import Cart from "./cart";
 import ConfirmModal from "./confirm-modal";
+import DashboardHeader from "../ui/header";
 
 type CustomerMenuProps = {
   tableId: string;
   initialTab?: "Meals" | "Coffee" | "Drinks" | "Favorites";
 };
 
-export default function CustomerMenu({ tableId, initialTab = "Meals" }: CustomerMenuProps) {
-  const [activeTab, setActiveTab] = useState<"Meals" | "Coffee" | "Drinks" | "Favorites">(
-    initialTab
-  );
+export default function CustomerMenu({
+  tableId,
+  initialTab = "Meals",
+}: CustomerMenuProps) {
+  const [activeTab, setActiveTab] = useState<
+    "Meals" | "Coffee" | "Drinks" | "Favorites"
+  >(initialTab);
   const [cart, setCart] = useState<any[]>([]);
   const [cartId, setCartId] = useState<number | null>(null);
   const [showCart, setShowCart] = useState(false);
@@ -24,7 +28,11 @@ export default function CustomerMenu({ tableId, initialTab = "Meals" }: Customer
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
-      const tab = params.get("tab") as "Meals" | "Coffee" | "Drinks" | "Favorites";
+      const tab = params.get("tab") as
+        | "Meals"
+        | "Coffee"
+        | "Drinks"
+        | "Favorites";
       if (tab && tab !== activeTab) setActiveTab(tab);
     }
   }, [activeTab]);
@@ -47,7 +55,13 @@ export default function CustomerMenu({ tableId, initialTab = "Meals" }: Customer
       } else {
         const { data: created, error: createError } = await supabase
           .from("cart")
-          .insert([{ total_price: 0, session_id: tableId, time_created: new Date().toISOString() }])
+          .insert([
+            {
+              total_price: 0,
+              session_id: tableId,
+              time_created: new Date().toISOString(),
+            },
+          ])
           .select("cart_id")
           .single();
         if (createError || !created) {
@@ -59,7 +73,9 @@ export default function CustomerMenu({ tableId, initialTab = "Meals" }: Customer
       setCartId(cart_id);
       const { data: items, error: itemsError } = await supabase
         .from("cartitem")
-        .select("cartitem_id, quantity, subtotal_price, menuitem_id, menuitem:menuitem_id (name, price, thumbnail)")
+        .select(
+          "cartitem_id, quantity, subtotal_price, menuitem_id, menuitem:menuitem_id (name, price, thumbnail)"
+        )
         .eq("cart_id", cart_id);
       setCart(items || []);
     };
@@ -68,23 +84,7 @@ export default function CustomerMenu({ tableId, initialTab = "Meals" }: Customer
 
   return (
     <div className="min-h-screen bg-[#ebebeb]">
-      {/* Dashboard-style header */}
-      <div className="relative w-full" style={{ height: "170px" }}>
-        <div className="absolute top-0 left-0 w-full h-[90px] bg-[#E59C53]" />
-        <div className="absolute bottom-0 left-0 w-full h-[90px] bg-[#ebebeb]" />
-        <div className="absolute top-4 right-6 text-black text-xs font-normal">
-          Table: {tableId}
-        </div>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <img
-            src="/logo-caffeinated.png"
-            alt="Logo"
-            width={200}
-            height={75}
-            style={{ objectFit: "contain" }}
-          />
-        </div>
-      </div>
+      <DashboardHeader mode="customer" tableId={tableId} />
       <div className="flex-1 px-8 pb-8 pt-2">
         <MenuList
           activeTab={activeTab}
