@@ -28,29 +28,25 @@ export default function MenuList({
     setSearch("");
     setSelectedItem(null);
     const supabase = createClient();
-    supabase
-      .from("menuitem")
-      .select("*")
-      .then(({ data }) => {
-        setMenuItems(data || []);
-        setLoading(false);
-      });
+    let query = supabase.from("menuitem").select("*");
+    if (activeTab === "Favorites") {
+      query = query.eq("is_favorites", true).eq("status", "Available");
+    } else {
+      query = query.eq("category", activeTab).eq("status", "Available");
+    }
+    query.then(({ data }) => {
+      setMenuItems(data || []);
+      setLoading(false);
+    });
   }, [activeTab]); // Refetch and reset on tab change
 
   let filtered;
   if (search.trim() !== "") {
     filtered = menuItems.filter(
-      (i) =>
-        i.status === "Available" &&
-        i.name.toLowerCase().includes(search.toLowerCase())
+      (i) => i.name.toLowerCase().includes(search.toLowerCase())
     );
   } else {
-    filtered =
-      activeTab === "Favorites"
-        ? menuItems.filter((i) => i.is_favorites && i.status === "Available")
-        : menuItems.filter(
-            (i) => i.category === activeTab && i.status === "Available"
-          );
+    filtered = menuItems;
   }
 
   return (
