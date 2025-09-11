@@ -5,10 +5,64 @@ import { createClient } from "@/lib/supabase/client";
 import DashboardHeader from "@/components/ui/header";
 import Taskbar from "@/components/admin/taskbar-admin";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function MenuPage() {
   const [refresh, setRefresh] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [permissions, setPermissions] = useState({
+    view_menu: false,
+    view_orders: false,
+    view_super: false,
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      const supabase = createClient();
+      const adminId = localStorage.getItem("user_id");
+      console.log("Fetching permissions for user_id:", adminId); // Debugging log
+
+      if (!adminId) {
+        console.error("User ID is null or undefined. Redirecting to login page.");
+        router.replace("/auth/login");
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from("adminusers")
+          .select("view_menu, view_orders, view_super, view_history, view_reviews")
+          .eq("user_id", adminId)
+          .single();
+
+        console.log("Fetched permissions:", data); // Debugging log
+
+        if (error || !data) {
+          console.error("Error fetching permissions from Supabase:", error);
+        } else {
+          setPermissions(data);
+        }
+      } catch (err) {
+        console.error("Unexpected error while fetching permissions:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPermissions();
+  }, [router]);
+
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
+    if (permissions.view_menu === false) {
+      router.replace("/admin");
+    }
+  }, [permissions, isLoading, router]);
 
   useEffect(() => {
     const getUser = async () => {
@@ -37,7 +91,7 @@ export default function MenuPage() {
         </Link>
       </div>
 
-      <DashboardHeader showBack={false} />
+      <DashboardHeader />
 
       {userEmail && (
         <div className="px-8 text-xs text-gray-600 md:text-center mb-2">
@@ -56,7 +110,7 @@ export default function MenuPage() {
         />
       </div>
 
-      <Taskbar />
+      <Taskbar permissions={permissions} />
     </div>
   );
 }

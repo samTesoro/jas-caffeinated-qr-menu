@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import styles from "./taskbar-admin.module.css";
 import Image from "next/image";
 import { LogoutButton } from "@/components/logout-button";
+import { useEffect } from "react";
 
 type Permissions = {
   view_orders?: boolean;
@@ -11,6 +12,7 @@ type Permissions = {
   view_menu?: boolean;
   view_reviews?: boolean;
   create_account?: boolean;
+  view_super?: boolean; // Added view_super property
 };
 
 export default function Taskbar({
@@ -25,6 +27,10 @@ export default function Taskbar({
   permissions?: Permissions;
 }) {
   const pathname = usePathname();
+
+  useEffect(() => {
+    console.log("Permissions object:", permissions); // Debugging log to verify permissions
+  }, [permissions]);
 
   const links = [
     {
@@ -41,6 +47,40 @@ export default function Taskbar({
       href: "/admin/history",
       label: "History",
       perm: permissions.view_history,
+    },
+    {
+      href: "/admin/reviews",
+      label: "Reviews",
+      perm: permissions.view_reviews,
+      icon: (
+        <button
+          aria-label="Reviews"
+          className={`${styles.starButton} ${
+            pathname === "/admin/reviews" ? styles.starActive : ""
+          } ${!permissions.view_reviews ? styles.disabled : ""}`}
+          disabled={!permissions.view_reviews}
+        >
+          ★
+        </button>
+      ),
+    },
+    {
+      href: "/admin/view-accounts",
+      label: "View Accounts",
+      perm: permissions.view_super || permissions.create_account, // Fallback to create_account if view_super is not set
+      icon: (
+        <Image
+          src={
+            pathname === "/admin/view-accounts"
+              ? "/create-account-selected.png"
+              : "/create-account.png"
+          }
+          alt="Create Account"
+          width={24}
+          height={24}
+          style={{ opacity: permissions.view_super || permissions.create_account ? 1 : 0.5 }}
+        />
+      ),
     },
   ];
 
@@ -59,7 +99,6 @@ export default function Taskbar({
       </div>
 
       <nav className={styles.nav}>
-        {/* Regular nav links */}
         {links.map((link) =>
           link.perm ? (
             <Link
@@ -69,7 +108,7 @@ export default function Taskbar({
                 pathname === link.href ? styles.active : ""
               }`}
             >
-              {link.label}
+              {link.icon || link.label} {/* Render icon if available, otherwise label */}
             </Link>
           ) : (
             <span
@@ -77,56 +116,10 @@ export default function Taskbar({
               className={`${styles.link} ${styles.disabled}`}
               aria-disabled="true"
             >
-              {link.label}
+              {link.icon || link.label} {/* Render icon if available, otherwise label */}
             </span>
           )
         )}
-
-        {/* Favorites (★) */}
-        <button
-          aria-label="Reviews"
-          onClick={
-            permissions.view_reviews
-              ? () => (window.location.href = "/admin/reviews")
-              : undefined
-          }
-          className={`${styles.starButton} ${
-            pathname === "/dashboard/reviews" ? styles.starActive : ""
-          } ${!permissions.view_reviews ? styles.disabled : ""}`}
-          disabled={!permissions.view_reviews}
-        >
-          ★
-        </button>
-
-        {/* Create/View Accounts */}
-        <button
-          aria-label="View Account"
-          onClick={
-            permissions.create_account
-              ? () => (window.location.href = "/admin/view-accounts")
-              : undefined
-          }
-          className={`${styles.starButton} ${
-            pathname === "/admin/view-accounts" ||
-            pathname === "/auth/create-account"
-              ? styles.starActive
-              : ""
-          } ${!permissions.create_account ? styles.disabled : ""}`}
-          disabled={!permissions.create_account}
-        >
-          <Image
-            src={
-              pathname === "/admin/view-accounts" ||
-              pathname === "/auth/create-account"
-                ? "/create-account-selected.png"
-                : "/create-account.png"
-            }
-            alt="Create Account"
-            width={24}
-            height={24}
-            style={{ opacity: permissions.create_account ? 1 : 0.5 }}
-          />
-        </button>
       </nav>
     </footer>
   );

@@ -1,31 +1,16 @@
-import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// Correct Supabase client initialization
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
 export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
+  const supabaseResponse = NextResponse.next({
     request,
   })
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({
-            request,
-          })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
 
   // Do not run code between createServerClient and
   // supabase.auth.getClaims(). A simple mistake could make it very hard to debug
@@ -35,6 +20,28 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims()
 
   const user = data?.claims
+
+  const { data: userClaims, error: claimsError } = await supabase.auth.getUser()
+
+  if (claimsError) {
+    console.error('Error fetching user claims:', claimsError)
+  } else {
+    const user = userClaims?.user
+
+    if (user) {
+      const { data: permissions, error: permissionsError } = await supabase
+        .from('adminusers')
+        .select('view_orders, view_history, view_menu, view_reviews, view_super')
+        .eq('user_id', user.id)
+        .single()
+
+      if (!permissionsError && permissions) {
+        request.headers.set('x-user-permissions', JSON.stringify(permissions)) // Attach permissions as a custom header
+      } else {
+        console.error('Failed to fetch permissions:', permissionsError)
+      }
+    }
+  }
 
   if (
     !user &&

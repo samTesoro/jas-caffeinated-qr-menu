@@ -4,10 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import DashboardHeader from "@/components/ui/header";
-// import { Input } from "@/components/ui/input";
-// import { Label } from "@/components/ui/label";
-// import { Button } from "@/components/ui/button";
-import Link from "next/link";
 
 export function LoginForm() {
   const [username, setUsername] = useState("");
@@ -22,25 +18,6 @@ export function LoginForm() {
     setIsLoading(true);
     setError(null);
 
-    // First, check if the account is blocked
-    const { data: userData, error: userError } = await supabase
-      .from("adminusers")
-      .select("is_blocked")
-      .eq("username", username)
-      .single();
-
-    if (userError || !userData) {
-      setIsLoading(false);
-      setError("Invalid username or password");
-      return;
-    }
-    if (userData.is_blocked) {
-      setIsLoading(false);
-      setError("This account is blocked. Please contact the administrator.");
-      return;
-    }
-
-    // If not blocked, check password
     const { data, error } = await supabase
       .from("adminusers")
       .select("*")
@@ -48,19 +25,50 @@ export function LoginForm() {
       .eq("password", password)
       .single();
 
+    console.log("Fetched user data:", data); // Debugging log to verify user data
+
     setIsLoading(false);
     if (error || !data) {
       setError("Invalid username or password");
     } else {
       // Set admin_session cookie for middleware authentication
-      document.cookie = `admin_session=${data.id}; path=/;`; // You can use any value, here we use user id
-      router.push("/admin/menu");
+      document.cookie = `admin_session=${data.id}; path=/;`;
+      // Store user_id in localStorage
+      localStorage.setItem("user_id", data.user_id);
+
+      // Construct permissions object from individual fields
+      const permissions = {
+        view_orders: data.view_orders,
+        view_history: data.view_history,
+        view_menu: data.view_menu,
+        view_reviews: data.view_reviews,
+        view_super: data.view_super,
+      };
+
+      console.log("User permissions:", permissions); // Debugging log to verify permissions
+
+      // Determine redirection based on permissions
+      const redirectionOrder = [
+        { perm: permissions.view_orders, href: "/admin/orders" },
+        { perm: permissions.view_menu, href: "/admin/menu" },
+        { perm: permissions.view_history, href: "/admin/history" },
+        { perm: permissions.view_reviews, href: "/admin/reviews" },
+        { perm: permissions.view_super, href: "/admin/view-accounts" },
+      ];
+
+      const targetPage = redirectionOrder.find((item) => item.perm)?.href;
+
+      if (targetPage) {
+        router.push(targetPage);
+      } else {
+        setError("You do not have access to any admin pages.");
+      }
     }
   };
 
   return (
     <div className="min-h-screen bg-[#ebebeb]">
-      <DashboardHeader showBack={false} />
+      <DashboardHeader />
 
       <div className="max-w-md mx-auto px-7 py-6 flex flex-col center">
         <h2 className="text-xl mb-4 mx-3 text-black text-center font-semibold">
@@ -108,7 +116,6 @@ export function LoginForm() {
             </button>
           </div>
         </form>
-  {/* Removed superadmin create account button */}
       </div>
     </div>
   );

@@ -1,21 +1,21 @@
 .taskbar {
   position: fixed;
   bottom: 0;
-  left: 0; /* Start from the very left */
-  width: 100%; /* Always span the viewport width */
+  left: 0;
+  width: 100%;
   background: #333;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0 0 8px 0;
+  justify-content: space-around; /* Adjusted for better spacing */
+  padding: 8px 0; /* Reduced padding */
   z-index: 100;
   border-top: 2px solid #222;
-  box-shadow: 0 -2px 8px rgba(0,0,0,0.12);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.12);
 }
 
 @media (max-width: 430px) {
   .taskbar {
-    padding-bottom: env(safe-area-inset-bottom, 8px); /* For iPhones with notches */
+    padding-bottom: env(safe-area-inset-bottom, 8px);
   }
 }
 
@@ -29,8 +29,8 @@
 .link {
   color: white;
   text-decoration: none;
-  font-size: 18px;
-  padding: 12px 0;
+  font-size: 16px; /* Reduced font size */
+  padding: 8px 0; /* Reduced padding */
   flex: 1;
   text-align: center;
   transition: color 0.2s;
@@ -45,9 +45,9 @@
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 22px;
+  font-size: 20px; /* Adjusted font size */
   color: white;
-  padding: 12px 0;
+  padding: 8px 0; /* Reduced padding */
   flex: 1;
   text-align: center;
 }
@@ -76,7 +76,7 @@
 
 .disabled {
   color: gray;
-  pointer-events: none; 
+  pointer-events: none;
   cursor: not-allowed;
   opacity: 0.5;
 }
