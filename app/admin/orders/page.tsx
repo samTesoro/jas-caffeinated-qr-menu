@@ -7,7 +7,19 @@ import { useRouter } from "next/navigation";
 
 export default function OrdersPage() {
   const router = useRouter();
-  const [permissions, setPermissions] = useState({ view_orders: false });
+  const [permissions, setPermissions] = useState<{
+    view_menu: boolean;
+    view_orders: boolean;
+    view_super: boolean;
+    view_history: boolean;
+    view_reviews: boolean;
+  }>({
+    view_menu: false,
+    view_orders: false,
+    view_super: false,
+    view_history: false,
+    view_reviews: false,
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -48,12 +60,26 @@ export default function OrdersPage() {
 
   useEffect(() => {
     if (!isLoading && permissions.view_orders === false) {
-      router.replace("/admin");
+      const previousPage = permissions.view_menu
+        ? "/admin/menu"
+        : permissions.view_super
+        ? "/admin/view-accounts"
+        : permissions.view_history
+        ? "/admin/history"
+        : permissions.view_reviews
+        ? "/admin/reviews"
+        : "/admin"; // Default fallback
+
+      router.replace(previousPage);
     }
   }, [isLoading, permissions, router]);
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <div>Loading...</div>; // Prevent rendering the page until permissions are loaded
+  }
+
+  if (!permissions.view_orders) {
+    return null; // Prevent rendering the page if the user doesn't have access
   }
 
   return (

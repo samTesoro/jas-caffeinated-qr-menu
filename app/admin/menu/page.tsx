@@ -10,11 +10,19 @@ import { useRouter } from "next/navigation";
 export default function MenuPage() {
   const [refresh, setRefresh] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [permissions, setPermissions] = useState({
+  const [permissions, setPermissions] = useState<{
+    view_menu: boolean;
+    view_orders: boolean;
+    view_super: boolean;
+    view_history: boolean;
+    view_reviews: boolean;
+  }>({
     view_menu: false,
     view_orders: false,
     view_super: false,
-  });
+    view_history: false,
+    view_reviews: false,
+  }); // Fixed syntax errors
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
@@ -60,9 +68,19 @@ export default function MenuPage() {
     }
 
     if (permissions.view_menu === false) {
-      router.replace("/admin");
+      const previousPage = permissions.view_orders
+        ? "/admin/orders"
+        : permissions.view_super
+        ? "/admin/view-accounts"
+        : permissions.view_history
+        ? "/admin/history"
+        : permissions.view_reviews
+        ? "/admin/reviews"
+        : "/admin"; // Default fallback
+
+      router.replace(previousPage);
     }
-  }, [permissions, isLoading, router]);
+  }, [isLoading, permissions, router]);
 
   useEffect(() => {
     const getUser = async () => {
@@ -72,6 +90,14 @@ export default function MenuPage() {
     };
     getUser();
   }, []);
+
+  if (isLoading) {
+    return <div>Loading...</div>; // Prevent rendering the page until permissions are loaded
+  }
+
+  if (!permissions.view_menu) {
+    return null; // Prevent rendering the page if the user doesn't have access
+  }
 
   return (
     <div className="min-h-screen bg-[#ebebeb] pb-10">

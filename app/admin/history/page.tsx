@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react"; // Removed unused `useMemo`
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Taskbar from "@/components/admin/taskbar-admin";
@@ -7,26 +7,19 @@ import DashboardHeader from "@/components/ui/header";
 
 const Page = () => {
   const router = useRouter();
-  type Permissions = {
-    view_orders: boolean;
-    view_history: boolean;
+  const [permissions, setPermissions] = useState<{
     view_menu: boolean;
+    view_orders: boolean;
     view_super: boolean;
-    create_account: boolean;
+    view_history: boolean;
     view_reviews: boolean;
-  };
-  const defaultPermissions = useMemo(
-    () => ({
-      view_orders: false,
-      view_history: false,
-      view_menu: false,
-      view_super: false,
-      create_account: false,
-      view_reviews: false,
-    }),
-    []
-  );
-  const [permissions, setPermissions] = useState<Permissions>(defaultPermissions);
+  }>({
+    view_menu: false,
+    view_orders: false,
+    view_super: false,
+    view_history: false,
+    view_reviews: false,
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -48,24 +41,36 @@ const Page = () => {
 
         if (error || !data) {
           console.error("Error fetching permissions from Supabase:", error);
-          setPermissions(defaultPermissions);
+          setPermissions({
+            view_menu: false,
+            view_orders: false,
+            view_super: false,
+            view_history: false,
+            view_reviews: false,
+          });
         } else {
           console.log("Fetched permissions:", data);
-          setPermissions({
-            ...defaultPermissions,
+          setPermissions((prev) => ({
+            ...prev,
             ...data,
-          });
+          }));
         }
       } catch (err) {
         console.error("Unexpected error while fetching permissions:", err);
-        setPermissions(defaultPermissions);
+        setPermissions({
+          view_menu: false,
+          view_orders: false,
+          view_super: false,
+          view_history: false,
+          view_reviews: false,
+        });
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchPermissions();
-  }, [defaultPermissions, router]);
+  }, [router]);
 
   useEffect(() => {
     if (isLoading) {
@@ -78,13 +83,31 @@ const Page = () => {
 
     if (permissions && permissions.view_history === false) {
       console.warn("Redirecting due to lack of view_history permission.");
-      router.replace("/admin");
+      const previousPage = permissions.view_menu
+        ? "/admin/menu"
+        : permissions.view_orders
+        ? "/admin/orders"
+        : permissions.view_super
+        ? "/admin/view-accounts"
+        : permissions.view_reviews
+        ? "/admin/reviews"
+        : "/admin"; // Default fallback
+
+      router.replace(previousPage);
     } else if (permissions && permissions.view_history === true) {
       console.log("Access granted to view_history.");
     } else {
       console.log("Permissions state is not yet fully loaded.");
     }
   }, [permissions, isLoading, router]);
+
+  if (isLoading) {
+    return <div>Loading...</div>; // Prevent rendering the page until permissions are loaded
+  }
+
+  if (!permissions.view_history) {
+    return null; // Prevent rendering the page if the user doesn't have access
+  }
 
   return (
     <div className="min-h-screen bg-[#ebebeb]">
