@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Taskbar from "@/components/admin/taskbar-admin";
 import DashboardHeader from "@/components/ui/header";
+import OrderHistory from "@/components/admin/order-history";
 
 const Page = () => {
   const router = useRouter();
@@ -112,6 +113,7 @@ const Page = () => {
   return (
     <div className="min-h-screen bg-[#ebebeb]">
       <DashboardHeader />
+      <OrderHistory />
       <Taskbar permissions={permissions} />
       {permissions.view_history ? (
         <div>

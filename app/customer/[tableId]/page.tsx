@@ -6,13 +6,14 @@ import { createClient } from "@/lib/supabase/client";
 import React from "react";
 
 export default function CustomerPage({
-  params,
+  params: paramsPromise,
 }: {
-  params: { tableId: string };
+  params: Promise<{ tableId: string }>;
 }) {
+  const params = React.use(paramsPromise);
   const { tableId } = params;
+
   const [isActive, setIsActive] = useState<boolean | null>(null);
-  const [customerId, setCustomerId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
@@ -27,10 +28,8 @@ export default function CustomerPage({
       console.log("Supabase table check:", { tableId, data, error });
       if (error || !data) {
         setIsActive(false);
-        setCustomerId(null);
       } else {
         setIsActive(data.is_active);
-        setCustomerId(data.customer_id);
         if (typeof window !== "undefined" && data.customer_id) {
           localStorage.setItem("customer_id", String(data.customer_id));
         }
@@ -40,6 +39,8 @@ export default function CustomerPage({
     if (tableId) checkTable();
   }, [tableId, supabase]);
 
+  console.log('Params in [tableId]/page.tsx:', params); // Log the params object to debug its structure
+
   if (loading) return <div className="p-8 text-center">Loading...</div>;
   if (!isActive)
     return (
@@ -47,5 +48,5 @@ export default function CustomerPage({
         This table is inactive. Please contact a staff member.
       </div>
     );
-  return <CustomerMenu tableId={String(tableId)} customerId={customerId} />;
+  return <CustomerMenu tableId={String(tableId)} />;
 }

@@ -1,4 +1,5 @@
 import React from "react";
+import { createClient } from "@/lib/supabase/client"; // Replace require with ES6 import
 
 export default function Cart({
   cart,
@@ -6,16 +7,36 @@ export default function Cart({
   onClose,
   onConfirm,
 }: {
-  cart: any[];
-  setCart: (cart: any[]) => void;
+  cart: Array<{
+    cartitem_id: number;
+    quantity: number;
+    subtotal_price: number;
+    menuitem_id: number;
+    menuitem?: {
+      name: string;
+      price: number;
+      thumbnail?: string;
+    };
+  }>;
+  setCart: (
+    cart: Array<{
+      cartitem_id: number;
+      quantity: number;
+      subtotal_price: number;
+      menuitem_id: number;
+      menuitem?: {
+        name: string;
+        price: number;
+        thumbnail?: string;
+      };
+    }>
+  ) => void;
   onClose: () => void;
   onConfirm: () => void;
 }) {
-  const [loading, setLoading] = React.useState(false);
   React.useEffect(() => {
     const fetchCart = async () => {
-      setLoading(true);
-      const supabase = require("@/lib/supabase/client").createClient();
+      const supabase = createClient(); // Use ES6 import for Supabase client
       let cart_id = null;
       let customer_id = null;
       if (typeof window !== "undefined") {
@@ -24,7 +45,6 @@ export default function Cart({
       }
       if (!customer_id) {
         setCart([]);
-        setLoading(false);
         return;
       }
       // Find the latest open cart for this customer
@@ -39,7 +59,6 @@ export default function Cart({
         if (cartError) {
           alert("Supabase fetch error: " + JSON.stringify(cartError));
           setCart([]);
-          setLoading(false);
           return;
         }
         if (cartData && cartData.cart_id) {
@@ -49,7 +68,6 @@ export default function Cart({
       }
       if (!cart_id) {
         setCart([]);
-        setLoading(false);
         return;
       }
       // Join cartitem with menuitem for display
@@ -62,18 +80,43 @@ export default function Cart({
       if (error) {
         alert("Supabase fetch error: " + JSON.stringify(error));
       }
-      setCart(data || []);
-      setLoading(false);
+      // Fix type mismatch in setCart
+      const formattedData = (data || []).map(
+        (item: {
+          cartitem_id: number;
+          quantity: number;
+          subtotal_price: number;
+          menuitem_id: number;
+          menuitem: {
+            name: string;
+            price: number;
+            thumbnail?: string;
+          };
+        }) => ({
+          cartitem_id: item.cartitem_id,
+          quantity: item.quantity,
+          subtotal_price: item.subtotal_price,
+          menuitem_id: item.menuitem_id,
+          menuitem:
+            item.menuitem && {
+              name: item.menuitem.name,
+              price: item.menuitem.price,
+              thumbnail: item.menuitem.thumbnail,
+            },
+        })
+      );
+      setCart(formattedData);
     };
     fetchCart();
-  }, []);
+  }, [setCart]); // Add setCart to the dependency array
 
   const updateQty = async (cartitem_id: number, delta: number) => {
-    const supabase = require("@/lib/supabase/client").createClient();
+    const supabase = createClient();
     const item = cart.find((i) => i.cartitem_id === cartitem_id);
     if (!item) return;
     const newQty = Math.max(1, item.quantity + delta);
-    const newSubtotal = item.menuitem.price * newQty;
+    // Fix possible undefined menuitem
+    const newSubtotal = item.menuitem ? item.menuitem.price * newQty : 0;
     await supabase
       .from("cartitem")
       .update({ quantity: newQty, subtotal_price: newSubtotal })
@@ -87,7 +130,7 @@ export default function Cart({
     );
   };
   const removeItem = async (cartitem_id: number) => {
-    const supabase = require("@/lib/supabase/client").createClient();
+    const supabase = createClient();
     setCart(cart.filter((i) => i.cartitem_id !== cartitem_id));
     await supabase.from("cartitem").delete().eq("cartitem_id", cartitem_id);
   };

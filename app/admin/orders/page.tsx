@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Taskbar from "@/components/admin/taskbar-admin";
 import DashboardHeader from "@/components/ui/header";
+import OrderNotification from "@/components/admin/order-notification"; // Import the OrderHistory component
 import { useRouter } from "next/navigation";
 
 export default function OrdersPage() {
@@ -85,6 +86,7 @@ export default function OrdersPage() {
   return (
     <div className="min-h-screen bg-[#ebebeb]">
       <DashboardHeader />
+      <OrderNotification /> {/* Add the OrderHistory component */}
       <Taskbar permissions={permissions} />
     </div>
   );
