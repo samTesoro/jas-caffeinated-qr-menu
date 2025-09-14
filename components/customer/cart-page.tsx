@@ -242,36 +242,52 @@ export default function CartPage({ tableId }: { tableId?: string }) {
     );
   };
 
-  const total = cart.reduce((sum, i) => sum + (i.subtotal_price || 0), 0);
+  const handlePaymentSelection = async (paymentMethod: string) => {
+    if (!tableId) {
+      alert("No table assigned. Please scan your table QR code.");
+      return;
+    }
 
-  const handlePaymentSelection = async (method: string) => {
+    const session_id = sessionStorage.getItem("session_id");
+    if (!session_id) {
+      alert("No active session found. Please try again.");
+      return;
+    }
+
     try {
+      // Call the API to create the order
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          table_number: tableId,
-          menu_items: cart, // Use the current cart items
-          payment_method: method,
-          total_price: cart.reduce((sum, item) => sum + item.subtotal_price, 0), // Calculate total price
+          session_id: session_id,
+          payment_method: paymentMethod,
+          customer_id: tableId // Pass tableId as customer_id
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to send order to the database');
+        throw new Error('Failed to create order');
       }
 
-      const data = await response.json();
-      console.log('Order sent successfully:', data);
+      const result = await response.json();
+      console.log('Order created successfully:', result);
 
-      // Redirect to confirmation page
-      router.push(`/customer/${tableId}/${method}-order-confirmation`);
+      // Navigate to the appropriate confirmation page
+      if (paymentMethod === "GCash") {
+        router.push(`/customer/${tableId}/gcash-order-confirmation`);
+      } else {
+        router.push(`/customer/${tableId}/cash-card-order-confirmation`);
+      }
     } catch (error) {
-      console.error('Error sending order:', error);
+      console.error('Error creating order:', error);
+      alert('Failed to process your order. Please try again.');
     }
   };
+
+  const total = cart.reduce((sum, i) => sum + (i.subtotal_price || 0), 0);
 
   return (
     <div className="min-h-screen bg-[#ebebeb] flex flex-col">
@@ -370,13 +386,9 @@ export default function CartPage({ tableId }: { tableId?: string }) {
                 borderRadius: "12px",
                 boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
               }}
-              onClick={() => {
+              onClick={async () => {
                 setShowPaymentModal(false);
-                if (tableId) {
-                  router.push(`/customer/${tableId}/gcash-order-confirmation`);
-                } else {
-                  alert("No table assigned. Please scan your table QR code.");
-                }
+                await handlePaymentSelection("GCash");
               }}
             >
               <Image
@@ -394,15 +406,9 @@ export default function CartPage({ tableId }: { tableId?: string }) {
                 borderRadius: "12px",
                 boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
               }}
-              onClick={() => {
+              onClick={async () => {
                 setShowPaymentModal(false);
-                if (tableId) {
-                  router.push(
-                    `/customer/${tableId}/cash-card-order-confirmation`
-                  );
-                } else {
-                  alert("No table assigned. Please scan your table QR code.");
-                }
+                await handlePaymentSelection("Cash/Card");
               }}
             >
               <span className="font-bold text-black text-2xl">Cash/Card</span>

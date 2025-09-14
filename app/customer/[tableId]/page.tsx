@@ -39,8 +39,6 @@ export default function CustomerPage({
     if (tableId) checkTable();
   }, [tableId, supabase]);
 
-  console.log('Params in [tableId]/page.tsx:', params); // Log the params object to debug its structure
-
   if (loading) return <div className="p-8 text-center">Loading...</div>;
   if (!isActive)
     return (
