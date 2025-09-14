@@ -13,15 +13,15 @@ export default function DashboardHeader({ mode = "admin", username = null, table
       <div className="absolute top-0 left-0 w-full h-[90px] bg-[#E59C53]" />
       <div className="absolute bottom-0 left-0 w-full h-[90px] bg-[#ebebeb]" />
 
-      <div className="absolute top-4 right-6 text-black text-xs font-normal">
-        {mode === "admin"
-          ? username
+      {(mode === "admin" || (mode === "customer" && tableId)) && (
+        <div className="absolute top-4 right-6 text-black text-xs font-normal">
+          {mode === "admin"
             ? username
-            : "Admin"
-          : tableId
-          ? `Table: ${tableId}`
-          : "Table: demo"}
-      </div>
+              ? username
+              : "Admin"
+            : `Table: ${tableId}`}
+        </div>
+      )}
 
       <div className="absolute inset-0 flex items-center justify-center">
         <Image

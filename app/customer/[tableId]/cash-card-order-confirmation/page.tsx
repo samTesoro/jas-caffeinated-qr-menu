@@ -18,8 +18,7 @@ export default function CashCardOrderConfirmation({ params }: { params: { tableI
 
   return (
     <div className="min-h-screen bg-[#ececec] flex flex-col">
-  <DashboardHeader mode="customer" />
-  <div className="absolute top-6 right-6 text-sm font-semibold text-black">Table: {tableId}</div>
+  <DashboardHeader mode="customer" tableId={tableId} />
       <div className="flex-1 flex flex-col items-center justify-center px-4">
         <div className="flex flex-col items-center w-full">
           <Image
