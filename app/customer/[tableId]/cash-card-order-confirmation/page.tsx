@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import DashboardHeader from "@/components/ui/header";
@@ -7,18 +7,41 @@ import DashboardHeader from "@/components/ui/header";
 export default function CashCardOrderConfirmation({ params }: { params: { tableId: string } }) {
   const router = useRouter();
   const { tableId } = params;
+  const [sessionId, setSessionId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Check for session in sessionStorage
+    const storedSessionId = sessionStorage.getItem('sessionId');
+    if (storedSessionId) {
+      setSessionId(storedSessionId);
+      // Redirect to session-based confirmation page
+      router.replace(`/customer/${tableId}/session/${storedSessionId}/cash-card-order-confirmation`);
+    }
+  }, [tableId, router]);
 
   const handleGoToTable = () => {
-    if (tableId) {
+    if (sessionId) {
+      router.push(`/customer/${tableId}/session/${sessionId}`);
+    } else if (tableId) {
       router.push(`/customer/${tableId}`);
     } else {
       router.push("/customer");
     }
   };
 
+  // If we have a session, show loading while redirecting
+  if (sessionId) {
+    return (
+      <div className="min-h-screen bg-[#ececec] flex flex-col items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#E59C53] mx-auto mb-4"></div>
+        <p className="text-gray-600">Redirecting to your session...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#ececec] flex flex-col">
-  <DashboardHeader mode="customer" />
+  <DashboardHeader mode="customer" tableId={tableId} />
   <div className="absolute top-6 right-6 text-sm font-semibold text-black">Table: {tableId}</div>
       <div className="flex-1 flex flex-col items-center justify-center px-4">
         <div className="flex flex-col items-center w-full">

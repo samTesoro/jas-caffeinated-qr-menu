@@ -1,32 +1,16 @@
-"use client";
-import React, { useEffect, useState } from "react";
+'use client';
+
+import React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import DashboardHeader from "@/components/ui/header";
 
-export default function GCashOrderConfirmation({ params }: { params: { tableId: string } }) {
+export default function SessionGCashOrderConfirmation({ params }: { params: { tableId: string, sessionId: string } }) {
   const router = useRouter();
-  const { tableId } = params;
-  const [sessionId, setSessionId] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Check for session in sessionStorage
-    const storedSessionId = sessionStorage.getItem('sessionId');
-    if (storedSessionId) {
-      setSessionId(storedSessionId);
-      // Redirect to session-based confirmation page
-      router.replace(`/customer/${tableId}/session/${storedSessionId}/gcash-order-confirmation`);
-    }
-  }, [tableId, router]);
+  const { tableId, sessionId } = params;
 
   const handleGoToTable = () => {
-    if (sessionId) {
-      router.push(`/customer/${tableId}/session/${sessionId}`);
-    } else if (tableId) {
-      router.push(`/customer/${tableId}`);
-    } else {
-      router.push("/customer");
-    }
+    router.push(`/customer/${tableId}/session/${sessionId}`);
   };
 
   const handleRedirectGCash = () => {
@@ -39,16 +23,6 @@ export default function GCashOrderConfirmation({ params }: { params: { tableId: 
     link.download = "gcash-qr.png";
     link.click();
   };
-
-  // If we have a session, show loading while redirecting
-  if (sessionId) {
-    return (
-      <div className="min-h-screen bg-[#ececec] flex flex-col items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#E59C53] mx-auto mb-4"></div>
-        <p className="text-gray-600">Redirecting to your session...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#ececec] flex flex-col">

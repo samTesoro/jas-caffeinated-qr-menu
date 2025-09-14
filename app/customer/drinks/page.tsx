@@ -1,6 +1,10 @@
 "use client";
-import CustomerMenu from "@/components/customer/menu";
+import Taskbar from "@/components/customer/taskbar-customer";
 
 export default function DrinksPage() {
-  return <CustomerMenu tableId="demo" initialTab="Drinks" />;
+  return (
+    <div className="min-h-screen bg-[#ebebeb] flex flex-col items-center justify-center">
+      <Taskbar />
+    </div>
+  );
 }
