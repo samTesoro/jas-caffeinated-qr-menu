@@ -5,13 +5,24 @@ import { useMemo } from "react";
 import styles from "./taskbar-customer.module.css";
 import Image from "next/image";
 
-export default function MenuTaskbar() {
+export default function MenuTaskbar({ tableId: propTableId, sessionId }: { tableId?: string; sessionId?: string }) {
   const pathname = usePathname();
-  // Memoize tableId extraction for better runtime
+  // Use prop tableId first, then extract from pathname as fallback
   const tableId = useMemo(() => {
+    if (propTableId) return propTableId;
     const match = pathname.match(/customer\/(\w+)/);
     return match ? match[1] : null;
-  }, [pathname]);
+  }, [pathname, propTableId]);
+
+  // Helper function to check if path is active
+  const isPathActive = (path: string) => {
+    // Check session-based route first, then table-based route
+    const sessionPath = tableId && sessionId ? `/customer/${tableId}/session/${sessionId}/${path}` : null;
+    const tablePath = tableId ? `/customer/${tableId}/${path}` : null;
+    const basePath = `/customer/${path}`;
+    
+    return pathname === sessionPath || pathname === tablePath || pathname === basePath;
+  };
 
   return (
     <footer className={styles.taskbar}>
@@ -19,12 +30,12 @@ export default function MenuTaskbar() {
         {/* Meals */}
         <div className="flex flex-col items-center">
           <Link
-            href={tableId ? `/customer/${tableId}/meals` : "/customer/meals"}
+            href={tableId && sessionId ? `/customer/${tableId}/session/${sessionId}/meals` : tableId ? `/customer/${tableId}/meals` : "/customer/meals"}
             className={styles.link}
           >
             <Image
               src={
-                pathname === `/customer/${tableId}/meals`
+                isPathActive("meals")
                   ? "/meals-icon-selected.png"
                   : "/meals-icon.png"
               }
@@ -36,7 +47,7 @@ export default function MenuTaskbar() {
             />
             <span
               className={
-                pathname === `/customer/${tableId}/meals`
+                isPathActive("meals")
                   ? styles.active
                   : styles.link
               }
@@ -49,12 +60,12 @@ export default function MenuTaskbar() {
         {/* Coffee */}
         <div className="flex flex-col items-center">
           <Link
-            href={tableId ? `/customer/${tableId}/coffee` : "/customer/coffee"}
+            href={tableId && sessionId ? `/customer/${tableId}/session/${sessionId}/coffee` : tableId ? `/customer/${tableId}/coffee` : "/customer/coffee"}
             className={styles.link}
           >
             <Image
               src={
-                pathname === `/customer/${tableId}/coffee`
+                isPathActive("coffee")
                   ? "/coffee-meals-icon-selected.png"
                   : "/coffee-meals-icon.png"
               }
@@ -66,7 +77,7 @@ export default function MenuTaskbar() {
             />
             <span
               className={
-                pathname === `/customer/${tableId}/coffee`
+                isPathActive("coffee")
                   ? styles.active
                   : styles.link
               }
@@ -80,7 +91,7 @@ export default function MenuTaskbar() {
           className="relative flex flex-col items-center"
           style={{ margin: "0 16px" }}
         >
-          <Link href={tableId ? `/customer/${tableId}/cart` : "/customer/cart"}>
+          <Link href={tableId && sessionId ? `/customer/${tableId}/session/${sessionId}/cart` : tableId ? `/customer/${tableId}/cart` : "/customer/cart"}>
             <button
               className="rounded-full shadow-lg flex items-center justify-center"
               style={{
@@ -106,12 +117,12 @@ export default function MenuTaskbar() {
         {/* Drinks */}
         <div className="flex flex-col items-center">
           <Link
-            href={tableId ? `/customer/${tableId}/drinks` : "/customer/drinks"}
+            href={tableId && sessionId ? `/customer/${tableId}/session/${sessionId}/drinks` : tableId ? `/customer/${tableId}/drinks` : "/customer/drinks"}
             className={styles.link}
           >
             <Image
               src={
-                pathname === `/customer/${tableId}/drinks`
+                isPathActive("drinks")
                   ? "/drinks-icon-selected.png"
                   : "/drinks-icon.png"
               }
@@ -123,7 +134,7 @@ export default function MenuTaskbar() {
             />
             <span
               className={
-                pathname === `/customer/${tableId}/drinks`
+                isPathActive("drinks")
                   ? styles.active
                   : styles.link
               }
@@ -137,13 +148,13 @@ export default function MenuTaskbar() {
         <div className="flex flex-col items-center">
           <Link
             href={
-              tableId ? `/customer/${tableId}/favorites` : "/customer/favorites"
+              tableId && sessionId ? `/customer/${tableId}/session/${sessionId}/favorites` : tableId ? `/customer/${tableId}/favorites` : "/customer/favorites"
             }
             className={styles.link}
           >
             <Image
               src={
-                pathname === `/customer/${tableId}/favorites`
+                isPathActive("favorites")
                   ? "/favorites-icon-selected.png"
                   : "/favorites-icon.png"
               }
@@ -155,7 +166,7 @@ export default function MenuTaskbar() {
             />
             <span
               className={
-                pathname === `/customer/${tableId}/favorites`
+                isPathActive("favorites")
                   ? styles.active
                   : styles.link
               }

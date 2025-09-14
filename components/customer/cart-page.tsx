@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
 import DashboardHeader from "@/components/ui/header";
 
-export default function CartPage({ tableId }: { tableId?: string }) {
+export default function CartPage({ tableId, sessionId }: { tableId?: string; sessionId?: string }) {
   type CartItem = {
     cartitem_id: number;
     quantity: number;
@@ -72,15 +72,24 @@ export default function CartPage({ tableId }: { tableId?: string }) {
   useEffect(() => {
     const fetchCart = async () => {
       const supabase = createClient();
-      let session_id = sessionStorage.getItem("session_id") || undefined;
-      if (!session_id) {
-        session_id = uuidv4();
-        sessionStorage.setItem("session_id", session_id);
+      let session_id: string;
+      
+      if (sessionId) {
+        // Use sessionId from URL params (preferred for session-based routing)
+        session_id = sessionId;
+      } else {
+        // Fallback to sessionStorage for backward compatibility
+        let storedSessionId = sessionStorage.getItem("session_id");
+        if (!storedSessionId) {
+          storedSessionId = uuidv4();
+          sessionStorage.setItem("session_id", storedSessionId);
+        }
+        session_id = storedSessionId;
       }
 
       let cart_id = null;
       // Try to find an open cart for this session
-      let { data: cartData, error: cartError } = await supabase
+      const { data: cartData, error: cartError } = await supabase
         .from("cart")
         .select("cart_id")
         .eq("session_id", session_id)
@@ -89,6 +98,7 @@ export default function CartPage({ tableId }: { tableId?: string }) {
         .maybeSingle();
 
       if (cartError) {
+        console.error("Error fetching cart:", cartError);
         setCart([]);
         return;
       }
@@ -96,36 +106,46 @@ export default function CartPage({ tableId }: { tableId?: string }) {
       if (cartData && cartData.cart_id) {
         cart_id = cartData.cart_id;
       } else {
-        // Try to create a new cart, but handle unique constraint error gracefully
-        const { data: newCart, error: newCartError } = await supabase
-          .from("cart")
-          .insert({ session_id, total_price: 0, checked_out: false })
-          .select("cart_id")
-          .single();
+        // No existing cart found, try to create one
+        try {
+          const { data: newCart, error: newCartError } = await supabase
+            .from("cart")
+            .insert({ session_id, total_price: 0, checked_out: false })
+            .select("cart_id")
+            .single();
 
-        if (newCartError) {
-          // If error is duplicate key, try to fetch the cart again
-          if (newCartError.code === "23505") {
-            const { data: retryCart, error: retryError } = await supabase
-              .from("cart")
-              .select("cart_id")
-              .eq("session_id", session_id)
-              .eq("checked_out", false)
-              .order("time_created", { ascending: false })
-              .maybeSingle();
-            if (retryCart && retryCart.cart_id) {
+          if (newCartError) {
+            // If error is duplicate key (23505), another process created the cart
+            if (newCartError.code === "23505") {
+              // Retry fetching the cart that was created by another process
+              const { data: retryCart, error: retryError } = await supabase
+                .from("cart")
+                .select("cart_id")
+                .eq("session_id", session_id)
+                .eq("checked_out", false)
+                .order("time_created", { ascending: false })
+                .maybeSingle();
+              
+              if (retryError || !retryCart?.cart_id) {
+                console.error("Error retrieving cart after retry:", retryError);
+                setCart([]);
+                return;
+              }
               cart_id = retryCart.cart_id;
             } else {
+              console.error("Error creating cart:", newCartError);
               setCart([]);
               return;
             }
+          } else if (newCart && newCart.cart_id) {
+            cart_id = newCart.cart_id;
           } else {
+            console.error("No cart created and no error returned");
             setCart([]);
             return;
           }
-        } else if (newCart && newCart.cart_id) {
-          cart_id = newCart.cart_id;
-        } else {
+        } catch (error) {
+          console.error("Unexpected error during cart creation:", error);
           setCart([]);
           return;
         }
@@ -154,7 +174,7 @@ export default function CartPage({ tableId }: { tableId?: string }) {
     };
     fetchCart();
     // End fetchCart and useEffect
-  }, []);
+  }, [sessionId]);
 
   const updateQty = async (cartitem_id: number, delta: number) => {
     const supabase = createClient();
@@ -169,13 +189,13 @@ export default function CartPage({ tableId }: { tableId?: string }) {
       .update({ quantity: newQty, subtotal_price: newSubtotal })
       .eq("cartitem_id", cartitem_id);
 
-    const session_id = sessionStorage.getItem("session_id");
-    if (!session_id) return;
+    const session_id_to_use = sessionId || sessionStorage.getItem("session_id");
+    if (!session_id_to_use) return;
 
     const { data: cartData } = await supabase
       .from("cart")
       .select("cart_id")
-      .eq("session_id", session_id)
+      .eq("session_id", session_id_to_use)
       .eq("checked_out", false)
       .order("time_created", { ascending: false })
       .maybeSingle();
@@ -219,13 +239,13 @@ export default function CartPage({ tableId }: { tableId?: string }) {
     const supabase = createClient();
     await supabase.from("cartitem").delete().eq("cartitem_id", cartitem_id);
 
-    const session_id = sessionStorage.getItem("session_id");
-    if (!session_id) return;
+    const session_id_to_use = sessionId || sessionStorage.getItem("session_id");
+    if (!session_id_to_use) return;
 
     const { data: cartData } = await supabase
       .from("cart")
       .select("cart_id")
-      .eq("session_id", session_id)
+      .eq("session_id", session_id_to_use)
       .eq("checked_out", false)
       .order("time_created", { ascending: false })
       .maybeSingle();
@@ -289,8 +309,11 @@ export default function CartPage({ tableId }: { tableId?: string }) {
       const data = await response.json();
       console.log('Order sent successfully:', data);
 
-      // Redirect to confirmation page
-      router.push(`/customer/${tableId}/${method}-order-confirmation`);
+      // Redirect to confirmation page - use session-based route if sessionId is available
+      const confirmationPath = sessionId 
+        ? `/customer/${tableId}/session/${sessionId}/${method}-order-confirmation`
+        : `/customer/${tableId}/${method}-order-confirmation`;
+      router.push(confirmationPath);
     } catch (error) {
       console.error('Error sending order:', error);
     }
@@ -396,7 +419,10 @@ export default function CartPage({ tableId }: { tableId?: string }) {
               onClick={() => {
                 setShowPaymentModal(false);
                 if (tableId) {
-                  router.push(`/customer/${tableId}/gcash-order-confirmation`);
+                  const gcashPath = sessionId 
+                    ? `/customer/${tableId}/session/${sessionId}/gcash-order-confirmation`
+                    : `/customer/${tableId}/gcash-order-confirmation`;
+                  router.push(gcashPath);
                 } else {
                   alert("No table assigned. Please scan your table QR code.");
                 }
@@ -420,9 +446,10 @@ export default function CartPage({ tableId }: { tableId?: string }) {
               onClick={() => {
                 setShowPaymentModal(false);
                 if (tableId) {
-                  router.push(
-                    `/customer/${tableId}/cash-card-order-confirmation`
-                  );
+                  const cashCardPath = sessionId 
+                    ? `/customer/${tableId}/session/${sessionId}/cash-card-order-confirmation`
+                    : `/customer/${tableId}/cash-card-order-confirmation`;
+                  router.push(cashCardPath);
                 } else {
                   alert("No table assigned. Please scan your table QR code.");
                 }

@@ -8,11 +8,13 @@ export default function ItemDetailModal({
   onClose,
   cart,
   setCart,
+  sessionId,
 }: {
   item: any;
   onClose: () => void;
   cart: any[];
   setCart: (cart: any[]) => void;
+  sessionId?: string;
 }) {
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
@@ -36,12 +38,24 @@ export default function ItemDetailModal({
 
   const addToCart = async () => {
     const supabase = createClient();
-    let session_id = sessionStorage.getItem("session_id");
-    if (!session_id) {
-      session_id = uuidv4();
-      sessionStorage.setItem("session_id", session_id);
+    let session_id: string;
+    
+    if (sessionId) {
+      // Use sessionId from props (preferred for session-based routing)
+      session_id = sessionId;
+    } else {
+      // Fallback to sessionStorage for backward compatibility
+      let storedSessionId = sessionStorage.getItem("session_id");
+      if (!storedSessionId) {
+        storedSessionId = uuidv4();
+        sessionStorage.setItem("session_id", storedSessionId);
+      }
+      session_id = storedSessionId;
     }
+    
     let cart_id = null;
+    
+    // Try to find existing cart for this session
     const { data: cartData, error: cartError } = await supabase
       .from("cart")
       .select("cart_id")
@@ -49,23 +63,54 @@ export default function ItemDetailModal({
       .eq("checked_out", false)
       .order("time_created", { ascending: false })
       .maybeSingle();
+      
     if (cartError) {
       alert("Failed to fetch cart: " + JSON.stringify(cartError));
       return;
     }
+    
     if (cartData && cartData.cart_id) {
       cart_id = cartData.cart_id;
     } else {
-      const { data: newCart, error: newCartError } = await supabase
-        .from("cart")
-        .insert({ session_id, total_price: 0, checked_out: false })
-        .select("cart_id")
-        .single();
-      if (newCartError || !newCart) {
-        alert("Failed to create cart: " + JSON.stringify(newCartError));
+      // Try to create a new cart with proper error handling
+      try {
+        const { data: newCart, error: newCartError } = await supabase
+          .from("cart")
+          .insert({ session_id, total_price: 0, checked_out: false })
+          .select("cart_id")
+          .single();
+          
+        if (newCartError) {
+          // If error is duplicate key (23505), another process created the cart
+          if (newCartError.code === "23505") {
+            // Retry fetching the cart that was created by another process
+            const { data: retryCart, error: retryError } = await supabase
+              .from("cart")
+              .select("cart_id")
+              .eq("session_id", session_id)
+              .eq("checked_out", false)
+              .order("time_created", { ascending: false })
+              .maybeSingle();
+            
+            if (retryError || !retryCart?.cart_id) {
+              alert("Failed to create or retrieve cart: " + JSON.stringify(retryError || "No cart found"));
+              return;
+            }
+            cart_id = retryCart.cart_id;
+          } else {
+            alert("Failed to create cart: " + JSON.stringify(newCartError));
+            return;
+          }
+        } else if (newCart && newCart.cart_id) {
+          cart_id = newCart.cart_id;
+        } else {
+          alert("Failed to create cart: No cart_id returned");
+          return;
+        }
+      } catch (error) {
+        alert("Unexpected error during cart creation: " + JSON.stringify(error));
         return;
       }
-      cart_id = newCart.cart_id;
     }
     const { data: existingItems, error: fetchError } = await supabase
       .from("cartitem")
