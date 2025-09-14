@@ -79,7 +79,8 @@ export default function CartPage({ tableId }: { tableId?: string }) {
       }
 
       let cart_id = null;
-      const { data: cartData, error: cartError } = await supabase
+      // Try to find an open cart for this session
+      let { data: cartData, error: cartError } = await supabase
         .from("cart")
         .select("cart_id")
         .eq("session_id", session_id)
@@ -95,17 +96,39 @@ export default function CartPage({ tableId }: { tableId?: string }) {
       if (cartData && cartData.cart_id) {
         cart_id = cartData.cart_id;
       } else {
+        // Try to create a new cart, but handle unique constraint error gracefully
         const { data: newCart, error: newCartError } = await supabase
           .from("cart")
           .insert({ session_id, total_price: 0, checked_out: false })
           .select("cart_id")
           .single();
 
-        if (newCartError || !newCart) {
+        if (newCartError) {
+          // If error is duplicate key, try to fetch the cart again
+          if (newCartError.code === "23505") {
+            const { data: retryCart, error: retryError } = await supabase
+              .from("cart")
+              .select("cart_id")
+              .eq("session_id", session_id)
+              .eq("checked_out", false)
+              .order("time_created", { ascending: false })
+              .maybeSingle();
+            if (retryCart && retryCart.cart_id) {
+              cart_id = retryCart.cart_id;
+            } else {
+              setCart([]);
+              return;
+            }
+          } else {
+            setCart([]);
+            return;
+          }
+        } else if (newCart && newCart.cart_id) {
+          cart_id = newCart.cart_id;
+        } else {
           setCart([]);
           return;
         }
-        cart_id = newCart.cart_id;
       }
 
       const { data, error } = await supabase
