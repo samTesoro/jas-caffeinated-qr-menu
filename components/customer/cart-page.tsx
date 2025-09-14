@@ -244,6 +244,35 @@ export default function CartPage({ tableId }: { tableId?: string }) {
 
   const total = cart.reduce((sum, i) => sum + (i.subtotal_price || 0), 0);
 
+  const handlePaymentSelection = async (method: string) => {
+    try {
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          table_number: tableId,
+          menu_items: cart, // Use the current cart items
+          payment_method: method,
+          total_price: cart.reduce((sum, item) => sum + item.subtotal_price, 0), // Calculate total price
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send order to the database');
+      }
+
+      const data = await response.json();
+      console.log('Order sent successfully:', data);
+
+      // Redirect to confirmation page
+      router.push(`/customer/${tableId}/${method}-order-confirmation`);
+    } catch (error) {
+      console.error('Error sending order:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#ebebeb] flex flex-col">
       <DashboardHeader mode="customer" />
