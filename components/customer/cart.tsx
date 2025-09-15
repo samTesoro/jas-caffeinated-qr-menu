@@ -81,30 +81,37 @@ export default function Cart({
         alert("Supabase fetch error: " + JSON.stringify(error));
       }
       // Fix type mismatch in setCart
-      const formattedData = (data || []).map(
-        (item: {
-          cartitem_id: number;
-          quantity: number;
-          subtotal_price: number;
-          menuitem_id: number;
-          menuitem: {
-            name: string;
-            price: number;
-            thumbnail?: string;
-          };
-        }) => ({
+      const formattedData = (data || []).map((item) => {
+        let menuitemObj;
+        if (item.menuitem) {
+          if (Array.isArray(item.menuitem)) {
+            // If menuitem is an array, take the first item
+            menuitemObj = item.menuitem[0]
+              ? {
+                  name: item.menuitem[0].name,
+                  price: item.menuitem[0].price,
+                  thumbnail: item.menuitem[0].thumbnail,
+                }
+              : undefined;
+          } else {
+            const mi = item.menuitem as { name: string; price: number; thumbnail?: string };
+            menuitemObj = {
+              name: mi.name,
+              price: mi.price,
+              thumbnail: mi.thumbnail,
+            };
+          }
+        } else {
+          menuitemObj = undefined;
+        }
+        return {
           cartitem_id: item.cartitem_id,
           quantity: item.quantity,
           subtotal_price: item.subtotal_price,
           menuitem_id: item.menuitem_id,
-          menuitem:
-            item.menuitem && {
-              name: item.menuitem.name,
-              price: item.menuitem.price,
-              thumbnail: item.menuitem.thumbnail,
-            },
-        })
-      );
+          menuitem: menuitemObj,
+        };
+      });
       setCart(formattedData);
     };
     fetchCart();

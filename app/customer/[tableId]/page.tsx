@@ -9,7 +9,7 @@ import { useRouter, useParams } from "next/navigation";
 export default function CustomerTableEntry() {
   const router = useRouter();
   const params = useParams();
-  const tableId = params.tableId as string;
+  const tableId = params?.tableId as string;
   useEffect(() => {
     if (!tableId) return;
     let sessionId = typeof window !== "undefined" ? sessionStorage.getItem("session_id") : null;
