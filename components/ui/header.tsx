@@ -6,22 +6,26 @@ interface DashboardHeaderProps {
   tableId?: string;
 }
 
-export default function DashboardHeader({ mode = "admin", username = null, tableId }: DashboardHeaderProps) {
+export default function DashboardHeader({
+  mode = "admin",
+  username = null,
+  tableId,
+}: DashboardHeaderProps) {
   return (
     <div className="relative w-full" style={{ height: "170px" }}>
       {/*Orange Split Background*/}
       <div className="absolute top-0 left-0 w-full h-[90px] bg-[#E59C53]" />
       <div className="absolute bottom-0 left-0 w-full h-[90px] bg-[#ebebeb]" />
 
-      {(mode === "admin" || (mode === "customer" && tableId)) && (
-        <div className="absolute top-4 right-6 text-black text-xs font-normal">
-          {mode === "admin"
+      <div className="absolute top-4 right-6 text-black text-xs font-normal">
+        {mode === "admin"
+          ? username
             ? username
-              ? username
-              : "Admin"
-            : `Table: ${tableId}`}
-        </div>
-      )}
+            : "Admin"
+          : tableId
+          ? `Table: ${tableId}`
+          : "Customer"}
+      </div>
 
       <div className="absolute inset-0 flex items-center justify-center">
         <Image

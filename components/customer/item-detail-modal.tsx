@@ -39,7 +39,7 @@ export default function ItemDetailModal({
   const addToCart = async () => {
     const supabase = createClient();
     let session_id: string;
-    
+
     if (sessionId) {
       // Use sessionId from props (preferred for session-based routing)
       session_id = sessionId;
@@ -52,9 +52,9 @@ export default function ItemDetailModal({
       }
       session_id = storedSessionId;
     }
-    
+
     let cart_id = null;
-    
+
     // Try to find existing cart for this session
     const { data: cartData, error: cartError } = await supabase
       .from("cart")
@@ -63,12 +63,12 @@ export default function ItemDetailModal({
       .eq("checked_out", false)
       .order("time_created", { ascending: false })
       .maybeSingle();
-      
+
     if (cartError) {
       alert("Failed to fetch cart: " + JSON.stringify(cartError));
       return;
     }
-    
+
     if (cartData && cartData.cart_id) {
       cart_id = cartData.cart_id;
     } else {
@@ -79,7 +79,7 @@ export default function ItemDetailModal({
           .insert({ session_id, total_price: 0, checked_out: false })
           .select("cart_id")
           .single();
-          
+
         if (newCartError) {
           // If error is duplicate key (23505), another process created the cart
           if (newCartError.code === "23505") {
@@ -91,9 +91,12 @@ export default function ItemDetailModal({
               .eq("checked_out", false)
               .order("time_created", { ascending: false })
               .maybeSingle();
-            
+
             if (retryError || !retryCart?.cart_id) {
-              alert("Failed to create or retrieve cart: " + JSON.stringify(retryError || "No cart found"));
+              alert(
+                "Failed to create or retrieve cart: " +
+                  JSON.stringify(retryError || "No cart found")
+              );
               return;
             }
             cart_id = retryCart.cart_id;
@@ -108,7 +111,9 @@ export default function ItemDetailModal({
           return;
         }
       } catch (error) {
-        alert("Unexpected error during cart creation: " + JSON.stringify(error));
+        alert(
+          "Unexpected error during cart creation: " + JSON.stringify(error)
+        );
         return;
       }
     }

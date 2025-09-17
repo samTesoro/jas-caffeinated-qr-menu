@@ -67,7 +67,7 @@ export default function MenuItemList({
     <div>
       <div className="sm:mb-6 md:mb-10 flex flex-col items-center gap-4">
         <div className="relative w-[350px]">
-          <Search className="absolute right-4 mx-2 top-1/2 -translate-y-1/2 h-4 w-4 text-black" />
+          <Search className="absolute right-4 mx-2 top-1/2 -translate-y-1/2 h-4 w-4  text-black" />
           <input
             type="text"
             value={search}
@@ -103,7 +103,7 @@ export default function MenuItemList({
       </div>
 
       {/* Menu Item Grid */}
-      <div className="grid grid-cols-2 gap-7 sm:gap-2 place-items-center mb-10">
+      <div className="grid grid-cols-2 gap-7 sm:gap-2 place-items-center mb-20">
         {filteredItems.map((item) => (
           <ItemCard
             key={item.menuitem_id}
