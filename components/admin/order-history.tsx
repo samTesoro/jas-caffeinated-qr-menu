@@ -1,4 +1,6 @@
+
 "use client";
+
 
 import { useState, useEffect } from "react";
 import NotesModal from "./note-modal";
@@ -17,6 +19,7 @@ interface Order {
 }
 
 export default function OrderHistory() {
+<<<<<<< HEAD
   const [orders, setOrders] = useState<Order[]>([]);
   const [modalItem, setModalItem] = useState<OrderItem | null>(null);
   const [showClearModal, setShowClearModal] = useState(false);
@@ -55,6 +58,64 @@ export default function OrderHistory() {
   const clearHistory = () => {
     setOrders([]);
     setShowClearModal(false);
+=======
+  const [order, setOrder] = useState<Order[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      type BackendOrder = {
+        order_id?: string | number;
+        date_ordered?: string;
+        time_ordered?: string;
+        customer_id?: string | number;
+        cart?: {
+          table_number?: string;
+          cartitem?: Array<{
+            quantity?: number;
+            menuitem?: {
+              name?: string;
+            };
+          }>;
+        };
+      };
+
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetch("/api/history");
+        if (!response.ok) throw new Error("Failed to fetch order history");
+        const data = await response.json();
+        // Transform backend data to match UI
+        const orderArr: Order[] = (data as BackendOrder[] || []).map((o) => ({
+          id: o.order_id?.toString() || "",
+          tableNo: o.customer_id?.toString() || "N/A",
+          time: o.date_ordered && o.time_ordered
+            ? `${o.date_ordered} ${o.time_ordered}`
+            : "",
+          items:
+            o.cart?.cartitem?.map((item) => ({
+              name: item.menuitem?.name || "Unknown Item",
+              quantity: item.quantity || 0,
+            })) || [],
+        }));
+        setOrder(orderArr);
+      } catch (err: unknown) {
+        let message = "Unknown error";
+        if (err instanceof Error) message = err.message;
+        setError(message);
+  setOrder([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOrders();
+  }, []);
+
+  const clearHistory = () => {
+  setOrder([]);
+>>>>>>> 7137e7fe9453f573fb92e3a0a69c0333ec43334c
   };
 
   return (
@@ -71,6 +132,7 @@ export default function OrderHistory() {
 
       <hr className="border-black my-2" />
 
+<<<<<<< HEAD
       {orders.map((order) => (
         <div key={order.order_id} className="mb-6">
           <div className="grid grid-cols-[65px_90px_100px_60px] gap-2 font-semibold text-black text-sm">
@@ -111,10 +173,65 @@ export default function OrderHistory() {
                   {item.name.length > 22
                     ? item.name.slice(0, 20) + "..."
                     : item.name}
+=======
+      {/* Table header */}
+      <div className="grid grid-cols-[2fr_3fr_3fr_1fr] gap-2 mb-1 text-sm font-semibold text-black">
+        <div className="text-center">Table No.</div>
+        <div className="text-center">Date/Time</div>
+  <div className="text-center">Order</div>
+        <div className="text-center">Qty.</div>
+      </div>
+
+      <hr className="border-black my-2" />
+
+      {/* Orders */}
+      {loading ? (
+        <p className="text-center text-sm text-gray-600 py-4">Loading order history...</p>
+      ) : error ? (
+        <p className="text-center text-sm text-red-600 py-4">{error}</p>
+      ) : order.length === 0 ? (
+        <p className="text-center text-sm text-gray-600 py-4">No order history available.</p>
+      ) : (
+        order.map((o) => (
+          <div key={o.id} className="mb-3">
+            <div className="grid grid-cols-[2fr_3fr_3fr_1fr] gap-2 text-sm text-black">
+              {/* Table No. */}
+              <div className="text-center">{o.tableNo}</div>
+
+              {/* Date + Time (separate lines) */}
+              <div className="flex flex-col items-center">
+                <span>{o.time.split(" ")[0]}</span> {/* date */}
+                <span>
+                  {o.time.split(" ")[1]} {o.time.split(" ")[2]}
+                </span>{" "}
+                {/* time + AM/PM */}
+              </div>
+
+              {/* Orders (aligned left) */}
+              <div className="text-center">
+                <div className="flex flex-col items-center break-words">
+                  {o.items.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="w-full text-center break-words"
+                      title={item.name}
+                    >
+                      {item.name}
+                    </div>
+                  ))}
+>>>>>>> 7137e7fe9453f573fb92e3a0a69c0333ec43334c
                 </div>
-              ))}
+              </div>
+
+              {/* Qty (aligned center per row) */}
+              <div className="text-center">
+                {o.items.map((item, idx) => (
+                  <div key={idx}>{item.quantity}</div>
+                ))}
+              </div>
             </div>
 
+<<<<<<< HEAD
             <div className="flex flex-col items-center gap-1">
               {order.items.map((item, idx) => (
                 <div key={idx} className="px-2 py-1">
@@ -163,6 +280,11 @@ export default function OrderHistory() {
             </div>
           </div>
         </div>
+=======
+            <hr className="border-black my-2" />
+          </div>
+        ))
+>>>>>>> 7137e7fe9453f573fb92e3a0a69c0333ec43334c
       )}
     </div>
   );

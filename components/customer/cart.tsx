@@ -68,7 +68,43 @@ export default function Cart({ cart, setCart, onClose, onConfirm }: CartProps) {
       if (error) {
         alert("Supabase fetch error: " + JSON.stringify(error));
       }
+<<<<<<< HEAD
       setCart((data as CartItem[]) || []);
+=======
+      // Fix type mismatch in setCart
+      const formattedData = (data || []).map((item) => {
+        let menuitemObj;
+        if (item.menuitem) {
+          if (Array.isArray(item.menuitem)) {
+            // If menuitem is an array, take the first item
+            menuitemObj = item.menuitem[0]
+              ? {
+                  name: item.menuitem[0].name,
+                  price: item.menuitem[0].price,
+                  thumbnail: item.menuitem[0].thumbnail,
+                }
+              : undefined;
+          } else {
+            const mi = item.menuitem as { name: string; price: number; thumbnail?: string };
+            menuitemObj = {
+              name: mi.name,
+              price: mi.price,
+              thumbnail: mi.thumbnail,
+            };
+          }
+        } else {
+          menuitemObj = undefined;
+        }
+        return {
+          cartitem_id: item.cartitem_id,
+          quantity: item.quantity,
+          subtotal_price: item.subtotal_price,
+          menuitem_id: item.menuitem_id,
+          menuitem: menuitemObj,
+        };
+      });
+      setCart(formattedData);
+>>>>>>> 7137e7fe9453f573fb92e3a0a69c0333ec43334c
     };
     fetchCart();
   }, [setCart]);
