@@ -40,7 +40,6 @@ export default function NotificationModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-lg p-6 mx-5 w-[95%] max-w-lg shadow-lg relative max-h-[90vh] overflow-y-auto">
-        {/* Close button */}
         <button
           onClick={onClose}
           className="absolute top-3 right-3 text-black hover:text-black"
@@ -56,7 +55,6 @@ export default function NotificationModal({
           {mockOrders.map((order) => (
             <div key={order.id} className="border-b border-black pb-2">
               <div className="grid grid-cols-[2fr_1fr_2fr] gap-0 text-black text-sm items-start">
-                {/* Column 1: Items */}
                 <div className="flex flex-col gap-1">
                   {order.items.map((item, idx) => (
                     <span
@@ -69,14 +67,12 @@ export default function NotificationModal({
                   ))}
                 </div>
 
-                {/* Column 2: Quantities */}
                 <div className="flex flex-col gap-1 items-center">
                   {order.items.map((item, idx) => (
                     <span key={idx}>{item.qty}</span>
                   ))}
                 </div>
 
-                {/* Column 3: Status + Button (same space always) */}
                 <div className="flex flex-col items-start gap-2 min-h-[60px]">
                   <span className="text-xs">
                     Status:{" "}
@@ -105,7 +101,6 @@ export default function NotificationModal({
                 </div>
               </div>
 
-              {/* Time (always bottom right) */}
               <p className="text-xs text-right text-black mt-1">{order.time}</p>
             </div>
           ))}
