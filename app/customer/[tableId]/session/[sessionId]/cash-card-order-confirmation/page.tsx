@@ -5,9 +5,9 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import DashboardHeader from "@/components/ui/header";
 
-export default function SessionCashCardOrderConfirmation({ params }: { params: { tableId: string, sessionId: string } }) {
+export default function SessionCashCardOrderConfirmation({ params }: { params: Promise<{ tableId: string, sessionId: string }> }) {
   const router = useRouter();
-  const { tableId, sessionId } = params;
+  const { tableId, sessionId } = React.use(params);
 
   const handleGoToTable = () => {
     router.push(`/customer/${tableId}/session/${sessionId}`);

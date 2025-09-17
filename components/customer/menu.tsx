@@ -92,7 +92,7 @@ export default function CustomerMenu({
                 .maybeSingle();
                 
               if (retryError || !retryCart?.cart_id) {
-                console.error("Error retrieving cart after retry:", retryError);
+                console.warn("No existing cart found, will create new one if needed");
                 return;
               }
               cart_id = retryCart.cart_id;

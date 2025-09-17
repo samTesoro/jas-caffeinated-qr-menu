@@ -4,9 +4,9 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import DashboardHeader from "@/components/ui/header";
 
-export default function GCashOrderConfirmation({ params }: { params: { tableId: string } }) {
+export default function GCashOrderConfirmation({ params }: { params: Promise<{ tableId: string }> }) {
   const router = useRouter();
-  const { tableId } = params;
+  const { tableId } = React.use(params);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
   useEffect(() => {

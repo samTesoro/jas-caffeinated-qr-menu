@@ -1,6 +1,6 @@
 import CustomerMenu from '@/components/customer/menu';
 
-export default async function SessionCoffeePage(props: { params: { tableId: string, sessionId: string } }) {
-  const { tableId, sessionId } = props.params;
+export default async function SessionCoffeePage(props: { params: Promise<{ tableId: string, sessionId: string }> }) {
+  const { tableId, sessionId } = await props.params;
   return <CustomerMenu tableId={tableId} sessionId={sessionId} initialTab="Coffee" />;
 }
