@@ -70,8 +70,26 @@ export default function OrderNotification() {
     return () => clearInterval(interval);
   }, []);
 
-  const deleteOrder = (id: string) => {
-    setOrders((prev) => prev.filter((order) => order.order_id !== id));
+  const deleteOrder = async (id: string) => {
+    try {
+      const response = await fetch(`/api/orders/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ iscancelled: true }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to cancel order");
+      }
+
+      // Remove the order from local state after successful API call
+      setOrders((prev) => prev.filter((order) => order.order_id !== id));
+    } catch (error) {
+      console.error("Error cancelling order:", error);
+      alert("Failed to cancel order. Please try again.");
+    }
   };
 
   const markAsFinished = async (id: string) => {

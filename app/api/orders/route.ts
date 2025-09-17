@@ -75,6 +75,7 @@ export async function POST(request: NextRequest) {
                       payment_method === 'Cash/Card' ? 'Cash/Card' :
                       payment_method,
         isfinished: false,
+        iscancelled: false,
         customer_id: customer_id,
         cart_id: cart_id
       })
@@ -113,7 +114,7 @@ export async function GET() {
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Optimized query - only fetch necessary fields for faster load times
+    // Optimized query - only fetch necessary fields for faster load times, excluding cancelled orders
     const { data: orders, error } = await supabase
       .from('order')
       .select(`
@@ -122,6 +123,7 @@ export async function GET() {
         time_ordered,
         payment_type,
         isfinished,
+        iscancelled,
         customer_id,
         cart_id,
         cart!order_cart_id_fkey (
@@ -135,6 +137,7 @@ export async function GET() {
         )
       `)
       .eq('isfinished', false)
+      .eq('iscancelled', false)
       .order('time_ordered', { ascending: true })
       .limit(50); // Limit to 50 most recent orders for better performance
 
