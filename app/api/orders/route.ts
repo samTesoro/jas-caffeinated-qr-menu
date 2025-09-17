@@ -7,10 +7,46 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 // Create a new order
 export async function POST(request: NextRequest) {
   try {
-    const { session_id, payment_method, customer_id } = await request.json();
-    console.log('Request body:', { session_id, payment_method, customer_id });
+    const { session_id, payment_method, table_number } = await request.json();
+    console.log('Request body:', { session_id, payment_method, table_number });
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Find or create customer record based on table number
+    let customer_id = null;
+    if (table_number) {
+      const tableNum = parseInt(table_number);
+      
+      // First, try to find an existing active customer for this table
+      const { data: existingCustomer, error: customerFindError } = await supabase
+        .from('customer')
+        .select('customer_id')
+        .eq('table_num', tableNum)
+        .eq('is_active', true)
+        .single();
+
+      if (existingCustomer) {
+        customer_id = existingCustomer.customer_id;
+        console.log('Found existing customer:', customer_id);
+      } else {
+        // Create new customer record
+        const { data: newCustomer, error: customerCreateError } = await supabase
+          .from('customer')
+          .insert({
+            table_num: tableNum,
+            is_active: true
+          })
+          .select('customer_id')
+          .single();
+
+        if (customerCreateError) {
+          console.error('Error creating customer:', customerCreateError);
+        } else {
+          customer_id = newCustomer.customer_id;
+          console.log('Created new customer:', customer_id);
+        }
+      }
+    }
 
     // First, get the cart_id for this session
     const { data: cartData, error: cartError } = await supabase
@@ -33,7 +69,11 @@ export async function POST(request: NextRequest) {
       .insert({
         date_ordered: new Date().toISOString().split('T')[0], // Today's date
         time_ordered: new Date().toTimeString().split(' ')[0], // Current time
-        payment_type: payment_method,
+        payment_type: payment_method === 'gcash' ? 'GCash' : 
+                      payment_method === 'cash-card' ? 'Cash/Card' : 
+                      payment_method === 'GCash' ? 'GCash' :
+                      payment_method === 'Cash/Card' ? 'Cash/Card' :
+                      payment_method,
         isfinished: false,
         customer_id: customer_id,
         cart_id: cart_id
@@ -73,7 +113,7 @@ export async function GET() {
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Get all pending orders with cart and item details - using explicit relationship
+    // Optimized query - only fetch necessary fields for faster load times
     const { data: orders, error } = await supabase
       .from('order')
       .select(`
@@ -85,73 +125,35 @@ export async function GET() {
         customer_id,
         cart_id,
         cart!order_cart_id_fkey (
-          session_id,
-          total_price,
           table_number,
           cartitem (
-            cartitem_id,
-            menuitem_id,
             quantity,
-            subtotal_price,
             menuitem (
-              name,
-              description
+              name
             )
           )
         )
       `)
       .eq('isfinished', false)
-  .order('time_ordered', { ascending: true });
+      .order('time_ordered', { ascending: true })
+      .limit(50); // Limit to 50 most recent orders for better performance
 
     if (error) {
       console.error('Error fetching orders:', error);
       return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 });
     }
 
-    // Transform the data to match the expected format
-    interface Item {
-      cartitem_id: number;
-      menuitem_id: number;
-      quantity: number;
-      subtotal_price: number;
-      menuitem?: {
-        name?: string;
-        description?: string;
-      };
-    }
-    interface Order {
-      order_id: number;
-      date_ordered: string;
-      time_ordered: string;
-      payment_type: string;
-      isfinished: boolean;
-      customer_id: string | number | null;
-      cart_id: number;
-      cart?: {
-        session_id?: string;
-        total_price?: number;
-        table_number?: string;
-        cartitem?: Item[];
-      };
-    }
-    const transformedOrders = (orders as Order[] | undefined)?.map((order) => ({
-      order_id: order.order_id,
-      date_ordered: order.date_ordered,
-      time_ordered: order.time_ordered,
-      payment_type: order.payment_type,
+    // Simplified transformation for faster processing
+    const transformedOrders = (orders as any[] | undefined)?.map((order) => ({
+      order_id: order.order_id.toString(),
       isfinished: order.isfinished,
       customer_id: order.customer_id,
-      cart_id: order.cart_id,
-      session_id: order.cart?.session_id,
-      total_price: order.cart?.total_price || 0,
+      time_ordered: order.time_ordered,
+      payment_type: order.payment_type,
       table_number: order.cart?.table_number,
-      items: order.cart?.cartitem?.map((item) => ({
-        cartitem_id: item.cartitem_id,
-        menuitem_id: item.menuitem_id,
-        quantity: item.quantity,
-        subtotal_price: item.subtotal_price,
+      items: order.cart?.cartitem?.map((item: any) => ({
         item_name: item.menuitem?.name || 'Unknown Item',
-        item_description: item.menuitem?.description
+        quantity: item.quantity
       })) || []
     })) || [];
 

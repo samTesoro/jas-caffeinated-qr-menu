@@ -404,7 +404,7 @@ export default function CartPage({ tableId, sessionId }: { tableId?: string; ses
                       session_id: sessionId,
                       table_number: tableId,
                       menu_items,
-                      payment_method: 'gcash',
+                      payment_method: 'GCash',
                       total_price: cart.reduce((sum, item) => sum + item.subtotal_price, 0),
                     };
 
@@ -478,7 +478,7 @@ export default function CartPage({ tableId, sessionId }: { tableId?: string; ses
                       session_id: sessionId,
                       table_number: tableId,
                       menu_items,
-                      payment_method: 'cash-card',
+                      payment_method: 'Cash/Card',
                       total_price: cart.reduce((sum, item) => sum + item.subtotal_price, 0),
                     };
 

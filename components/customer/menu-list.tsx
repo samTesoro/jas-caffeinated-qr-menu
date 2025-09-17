@@ -11,6 +11,7 @@ interface MenuListProps {
   setCart: (cart: any[]) => void;
   customerId?: number | null;
   sessionId?: string;
+  tableId?: string;
 }
 
 export default function MenuList({
@@ -19,6 +20,7 @@ export default function MenuList({
   setCart,
   customerId,
   sessionId,
+  tableId,
 }: MenuListProps) {
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
   const [menuItems, setMenuItems] = useState<any[]>([]);
@@ -106,6 +108,7 @@ export default function MenuList({
           cart={cart}
           setCart={setCart}
           sessionId={sessionId}
+          tableId={tableId}
         />
       )}
     </div>

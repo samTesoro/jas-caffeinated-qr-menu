@@ -39,6 +39,7 @@ export default function OrderNotification() {
           time_ordered: string;
           items?: Item[];
           payment_type: string;
+          table_number?: number;
         }
         const transformed = (data as Order[])
           .map((order) => ({
@@ -46,7 +47,7 @@ export default function OrderNotification() {
             status: order.isfinished
               ? "Finished"
               : ("Preparing" as "Preparing" | "Finished"),
-            tableNo: String(order.customer_id ?? "N/A"),
+            tableNo: String(order.table_number ?? order.customer_id ?? "N/A"),
             time: order.time_ordered ?? "",
             items:
               order.items?.map((item) => ({
@@ -64,7 +65,8 @@ export default function OrderNotification() {
       }
     };
     fetchOrders();
-    const interval = setInterval(fetchOrders, 30000);
+    // Increased interval to 60 seconds to reduce server load
+    const interval = setInterval(fetchOrders, 60000);
     return () => clearInterval(interval);
   }, []);
 

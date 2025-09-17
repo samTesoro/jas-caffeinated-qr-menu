@@ -134,6 +134,7 @@ export default function CustomerMenu({
           cart={cart}
           setCart={setCart as (cart: any[]) => void}
           sessionId={sessionId}
+          tableId={tableId}
         />
         {showConfirm && <ConfirmModal onClose={() => setShowConfirm(false)} />}
       </div>

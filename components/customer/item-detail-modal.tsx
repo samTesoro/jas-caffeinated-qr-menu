@@ -9,12 +9,14 @@ export default function ItemDetailModal({
   cart,
   setCart,
   sessionId,
+  tableId,
 }: {
   item: any;
   onClose: () => void;
   cart: any[];
   setCart: (cart: any[]) => void;
   sessionId?: string;
+  tableId?: string;
 }) {
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
@@ -41,10 +43,8 @@ export default function ItemDetailModal({
     let session_id: string;
     
     if (sessionId) {
-      // Use sessionId from props (preferred for session-based routing)
       session_id = sessionId;
     } else {
-      // Fallback to sessionStorage for backward compatibility
       let storedSessionId = sessionStorage.getItem("session_id");
       if (!storedSessionId) {
         storedSessionId = uuidv4();
@@ -53,110 +53,120 @@ export default function ItemDetailModal({
       session_id = storedSessionId;
     }
     
-    let cart_id = null;
-    
-    // Try to find existing cart for this session
-    const { data: cartData, error: cartError } = await supabase
-      .from("cart")
-      .select("cart_id")
-      .eq("session_id", session_id)
-      .eq("checked_out", false)
-      .order("time_created", { ascending: false })
-      .maybeSingle();
-      
-    if (cartError) {
-      alert("Failed to fetch cart: " + JSON.stringify(cartError));
-      return;
-    }
-    
-    if (cartData && cartData.cart_id) {
-      cart_id = cartData.cart_id;
-    } else {
-      // Try to create a new cart with proper error handling
-      try {
+    try {
+      // Single query to get cart and existing cart items
+      const { data: cartData } = await supabase
+        .from("cart")
+        .select(`
+          cart_id,
+          cartitem!inner (
+            cartitem_id,
+            quantity,
+            subtotal_price,
+            menuitem_id
+          )
+        `)
+        .eq("session_id", session_id)
+        .eq("checked_out", false)
+        .eq("cartitem.menuitem_id", item.menuitem_id)
+        .order("time_created", { ascending: false })
+        .maybeSingle();
+
+      let cart_id = null;
+      let existingItem = null;
+
+      if (cartData) {
+        cart_id = cartData.cart_id;
+        existingItem = cartData.cartitem?.[0];
+      } else {
+        // Try to get cart without the item filter
+        const { data: emptyCartData } = await supabase
+          .from("cart")
+          .select("cart_id")
+          .eq("session_id", session_id)
+          .eq("checked_out", false)
+          .order("time_created", { ascending: false })
+          .maybeSingle();
+
+        if (emptyCartData) {
+          cart_id = emptyCartData.cart_id;
+        }
+      }
+
+      // Create cart if it doesn't exist
+      if (!cart_id) {
         const { data: newCart, error: newCartError } = await supabase
           .from("cart")
-          .insert({ session_id, total_price: 0, checked_out: false })
+          .insert({ session_id, total_price: 0, checked_out: false, table_number: parseInt(tableId || "0") })
           .select("cart_id")
           .single();
           
         if (newCartError) {
-          // If error is duplicate key (23505), another process created the cart
           if (newCartError.code === "23505") {
-            // Retry fetching the cart that was created by another process
-            const { data: retryCart, error: retryError } = await supabase
+            // Retry once if duplicate key
+            const { data: retryCart } = await supabase
               .from("cart")
               .select("cart_id")
               .eq("session_id", session_id)
               .eq("checked_out", false)
-              .order("time_created", { ascending: false })
-              .maybeSingle();
-            
-            if (retryError || !retryCart?.cart_id) {
-              alert("Failed to create or retrieve cart: " + JSON.stringify(retryError || "No cart found"));
-              return;
-            }
-            cart_id = retryCart.cart_id;
-          } else {
-            alert("Failed to create cart: " + JSON.stringify(newCartError));
+              .single();
+            cart_id = retryCart?.cart_id;
+          }
+          if (!cart_id) {
+            alert("Failed to create cart");
             return;
           }
-        } else if (newCart && newCart.cart_id) {
-          cart_id = newCart.cart_id;
         } else {
-          alert("Failed to create cart: No cart_id returned");
+          cart_id = newCart.cart_id;
+        }
+      }
+
+      // Update or insert cart item
+      if (existingItem) {
+        const newQty = existingItem.quantity + qty;
+        const newSubtotal = item.price * newQty;
+        const { error: updateError } = await supabase
+          .from("cartitem")
+          .update({ quantity: newQty, subtotal_price: newSubtotal })
+          .eq("cartitem_id", existingItem.cartitem_id);
+        
+        if (updateError) {
+          alert("Failed to update cart item");
           return;
         }
-      } catch (error) {
-        alert("Unexpected error during cart creation: " + JSON.stringify(error));
-        return;
+        
+        setCart(
+          cart.map((i) =>
+            i.menuitem_id === item.menuitem_id
+              ? { ...i, quantity: newQty, subtotal_price: newSubtotal }
+              : i
+          )
+        );
+      } else {
+        const cartItem = {
+          quantity: qty,
+          subtotal_price: item.price * qty,
+          menuitem_id: item.menuitem_id,
+          cart_id: cart_id,
+        };
+        
+        const { error: itemError } = await supabase
+          .from("cartitem")
+          .insert([cartItem]);
+        
+        if (itemError) {
+          alert("Failed to add item to cart");
+          return;
+        }
+        
+        setCart([...cart, cartItem]);
       }
+      
+      onClose();
+    } catch (error) {
+      console.error("Cart error:", error);
+      alert("An error occurred while adding to cart");
     }
-    const { data: existingItems, error: fetchError } = await supabase
-      .from("cartitem")
-      .select("*")
-      .eq("cart_id", cart_id)
-      .eq("menuitem_id", item.menuitem_id);
-    if (fetchError) {
-      alert("Supabase fetch error: " + JSON.stringify(fetchError));
-      return;
-    }
-    if (existingItems && existingItems.length > 0) {
-      const existing = existingItems[0];
-      const newQty = existing.quantity + qty;
-      const newSubtotal = item.price * newQty;
-      const { error: updateError } = await supabase
-        .from("cartitem")
-        .update({ quantity: newQty, subtotal_price: newSubtotal })
-        .eq("cartitem_id", existing.cartitem_id);
-      if (updateError) {
-        alert("Supabase update error: " + JSON.stringify(updateError));
-        return;
-      }
-      setCart(
-        cart.map((i) =>
-          i.menuitem_id === item.menuitem_id
-            ? { ...i, quantity: newQty, subtotal_price: newSubtotal }
-            : i
-        )
-      );
-    } else {
-      const cartItem = {
-        quantity: qty,
-        subtotal_price: item.price * qty,
-        menuitem_id: item.menuitem_id,
-        cart_id: cart_id,
-      };
-      const { error: itemError } = await supabase
-        .from("cartitem")
-        .insert([cartItem]);
-      if (itemError) {
-        alert("Supabase insert error: " + JSON.stringify(itemError));
-        console.error("Supabase insert error:", itemError);
-      }
-      setCart([...cart, cartItem]);
-    }
-    onClose();
   };
 
   return (
