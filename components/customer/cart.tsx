@@ -1,42 +1,30 @@
-import React from "react";
-import { createClient } from "@/lib/supabase/client"; // Replace require with ES6 import
+import React, { useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 
-export default function Cart({
-  cart,
-  setCart,
-  onClose,
-  onConfirm,
-}: {
-  cart: Array<{
-    cartitem_id: number;
-    quantity: number;
-    subtotal_price: number;
-    menuitem_id: number;
-    menuitem?: {
-      name: string;
-      price: number;
-      thumbnail?: string;
-    };
-  }>;
-  setCart: (
-    cart: Array<{
-      cartitem_id: number;
-      quantity: number;
-      subtotal_price: number;
-      menuitem_id: number;
-      menuitem?: {
-        name: string;
-        price: number;
-        thumbnail?: string;
-      };
-    }>
-  ) => void;
+interface MenuItem {
+  name?: string;
+  price?: number;
+  thumbnail?: string;
+}
+interface CartItem {
+  cartitem_id: number;
+  quantity: number;
+  subtotal_price: number;
+  menuitem_id: number;
+  menuitem: MenuItem;
+}
+
+interface CartProps {
+  cart: CartItem[];
+  setCart: (cart: CartItem[]) => void;
   onClose: () => void;
   onConfirm: () => void;
-}) {
-  React.useEffect(() => {
+}
+
+export default function Cart({ cart, setCart, onClose, onConfirm }: CartProps) {
+  useEffect(() => {
     const fetchCart = async () => {
-      const supabase = createClient(); // Use ES6 import for Supabase client
+      const supabase = createClient();
       let cart_id = null;
       let customer_id = null;
       if (typeof window !== "undefined") {
@@ -80,6 +68,9 @@ export default function Cart({
       if (error) {
         alert("Supabase fetch error: " + JSON.stringify(error));
       }
+<<<<<<< HEAD
+      setCart((data as CartItem[]) || []);
+=======
       // Fix type mismatch in setCart
       const formattedData = (data || []).map((item) => {
         let menuitemObj;
@@ -113,17 +104,17 @@ export default function Cart({
         };
       });
       setCart(formattedData);
+>>>>>>> 7137e7fe9453f573fb92e3a0a69c0333ec43334c
     };
     fetchCart();
-  }, [setCart]); // Add setCart to the dependency array
+  }, [setCart]);
 
   const updateQty = async (cartitem_id: number, delta: number) => {
     const supabase = createClient();
     const item = cart.find((i) => i.cartitem_id === cartitem_id);
     if (!item) return;
     const newQty = Math.max(1, item.quantity + delta);
-    // Fix possible undefined menuitem
-    const newSubtotal = item.menuitem ? item.menuitem.price * newQty : 0;
+    const newSubtotal = (item.menuitem.price || 0) * newQty;
     await supabase
       .from("cartitem")
       .update({ quantity: newQty, subtotal_price: newSubtotal })

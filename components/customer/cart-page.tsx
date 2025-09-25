@@ -7,7 +7,13 @@ import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
 import DashboardHeader from "@/components/ui/header";
 
-export default function CartPage({ tableId, sessionId }: { tableId?: string; sessionId?: string }) {
+export default function CartPage({
+  tableId,
+  sessionId,
+}: {
+  tableId?: string;
+  sessionId?: string;
+}) {
   type CartItem = {
     cartitem_id: number;
     quantity: number;
@@ -73,7 +79,7 @@ export default function CartPage({ tableId, sessionId }: { tableId?: string; ses
     const fetchCart = async () => {
       const supabase = createClient();
       let session_id: string;
-      
+
       if (sessionId) {
         // Use sessionId from URL params (preferred for session-based routing)
         session_id = sessionId;
@@ -125,7 +131,7 @@ export default function CartPage({ tableId, sessionId }: { tableId?: string; ses
                 .eq("checked_out", false)
                 .order("time_created", { ascending: false })
                 .maybeSingle();
-              
+
               if (retryError || !retryCart?.cart_id) {
                 console.error("Error retrieving cart after retry:", retryError);
                 setCart([]);
@@ -293,72 +299,92 @@ export default function CartPage({ tableId, sessionId }: { tableId?: string; ses
       <div className="flex-1 px-6 pb-32 pt-2 w-full max-w-md mx-auto">
         <h2 className="font-bold text-black text-2xl mb-2 mt-2">Cart</h2>
         <hr className="mb-6 border-black/30" />
-        <div className="mb-4">
-          {cart.map((i) => (
-            <div
-              key={i.cartitem_id}
-              className="flex items-center justify-between mb-4 bg-white rounded-xl shadow p-3"
-            >
-              <Image
-                src={i.menuitem?.thumbnail || "/default-food.png"}
-                alt={i.menuitem?.name || "Unknown Item"}
-                width={64}
-                height={64}
-                className="w-16 h-16 object-cover rounded-lg mr-3 flex-shrink-0"
-              />
 
-              <div className="flex-1 min-w-0 mr-2">
-                <div className="font-bold text-black text-base break-words leading-snug">
-                  {i.menuitem?.name || "Unknown Item"}
+        {/* Show message if cart is empty */}
+        {cart.length === 0 ? (
+          <p className="text-center text-gray-600 py-2 text-sm">
+            No items in the cart.
+          </p>
+        ) : (
+          <div className="mb-4">
+            {cart.map((i) => (
+              <div
+                key={i.cartitem_id}
+                className="flex items-center justify-between mb-4 bg-white rounded-xl shadow p-3"
+              >
+                <Image
+                  src={i.menuitem?.thumbnail || "/default-food.png"}
+                  alt={i.menuitem?.name || "Unknown Item"}
+                  width={64}
+                  height={64}
+                  className="w-16 h-16 object-cover rounded-lg mr-3 flex-shrink-0"
+                />
+
+                <div className="flex-1 min-w-0 mr-2">
+                  <div className="font-bold text-black text-base break-words leading-snug">
+                    {i.menuitem?.name || "Unknown Item"}
+                  </div>
+                  <div className="text-black text-xs">
+                    ₱{i.subtotal_price}.00
+                  </div>
                 </div>
-                <div className="text-black text-xs">₱{i.subtotal_price}.00</div>
-              </div>
 
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <button
-                  className="text-lg font-bold text-black px-1"
-                  onClick={() => updateQty(i.cartitem_id, -1)}
-                >
-                  -
-                </button>
-                <span className="bg-gray-200 rounded w-10 h-8 flex items-center justify-center font-bold text-black text-lg">
-                  {i.quantity}
-                </span>
-                <button
-                  className="text-lg font-bold text-black px-1"
-                  onClick={() => updateQty(i.cartitem_id, 1)}
-                >
-                  +
-                </button>
-                <button
-                  className="bg-red-500 rounded-full w-9 h-9 flex items-center justify-center shadow-md"
-                  onClick={() => removeItem(i.cartitem_id)}
-                >
-                  <TrashIcon />
-                </button>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    className="text-lg font-bold text-black px-1"
+                    onClick={() => updateQty(i.cartitem_id, -1)}
+                  >
+                    -
+                  </button>
+                  <span className="bg-gray-200 rounded w-10 h-8 flex items-center justify-center font-bold text-black text-lg">
+                    {i.quantity}
+                  </span>
+                  <button
+                    className="text-lg font-bold text-black px-1"
+                    onClick={() => updateQty(i.cartitem_id, 1)}
+                  >
+                    +
+                  </button>
+                  <button
+                    className="bg-red-500 rounded-full w-9 h-9 flex items-center justify-center shadow-md"
+                    onClick={() => removeItem(i.cartitem_id)}
+                  >
+                    <TrashIcon />
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="fixed bottom-20 left-0 right-0 px-6 max-w-md mx-auto">
-          <hr className="my-2 border-black" />
-          <div className="font-bold text-black text-right mb-[50px] text-xl">
-            Total: ₱{total}.00
+            ))}
           </div>
+        )}
+      </div>
+
+      <div className="fixed bottom-20 left-0 right-0 px-6 max-w-md mx-auto">
+        <hr className="my-2 border-black" />
+        <div className="font-bold text-black text-right mb-[50px] text-xl">
+          Total: ₱{total}.00
         </div>
       </div>
+
       <div className="fixed bottom-0 left-0 right-0 bg-[#393939] border-t h-20">
         <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex gap-12">
           <button
             onClick={() => router.back()}
-            className="bg-red-400 text-white rounded-full w-16 h-16 flex items-center justify-center shadow-lg"
+            className="bg-red-400 hover:bg-red-500 text-white rounded-full w-16 h-16 flex items-center justify-center shadow-lg"
           >
             <BackIcon />
           </button>
+
+          {/* Disable check button when cart is empty */}
           <button
-            className="bg-green-400 text-white rounded-full w-16 h-16 flex items-center justify-center shadow-lg"
-            onClick={() => setShowPaymentModal(true)}
+            disabled={cart.length === 0}
+            className={`rounded-full w-16 h-16 flex items-center justify-center shadow-lg ${
+              cart.length === 0
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-green-400 text-white"
+            }`}
+            onClick={() => {
+              if (cart.length > 0) setShowPaymentModal(true);
+            }}
           >
             <CheckIcon />
           </button>
@@ -388,55 +414,60 @@ export default function CartPage({ tableId, sessionId }: { tableId?: string; ses
                 setShowPaymentModal(false);
                 if (tableId) {
                   try {
-                    console.log('Cart data before sending:', cart);
-                    console.log('Session ID:', sessionId);
-                    console.log('Table ID:', tableId);
+                    console.log("Cart data before sending:", cart);
+                    console.log("Session ID:", sessionId);
+                    console.log("Table ID:", tableId);
 
                     // Transform cart items to use menu_item_id for backend
-                    const menu_items = cart.map(({ menuitem_id, quantity, subtotal_price }) => ({
-                      menu_item_id: menuitem_id,
-                      quantity,
-                      subtotal_price,
-                    }));
+                    const menu_items = cart.map(
+                      ({ menuitem_id, quantity, subtotal_price }) => ({
+                        menu_item_id: menuitem_id,
+                        quantity,
+                        subtotal_price,
+                      })
+                    );
 
                     // Create the order
                     const orderData = {
                       session_id: sessionId,
                       table_number: tableId,
                       menu_items,
-                      payment_method: 'GCash',
-                      total_price: cart.reduce((sum, item) => sum + item.subtotal_price, 0),
+                      payment_method: "gcash",
+                      total_price: cart.reduce(
+                        (sum, item) => sum + item.subtotal_price,
+                        0
+                      ),
                     };
 
-                    console.log('Order data being sent:', orderData);
+                    console.log("Order data being sent:", orderData);
 
-                    const response = await fetch('/api/orders', {
-                      method: 'POST',
+                    const response = await fetch("/api/orders", {
+                      method: "POST",
                       headers: {
-                        'Content-Type': 'application/json',
+                        "Content-Type": "application/json",
                       },
                       body: JSON.stringify(orderData),
                     });
 
-                    console.log('Response status:', response.status);
+                    console.log("Response status:", response.status);
 
                     if (!response.ok) {
                       const errorText = await response.text();
-                      console.error('Response error:', errorText);
+                      console.error("Response error:", errorText);
                       throw new Error(`Failed to create order: ${errorText}`);
                     }
 
                     const result = await response.json();
-                    console.log('Order creation result:', result);
+                    console.log("Order creation result:", result);
 
                     // Navigate to confirmation page
-                    const gcashPath = sessionId 
+                    const gcashPath = sessionId
                       ? `/customer/${tableId}/session/${sessionId}/gcash-order-confirmation`
                       : `/customer/${tableId}/gcash-order-confirmation`;
                     router.push(gcashPath);
                   } catch (error) {
-                    console.error('Error creating order:', error);
-                    alert('Failed to create order. Please try again.');
+                    console.error("Error creating order:", error);
+                    alert("Failed to create order. Please try again.");
                   }
                 } else {
                   alert("No table assigned. Please scan your table QR code.");
@@ -462,55 +493,60 @@ export default function CartPage({ tableId, sessionId }: { tableId?: string; ses
                 setShowPaymentModal(false);
                 if (tableId) {
                   try {
-                    console.log('Cart data before sending:', cart);
-                    console.log('Session ID:', sessionId);
-                    console.log('Table ID:', tableId);
+                    console.log("Cart data before sending:", cart);
+                    console.log("Session ID:", sessionId);
+                    console.log("Table ID:", tableId);
 
                     // Transform cart items to use menu_item_id for backend
-                    const menu_items = cart.map(({ menuitem_id, quantity, subtotal_price }) => ({
-                      menu_item_id: menuitem_id,
-                      quantity,
-                      subtotal_price,
-                    }));
+                    const menu_items = cart.map(
+                      ({ menuitem_id, quantity, subtotal_price }) => ({
+                        menu_item_id: menuitem_id,
+                        quantity,
+                        subtotal_price,
+                      })
+                    );
 
                     // Create the order
                     const orderData = {
                       session_id: sessionId,
                       table_number: tableId,
                       menu_items,
-                      payment_method: 'Cash/Card',
-                      total_price: cart.reduce((sum, item) => sum + item.subtotal_price, 0),
+                      payment_method: "cash-card",
+                      total_price: cart.reduce(
+                        (sum, item) => sum + item.subtotal_price,
+                        0
+                      ),
                     };
 
-                    console.log('Order data being sent:', orderData);
+                    console.log("Order data being sent:", orderData);
 
-                    const response = await fetch('/api/orders', {
-                      method: 'POST',
+                    const response = await fetch("/api/orders", {
+                      method: "POST",
                       headers: {
-                        'Content-Type': 'application/json',
+                        "Content-Type": "application/json",
                       },
                       body: JSON.stringify(orderData),
                     });
 
-                    console.log('Response status:', response.status);
+                    console.log("Response status:", response.status);
 
                     if (!response.ok) {
                       const errorText = await response.text();
-                      console.error('Response error:', errorText);
+                      console.error("Response error:", errorText);
                       throw new Error(`Failed to create order: ${errorText}`);
                     }
 
                     const result = await response.json();
-                    console.log('Order creation result:', result);
+                    console.log("Order creation result:", result);
 
                     // Navigate to confirmation page
-                    const cashCardPath = sessionId 
+                    const cashCardPath = sessionId
                       ? `/customer/${tableId}/session/${sessionId}/cash-card-order-confirmation`
                       : `/customer/${tableId}/cash-card-order-confirmation`;
                     router.push(cashCardPath);
                   } catch (error) {
-                    console.error('Error creating order:', error);
-                    alert('Failed to create order. Please try again.');
+                    console.error("Error creating order:", error);
+                    alert("Failed to create order. Please try again.");
                   }
                 } else {
                   alert("No table assigned. Please scan your table QR code.");

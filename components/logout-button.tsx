@@ -1,9 +1,9 @@
-
 "use client";
 
 import React from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { Button } from "./ui/button";
 
 export function LogoutButton({ children }: { children?: React.ReactNode }) {
   const router = useRouter();
@@ -32,66 +32,26 @@ export function LogoutButton({ children }: { children?: React.ReactNode }) {
         {children ? children : "Logout"}
       </button>
       {showModal && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            background: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-            fontFamily: "Inter, sans-serif",
-          }}
-        >
-          <div
-            style={{
-              background: "white",
-              padding: "1rem 2rem",
-              borderRadius: "8px",
-              minWidth: "260px",
-              textAlign: "center",
-              fontFamily: "Inter, sans-serif",
-            }}
-          >
-            <p style={{ marginBottom: "1.5rem", fontSize: "1rem", fontWeight: 700, fontFamily: "Inter, sans-serif", color: "black" }}>Log out?</p>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <button
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-md p-6 w-[250px] text-center space-y-4">
+            <p className="text-md text-black font-bold mt-3">Log out?</p>
+            <div className="flex justify-between font-bold">
+              <Button
+                variant="red"
+                type="button"
                 onClick={() => setShowModal(false)}
-                style={{
-                  marginRight: "1rem",
-                  padding: "0.75rem 2rem",
-                  background: "#F96666",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  fontFamily: "Inter, sans-serif",
-                  fontWeight: 700,
-                  color: "black",
-                  fontSize: "0.9rem",
-                }}
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg"
               >
                 No
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="green"
+                type="button"
                 onClick={logout}
-                style={{
-                  padding: "0.75rem 2rem",
-                  background: "#A7F586",
-                  color: "black",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  fontFamily: "Inter, sans-serif",
-                  fontWeight: 700,
-                  fontSize: "0.9rem",
-                }}
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg"
               >
                 Yes
-              </button>
+              </Button>
             </div>
           </div>
         </div>

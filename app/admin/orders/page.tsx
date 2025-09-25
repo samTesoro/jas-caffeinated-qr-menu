@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Taskbar from "@/components/admin/taskbar-admin";
 import DashboardHeader from "@/components/ui/header";
-import OrderNotification from "@/components/admin/order-notification"; // Import the OrderHistory component
+import OrderNotification from "@/components/admin/order-notification"; 
 import { useRouter } from "next/navigation";
 
 export default function OrdersPage() {

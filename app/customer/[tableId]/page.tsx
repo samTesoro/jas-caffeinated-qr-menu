@@ -1,4 +1,3 @@
-
 "use client";
 export const dynamic = "force-dynamic";
 
@@ -12,7 +11,10 @@ export default function CustomerTableEntry() {
   const tableId = params?.tableId as string;
   useEffect(() => {
     if (!tableId) return;
-    let sessionId = typeof window !== "undefined" ? sessionStorage.getItem("session_id") : null;
+    let sessionId =
+      typeof window !== "undefined"
+        ? sessionStorage.getItem("session_id")
+        : null;
     if (!sessionId) {
       sessionId = uuidv4();
       sessionStorage.setItem("session_id", sessionId);

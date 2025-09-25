@@ -42,7 +42,10 @@ export default function CashCardOrderConfirmation({ params }: { params: Promise<
   return (
     <div className="min-h-screen bg-[#ececec] flex flex-col">
   <DashboardHeader mode="customer" tableId={tableId} />
+<<<<<<< HEAD
+=======
   <div className="absolute top-6 right-6 text-sm font-semibold text-black">Table: {tableId}</div>
+>>>>>>> 7137e7fe9453f573fb92e3a0a69c0333ec43334c
       <div className="flex-1 flex flex-col items-center justify-center px-4">
         <div className="flex flex-col items-center w-full">
           <Image

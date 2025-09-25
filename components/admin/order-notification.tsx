@@ -111,9 +111,9 @@ export default function OrderNotification() {
   };
 
   return (
-    <div className="px-8 py-5 w-full mb-40">
+    <div className="px-8 md:px-[500px] py-3 w-full pb-20">
       <div className="mx-auto mb-4">
-        <h2 className="text-2xl font-bold text-black">Orders</h2>
+        <h2 className="text-2xl font-bold text-black md:text-3xl">Orders</h2>
       </div>
       <hr className="border-black my-4" />
 
@@ -126,7 +126,7 @@ export default function OrderNotification() {
               </span>
               <button
                 onClick={() => markAsFinished(order.order_id)}
-                className="bg-[#A7F586] hover:bg-gray-400 transition-colors px-1 border text-black text-sm"
+                className="bg-[#A7F586] hover:bg-gray-400 transition-colors px-1 border text-black text-sm md:text-lg"
               >
                 Finished
               </button>
@@ -135,13 +135,13 @@ export default function OrderNotification() {
               onClick={() => deleteOrder(order.order_id)}
               className="text-black hover:text-red-700"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5 md:w-7 md:h-7" />
             </button>
           </div>
 
           <hr className="border-black my-2" />
 
-          <div className="grid grid-cols-[65px_90px_100px_60px] gap-2 mb-2 font-semibold text-black text-sm">
+          <div className="grid grid-cols-[65px_90px_100px_60px] md:grid-cols-[1fr_2fr_3fr_1fr] gap-2 mb-2 font-semibold text-black text-sm md:text-lg">
             <div className="text-center">Table No.</div>
             <div className="text-center">Time</div>
             <div className="text-center">Order</div>
@@ -150,14 +150,14 @@ export default function OrderNotification() {
 
           <hr className="border-black my-2" />
 
-          <div className="grid grid-cols-[65px_90px_100px_60px] gap-2 mb-2 text-black text-sm">
+          <div className="grid grid-cols-[65px_90px_100px_60px] md:grid-cols-[1fr_2fr_3fr_1fr] gap-2 mb-2 text-black text-sm md:text-lg">
             <div className="flex justify-center items-center row-span-full text-center">
               {order.tableNo}
             </div>
             <div className="flex justify-center items-center row-span-full text-center">
               {order.time}
             </div>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1 md:text-center">
               <div>
                 {order.items.map((item, idx) => (
                   <div
@@ -181,7 +181,7 @@ export default function OrderNotification() {
 
           <hr className="border-blacks my-2" />
 
-          <div className="flex justify-end items-center text-black text-sm mb-10">
+          <div className="flex justify-end items-center text-black text-sm md:text-lg mb-10">
             <span>Payment: </span>
             <span
               className={`ml-2 ${
