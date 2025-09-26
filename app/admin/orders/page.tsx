@@ -5,6 +5,7 @@ import Taskbar from "@/components/admin/taskbar-admin";
 import DashboardHeader from "@/components/ui/header";
 import OrderNotification from "@/components/admin/order-notification"; // Import the OrderHistory component
 import { useRouter } from "next/navigation";
+import LoadingSpinner from "@/components/ui/loading-spinner";
 
 export default function OrdersPage() {
   const router = useRouter();
@@ -76,7 +77,7 @@ export default function OrdersPage() {
   }, [isLoading, permissions, router]);
 
   if (isLoading) {
-    return <div>Loading...</div>; // Prevent rendering the page until permissions are loaded
+    return <LoadingSpinner message="Loading..." />;
   }
 
   if (!permissions.view_orders) {

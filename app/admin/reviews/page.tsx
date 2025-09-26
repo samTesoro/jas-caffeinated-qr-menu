@@ -4,6 +4,7 @@ import DashboardHeader from "@/components/ui/header";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import LoadingSpinner from "@/components/ui/loading-spinner";
 
 export default function ReviewsPage() {
 
@@ -81,7 +82,7 @@ export default function ReviewsPage() {
   }, [permissions, isLoading, router]);
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <LoadingSpinner message="Loading..." />;
   }
   if (!permissions.view_reviews) {
     return null;

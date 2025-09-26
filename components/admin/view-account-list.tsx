@@ -290,8 +290,8 @@ export default function ViewAccounts() {
 
       {/* Delete Modal */}
       {deleteUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg text-center w-80">
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-300">
+          <div className="bg-white p-6 rounded-lg shadow-xl text-center w-80">
             <h2 className="text-lg font-bold mb-4 text-black">
               Delete{" "}
               <span className="text-red-400">"{deleteUser.username}"</span>?
@@ -313,8 +313,8 @@ export default function ViewAccounts() {
 
       {/* Block Modal */}
       {blockUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg text-center w-80">
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-300">
+          <div className="bg-white p-6 rounded-lg shadow-xl text-center w-80">
             <h2 className="text-lg font-bold text-black mb-4">
               Block <span className="text-red-600">"{blockUser.username}"</span>
               ?
@@ -333,8 +333,8 @@ export default function ViewAccounts() {
 
       {/* Unblock Modal */}
       {unblockUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg text-center w-80">
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-300">
+          <div className="bg-white p-6 rounded-lg shadow-xl text-center w-80">
             <h2 className="text-lg font-bold text-black mb-4">
               Unblock{" "}
               <span className="text-red-600">"{unblockUser.username}"</span>?

@@ -67,7 +67,7 @@ export default function MenuItemList({
     <div>
       <div className="sm:mb-6 md:mb-10 flex flex-col items-center gap-4">
         <div className="relative w-[350px]">
-          <Search className="absolute right-4 mx-2 top-1/2 -translate-y-1/2 h-4 w-4 text-black" />
+          <Search className="absolute right-4 mx-2 top-1/2 -translate-y-1/2 h-4 w-4  text-black" />
           <input
             type="text"
             value={search}
@@ -103,7 +103,7 @@ export default function MenuItemList({
       </div>
 
       {/* Menu Item Grid */}
-      <div className="grid grid-cols-2 gap-7 sm:gap-2 place-items-center mb-10">
+      <div className="grid grid-cols-2 gap-7 sm:gap-2 place-items-center mb-20">
         {filteredItems.map((item) => (
           <ItemCard
             key={item.menuitem_id}
@@ -118,7 +118,7 @@ export default function MenuItemList({
       {/* Modal */}
       {modalItem && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 transition-opacity duration-300"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm transition-opacity duration-300"
           aria-hidden={!modalItem}
         >
           <div className="bg-white rounded-lg shadow-lg max-w-lg w-full p-6 relative transform transition-all duration-300">

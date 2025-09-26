@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import DashboardHeader from "@/components/ui/header";
 import Taskbar from "@/components/admin/taskbar-admin";
+import LoadingSpinner from "@/components/ui/loading-spinner";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -92,7 +93,7 @@ export default function MenuPage() {
   }, []);
 
   if (isLoading) {
-    return <div>Loading...</div>; // Prevent rendering the page until permissions are loaded
+    return <LoadingSpinner />; // Prevent rendering the page until permissions are loaded
   }
 
   if (!permissions.view_menu) {
