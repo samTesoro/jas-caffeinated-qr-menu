@@ -1,7 +1,11 @@
 "use client";
 import React, { useState } from "react";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { v4 as uuidv4 } from "uuid";
+
+type CartItem = { cartitem_id?: number; quantity: number; subtotal_price: number; menuitem_id: number };
+type MenuItem = { menuitem_id: number; name: string; price: number; thumbnail?: string | null };
 
 export default function ItemDetailModal({
   item,
@@ -11,10 +15,10 @@ export default function ItemDetailModal({
   sessionId,
   tableId,
 }: {
-  item: any;
+  item: MenuItem;
   onClose: () => void;
-  cart: any[];
-  setCart: (cart: any[]) => void;
+  cart: CartItem[];
+  setCart: (cart: CartItem[]) => void;
   sessionId?: string;
   tableId?: string;
 }) {
@@ -183,9 +187,11 @@ export default function ItemDetailModal({
           <BackIcon />
         </button>
 
-        <img
-          src={item.thumbnail}
+        <Image
+          src={item.thumbnail || "/default-food.png"}
           alt={item.name}
+          width={800}
+          height={400}
           className="w-full h-[280px] md:h-[200px] object-cover rounded-b-none md:rounded-sm mb-4"
         />
 
