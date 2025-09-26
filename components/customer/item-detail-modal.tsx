@@ -152,7 +152,8 @@ export default function ItemDetailModal({
           subtotal_price: item.price * qty,
           menuitem_id: item.menuitem_id,
           cart_id: cart_id,
-        };
+          note: note || null,
+        } as const;
         
         const { error: itemError } = await supabase
           .from("cartitem")
@@ -163,7 +164,7 @@ export default function ItemDetailModal({
           return;
         }
         
-        setCart([...cart, cartItem]);
+  setCart([...cart, { ...cartItem }]);
       }
       
       onClose();

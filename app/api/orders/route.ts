@@ -146,6 +146,7 @@ export async function GET() {
           table_number,
           cartitem (
             quantity,
+            note,
             menuitem (
               name
             )
@@ -163,14 +164,14 @@ export async function GET() {
     }
 
     // Simplified transformation for faster processing
-    type OrderItem = { item_name: string; quantity: number };
+  type OrderItem = { item_name: string; quantity: number; note?: string | null };
     type OrderRow = {
       order_id: number | string;
       isfinished: boolean;
       customer_id: number | null;
       time_ordered: string;
       payment_type: string;
-      cart?: { table_number?: number | null; cartitem?: Array<{ quantity: number; menuitem?: { name?: string | null } | null }> } | null;
+  cart?: { table_number?: number | null; cartitem?: Array<{ quantity: number; note?: string | null; menuitem?: { name?: string | null } | null }> } | null;
     };
     const transformedOrders = ((orders as unknown as OrderRow[]) || []).map((order) => ({
       order_id: order.order_id.toString(),
@@ -181,7 +182,8 @@ export async function GET() {
       table_number: order.cart?.table_number ?? null,
       items: (order.cart?.cartitem || []).map((item): OrderItem => ({
         item_name: item.menuitem?.name || 'Unknown Item',
-        quantity: item.quantity
+        quantity: item.quantity,
+        note: item.note ?? null,
       }))
     }));
 
