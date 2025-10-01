@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import Taskbar from "@/components/admin/taskbar-admin";
 import DashboardHeader from "@/components/ui/header";
 import OrderHistory from "@/components/admin/order-history";
+import LoadingSpinner from "@/components/ui/loading-spinner";
 
 const Page = () => {
   const router = useRouter();
@@ -103,7 +104,7 @@ const Page = () => {
   }, [permissions, isLoading, router]);
 
   if (isLoading) {
-    return <div>Loading...</div>; // Prevent rendering the page until permissions are loaded
+    return <LoadingSpinner message="Loading..." />;
   }
 
   if (!permissions.view_history) {

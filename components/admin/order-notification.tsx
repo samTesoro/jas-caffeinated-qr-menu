@@ -15,9 +15,14 @@ interface Order {
 interface OrderItem {
   name: string;
   quantity: number;
+  note?: string | null;
 }
+import NotesModal from "./note-modal";
 export default function OrderNotification() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [noteText, setNoteText] = useState<string | undefined>(undefined);
+  const [noteItemName, setNoteItemName] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -31,6 +36,7 @@ export default function OrderNotification() {
         interface Item {
           item_name: string;
           quantity: number;
+          note?: string | null;
         }
         interface Order {
           order_id: string;
@@ -39,7 +45,6 @@ export default function OrderNotification() {
           time_ordered: string;
           items?: Item[];
           payment_type: string;
-          table_number?: number;
         }
         const transformed = (data as Order[])
           .map((order) => ({
@@ -47,12 +52,13 @@ export default function OrderNotification() {
             status: order.isfinished
               ? "Finished"
               : ("Preparing" as "Preparing" | "Finished"),
-            tableNo: String(order.table_number ?? order.customer_id ?? "N/A"),
+            tableNo: String(order.customer_id ?? "N/A"),
             time: order.time_ordered ?? "",
             items:
               order.items?.map((item) => ({
                 name: item.item_name,
                 quantity: item.quantity,
+                note: item.note ?? null,
               })) ?? [],
             paymentMethod: order.payment_type ?? "",
           }))
@@ -65,31 +71,12 @@ export default function OrderNotification() {
       }
     };
     fetchOrders();
-    // Increased interval to 60 seconds to reduce server load
-    const interval = setInterval(fetchOrders, 60000);
+    const interval = setInterval(fetchOrders, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  const deleteOrder = async (id: string) => {
-    try {
-      const response = await fetch(`/api/orders/${id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ iscancelled: true }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to cancel order");
-      }
-
-      // Remove the order from local state after successful API call
-      setOrders((prev) => prev.filter((order) => order.order_id !== id));
-    } catch (error) {
-      console.error("Error cancelling order:", error);
-      alert("Failed to cancel order. Please try again.");
-    }
+  const deleteOrder = (id: string) => {
+    setOrders((prev) => prev.filter((order) => order.order_id !== id));
   };
 
   const markAsFinished = async (id: string) => {
@@ -162,8 +149,15 @@ export default function OrderNotification() {
                 {order.items.map((item, idx) => (
                   <div
                     key={idx}
-                    className="truncate px-2 py-1"
+                    className={`truncate px-2 py-1 ${item.note ? "text-blue-600 cursor-pointer underline" : ""}`}
                     title={item.name}
+                    onClick={() => {
+                      if (item.note) {
+                        setNoteText(item.note || undefined);
+                        setNoteItemName(item.name);
+                        setNoteOpen(true);
+                      }
+                    }}
                   >
                     {item.name}
                   </div>
@@ -199,6 +193,13 @@ export default function OrderNotification() {
       {orders.length === 0 && (
         <p className="text-black text-center py-8">No orders available.</p>
       )}
+
+      <NotesModal
+        open={noteOpen}
+        note={noteText}
+        itemName={noteItemName}
+        onClose={() => setNoteOpen(false)}
+      />
     </div>
   );
 }

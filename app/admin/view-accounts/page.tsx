@@ -3,8 +3,9 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Taskbar from "@/components/admin/taskbar-admin";
 import DashboardHeader from "@/components/ui/header";
-import ViewAccounts from "@/components/admin/view-account-list";
+import ViewAccountList from "@/components/admin/view-account-list";
 import { useRouter } from "next/navigation";
+import LoadingSpinner from "@/components/ui/loading-spinner";
 
 export default function ViewAccountsPage() {
   const router = useRouter();
@@ -76,7 +77,7 @@ export default function ViewAccountsPage() {
   }, [isLoading, permissions, router]);
 
   if (isLoading) {
-    return <div>Loading...</div>; // Prevent rendering the page until permissions are loaded
+    return <LoadingSpinner message="Loading..." />;
   }
 
   if (!permissions.view_super) {
@@ -86,7 +87,7 @@ export default function ViewAccountsPage() {
   return (
     <div className="min-h-screen bg-[#ebebeb]">
       <DashboardHeader />
-      <ViewAccounts />
+      <ViewAccountList />
       <Taskbar permissions={permissions} />
     </div>
   );

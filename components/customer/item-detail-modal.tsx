@@ -1,7 +1,11 @@
 "use client";
 import React, { useState } from "react";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { v4 as uuidv4 } from "uuid";
+
+type CartItem = { cartitem_id?: number; quantity: number; subtotal_price: number; menuitem_id: number };
+type MenuItem = { menuitem_id: number; name: string; price: number; thumbnail?: string | null };
 
 export default function ItemDetailModal({
   item,
@@ -11,10 +15,10 @@ export default function ItemDetailModal({
   sessionId,
   tableId,
 }: {
-  item: any;
+  item: MenuItem;
   onClose: () => void;
-  cart: any[];
-  setCart: (cart: any[]) => void;
+  cart: CartItem[];
+  setCart: (cart: CartItem[]) => void;
   sessionId?: string;
   tableId?: string;
 }) {
@@ -105,62 +109,56 @@ export default function ItemDetailModal({
           }
         } else {
           cart_id = newCart.cart_id;
-        } else {
-          alert("Failed to create cart: No cart_id returned");
+        }
+      }
+
+      // Update or insert cart item
+      if (existingItem) {
+        const newQty = existingItem.quantity + qty;
+        const newSubtotal = item.price * newQty;
+        const { error: updateError } = await supabase
+          .from("cartitem")
+          .update({ quantity: newQty, subtotal_price: newSubtotal })
+          .eq("cartitem_id", existingItem.cartitem_id);
+        
+        if (updateError) {
+          alert("Failed to update cart item");
           return;
         }
-      } catch (error) {
-        alert(
-          "Unexpected error during cart creation: " + JSON.stringify(error)
+        
+        setCart(
+          cart.map((i) =>
+            i.menuitem_id === item.menuitem_id
+              ? { ...i, quantity: newQty, subtotal_price: newSubtotal }
+              : i
+          )
         );
-        return;
+      } else {
+        const cartItem = {
+          quantity: qty,
+          subtotal_price: item.price * qty,
+          menuitem_id: item.menuitem_id,
+          cart_id: cart_id,
+          note: note || null,
+        } as const;
+        
+        const { error: itemError } = await supabase
+          .from("cartitem")
+          .insert([cartItem]);
+        
+        if (itemError) {
+          alert("Failed to add item to cart");
+          return;
+        }
+        
+  setCart([...cart, { ...cartItem }]);
       }
+      
+      onClose();
+    } catch (error) {
+      console.error("Cart error:", error);
+      alert("An error occurred while adding to cart");
     }
-    const { data: existingItems, error: fetchError } = await supabase
-      .from("cartitem")
-      .select("*")
-      .eq("cart_id", cart_id)
-      .eq("menuitem_id", item.menuitem_id);
-    if (fetchError) {
-      alert("Supabase fetch error: " + JSON.stringify(fetchError));
-      return;
-    }
-    if (existingItems && existingItems.length > 0) {
-      const existing = existingItems[0];
-      const newQty = existing.quantity + qty;
-      const newSubtotal = item.price * newQty;
-      const { error: updateError } = await supabase
-        .from("cartitem")
-        .update({ quantity: newQty, subtotal_price: newSubtotal })
-        .eq("cartitem_id", existing.cartitem_id);
-      if (updateError) {
-        alert("Supabase update error: " + JSON.stringify(updateError));
-        return;
-      }
-      setCart(
-        cart.map((i) =>
-          i.menuitem_id === item.menuitem_id
-            ? { ...i, quantity: newQty, subtotal_price: newSubtotal }
-            : i
-        )
-      );
-    } else {
-      const cartItem = {
-        quantity: qty,
-        subtotal_price: item.price * qty,
-        menuitem_id: item.menuitem_id,
-        cart_id: cart_id,
-      };
-      const { error: itemError } = await supabase
-        .from("cartitem")
-        .insert([cartItem]);
-      if (itemError) {
-        alert("Supabase insert error: " + JSON.stringify(itemError));
-        console.error("Supabase insert error:", itemError);
-      }
-      setCart([...cart, cartItem]);
-    }
-    onClose();
   };
 
   return (
@@ -177,9 +175,11 @@ export default function ItemDetailModal({
           <BackIcon />
         </button>
 
-        <img
-          src={item.thumbnail}
+        <Image
+          src={item.thumbnail || "/default-food.png"}
           alt={item.name}
+          width={800}
+          height={400}
           className="w-full h-[280px] md:h-[200px] object-cover rounded-b-none md:rounded-sm mb-4"
         />
 

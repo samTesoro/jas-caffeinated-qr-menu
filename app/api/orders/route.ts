@@ -7,44 +7,59 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 // Create a new order
 export async function POST(request: NextRequest) {
   try {
-    const { session_id, payment_method, table_number } = await request.json();
-    console.log("Request body:", { session_id, payment_method, table_number });
+  const { session_id, payment_method, table_number } = await request.json();
+  console.log('Request body:', { session_id, payment_method, table_number });
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Find or create customer record based on table number
+    // Find or create customer record using session_id, fallback to table_number
     let customer_id = null;
-    if (table_number) {
-      const tableNum = parseInt(table_number);
+    if (session_id) {
+      // Prefer session binding: one customer per session_id
+      const { data: bySession } = await supabase
+        .from('customer')
+        .select('customer_id')
+        .eq('session_id', session_id)
+        .eq('is_active', true)
+        .maybeSingle();
 
-      // First, try to find an existing active customer for this table
-      const { data: existingCustomer, error: customerFindError } =
-        await supabase
-          .from("customer")
-          .select("customer_id")
-          .eq("table_num", tableNum)
-          .eq("is_active", true)
-          .single();
+      if (bySession && bySession.customer_id) {
+        customer_id = bySession.customer_id;
+      } else if (table_number) {
+        const tableNum = parseInt(table_number);
+        // If none by session, reuse active by table, otherwise create
+        const { data: existingCustomer } = await supabase
+          .from('customer')
+          .select('customer_id')
+          .eq('table_num', tableNum)
+          .eq('is_active', true)
+          .maybeSingle();
 
-      if (existingCustomer) {
-        customer_id = existingCustomer.customer_id;
-        console.log("Found existing customer:", customer_id);
-      } else {
-        // Create new customer record
-        const { data: newCustomer, error: customerCreateError } = await supabase
-          .from("customer")
-          .insert({
-            table_num: tableNum,
-            is_active: true,
-          })
-          .select("customer_id")
-          .single();
-
-        if (customerCreateError) {
-          console.error("Error creating customer:", customerCreateError);
+        if (existingCustomer && existingCustomer.customer_id) {
+          customer_id = existingCustomer.customer_id;
+          // Attach session_id to this customer if not already set
+          await supabase
+            .from('customer')
+            .update({ session_id })
+            .eq('customer_id', customer_id)
+            .is('session_id', null);
         } else {
-          customer_id = newCustomer.customer_id;
-          console.log("Created new customer:", customer_id);
+          // Create a new active customer and bind session_id
+          const { data: newCustomer, error: customerCreateError } = await supabase
+            .from('customer')
+            .insert({
+              table_num: tableNum,
+              is_active: true,
+              session_id
+            })
+            .select('customer_id')
+            .single();
+
+          if (customerCreateError) {
+            console.error('Error creating customer:', customerCreateError);
+          } else {
+            customer_id = newCustomer?.customer_id ?? null;
+          }
         }
       }
     }
@@ -152,6 +167,7 @@ export async function GET() {
           table_number,
           cartitem (
             quantity,
+            note,
             menuitem (
               name
             )
@@ -173,20 +189,28 @@ export async function GET() {
     }
 
     // Simplified transformation for faster processing
-    const transformedOrders =
-      (orders as any[] | undefined)?.map((order) => ({
-        order_id: order.order_id.toString(),
-        isfinished: order.isfinished,
-        customer_id: order.customer_id,
-        time_ordered: order.time_ordered,
-        payment_type: order.payment_type,
-        table_number: order.cart?.table_number,
-        items:
-          order.cart?.cartitem?.map((item: any) => ({
-            item_name: item.menuitem?.name || "Unknown Item",
-            quantity: item.quantity,
-          })) || [],
-      })) || [];
+  type OrderItem = { item_name: string; quantity: number; note?: string | null };
+    type OrderRow = {
+      order_id: number | string;
+      isfinished: boolean;
+      customer_id: number | null;
+      time_ordered: string;
+      payment_type: string;
+  cart?: { table_number?: number | null; cartitem?: Array<{ quantity: number; note?: string | null; menuitem?: { name?: string | null } | null }> } | null;
+    };
+    const transformedOrders = ((orders as unknown as OrderRow[]) || []).map((order) => ({
+      order_id: order.order_id.toString(),
+      isfinished: order.isfinished,
+      customer_id: order.customer_id,
+      time_ordered: order.time_ordered,
+      payment_type: order.payment_type,
+      table_number: order.cart?.table_number ?? null,
+      items: (order.cart?.cartitem || []).map((item): OrderItem => ({
+        item_name: item.menuitem?.name || 'Unknown Item',
+        quantity: item.quantity,
+        note: item.note ?? null,
+      }))
+    }));
 
     return NextResponse.json(transformedOrders);
   } catch (error) {

@@ -1,16 +1,17 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import MenuItemCard from "../ui/menu-item-card";
 import ItemDetailModal from "./item-detail-modal";
 import NotificationModal from "./notification-modal"; // ✅ import
 import { createClient } from "@/lib/supabase/client";
 import { Search } from "lucide-react";
 
+type CartItem = { cartitem_id?: number; quantity: number; subtotal_price: number; menuitem_id: number };
 interface MenuListProps {
   activeTab: string;
-  cart: any[];
-  setCart: (cart: any[]) => void;
-  customerId?: number | null;
+  cart: CartItem[];
+  setCart: (cart: CartItem[]) => void;
   sessionId?: string;
   tableId?: string;
 }
@@ -19,12 +20,12 @@ export default function MenuList({
   activeTab,
   cart,
   setCart,
-  customerId,
   sessionId,
   tableId,
 }: MenuListProps) {
-  const [selectedItem, setSelectedItem] = useState<any | null>(null);
-  const [menuItems, setMenuItems] = useState<any[]>([]);
+  type MenuItem = { menuitem_id: number; name: string; price: number; thumbnail?: string; category: string; status: string };
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false); //state for modal
@@ -70,7 +71,7 @@ export default function MenuList({
               className="bg-gray-300 rounded-full flex items-center justify-center"
               style={{ width: "45px", height: "45px" }}
             >
-              <img
+              <Image
                 src="/notifications-icon.png"
                 alt="Notifications"
                 width={25}

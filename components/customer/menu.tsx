@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import MenuTaskbar from "./taskbar-customer";
 import MenuList from "./menu-list";
-import Cart from "./cart";
 import ConfirmModal from "./confirm-modal";
 import DashboardHeader from "../ui/header";
 
@@ -19,12 +18,17 @@ export default function CustomerMenu({
   sessionId,
   initialTab = "Meals",
 }: CustomerMenuProps) {
+  type MenuCartItem = {
+    cartitem_id?: number;
+    quantity: number;
+    subtotal_price: number;
+    menuitem_id: number;
+    menuitem?: { name: string; price: number; thumbnail?: string } | null;
+  };
   const [activeTab, setActiveTab] = useState<
     "Meals" | "Coffee" | "Drinks" | "Favorites"
   >(initialTab);
-  const [cart, setCart] = useState<any[]>([]);
-  const [cartId, setCartId] = useState<number | null>(null);
-  const [showCart, setShowCart] = useState(false);
+  const [cart, setCart] = useState<MenuCartItem[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
 
   // Handle tab from URL
@@ -59,7 +63,7 @@ export default function CustomerMenu({
           return;
         }
         
-        let cart_id;
+  let cart_id: number | undefined;
         if (existing && existing.cart_id) {
           cart_id = existing.cart_id;
         } else {
@@ -108,8 +112,6 @@ export default function CustomerMenu({
           }
         }
         
-        setCartId(cart_id);
-        
         // Fetch cart items for this cart
         const { data: items } = await supabase
           .from("cartitem")
@@ -117,7 +119,7 @@ export default function CustomerMenu({
             "cartitem_id, quantity, subtotal_price, menuitem_id, menuitem:menuitem_id (name, price, thumbnail)"
           )
           .eq("cart_id", cart_id);
-        setCart(items || []);
+        setCart((items || []) as unknown as MenuCartItem[]);
       } catch (error) {
         console.error("Unexpected error in ensureCart:", error);
       }
@@ -132,7 +134,7 @@ export default function CustomerMenu({
         <MenuList
           activeTab={activeTab}
           cart={cart}
-          setCart={setCart as (cart: any[]) => void}
+          setCart={setCart}
           sessionId={sessionId}
           tableId={tableId}
         />

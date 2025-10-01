@@ -13,8 +13,8 @@ export default function NotesModal({ open, note, itemName, onClose }: NotesModal
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-md py-4 px-7 w-[320px] relative">
+    <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-300">
+      <div className="bg-white rounded-md py-4 px-7 w-[320px] relative shadow-xl">
         <div className="flex justify-between items-start mb-4">
           <h3 className="text-lg font-bold text-left mt-3 text-black">
             Note

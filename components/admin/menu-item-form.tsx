@@ -156,8 +156,9 @@ export default function MenuItemForm({
   return (
     <div className="min-h-screen bg-[#ebebeb]">
       {saving && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 shadow text-center font-bold text-orange-600">
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-300">
+          <div className="bg-white rounded-lg p-6 shadow-lg text-center font-bold text-orange-600">
+            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-orange-400 mx-auto mb-2"></div>
             Processing...
           </div>
         </div>
@@ -363,8 +364,8 @@ export default function MenuItemForm({
 
       {/* Confirm Add / Edit */}
       {showConfirmModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-          <div className="bg-white rounded-md p-6 w-[250] text-center space-y-4">
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center transition-opacity duration-300">
+          <div className="bg-white rounded-md p-6 w-[250] text-center space-y-4 shadow-lg">
             <p className="text-md text-black font-bold mt-3">
               {item ? "Save changes?" : "Add this menu item?"}
             </p>
@@ -392,8 +393,8 @@ export default function MenuItemForm({
 
       {/* Confirm Delete */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-          <div className="bg-white rounded-xl p-6 w-[300px] text-center space-y-4">
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center transition-opacity duration-300">
+          <div className="bg-white rounded-xl p-6 w-[300px] text-center space-y-4 shadow-lg">
             <p className="text-sm text-black">Delete this item?</p>
             <div className="flex justify-between">
               <Button

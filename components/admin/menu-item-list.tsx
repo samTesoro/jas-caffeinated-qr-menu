@@ -118,7 +118,7 @@ export default function MenuItemList({
       {/* Modal */}
       {modalItem && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 transition-opacity duration-300"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm transition-opacity duration-300"
           aria-hidden={!modalItem}
         >
           <div className="bg-white rounded-lg shadow-lg max-w-lg w-full p-6 relative transform transition-all duration-300">
