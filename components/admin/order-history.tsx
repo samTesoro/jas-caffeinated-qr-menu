@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Button } from "../ui/button";
 
 interface Order {
   id: string;
@@ -18,6 +19,7 @@ export default function OrderHistory() {
   const [order, setOrder] = useState<Order[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [showClearModal, setShowClearModal] = useState(false);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -72,6 +74,7 @@ export default function OrderHistory() {
 
   const clearHistory = () => {
     setOrder([]);
+    setShowClearModal(false);
   };
 
   return (
@@ -81,8 +84,13 @@ export default function OrderHistory() {
           Order History
         </h2>
         <button
-          onClick={clearHistory}
-          className="bg-[#d9d9d9] hover:bg-red-300 transition-colors px-3 border text-black text-md md:text-lg"
+          onClick={() => setShowClearModal(true)}
+          disabled={order.length === 0}
+          className={`bg-[#d9d9d9] hover:bg-red-500 transition-colors px-3 border text-black text-md md:text-lg ${
+            order.length === 0
+              ? "opacity-50 cursor-not-allowed pointer-events-none"
+              : ""
+          }`}
         >
           Clear
         </button>
@@ -158,6 +166,35 @@ export default function OrderHistory() {
             <hr className="border-black my-2" />
           </div>
         ))
+      )}
+
+      {/* Confirm Clear Modal */}
+      {showClearModal && (
+        <div className="fixed inset-0 bg-white/50 flex items-center justify-center transition-opacity duration-300 z-[9999]">
+          <div className="bg-white rounded-md p-6 w-[250px] text-center space-y-4 shadow-lg">
+            <p className="text-md text-black font-bold mt-3">
+              Clear all order history?
+            </p>
+            <div className="flex justify-between font-bold">
+              <Button
+                variant="red"
+                type="button"
+                onClick={() => setShowClearModal(false)}
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg"
+              >
+                No
+              </Button>
+              <Button
+                variant="green"
+                type="button"
+                onClick={clearHistory}
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg"
+              >
+                Yes
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

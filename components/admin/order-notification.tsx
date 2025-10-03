@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
-
+import { Button } from "../ui/button";
 interface Order {
   order_id: string;
   status: "Pending" | "Preparing" | "Finished";
@@ -22,7 +22,11 @@ export default function OrderNotification() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [noteOpen, setNoteOpen] = useState(false);
   const [noteText, setNoteText] = useState<string | undefined>(undefined);
-  const [noteItemName, setNoteItemName] = useState<string | undefined>(undefined);
+  const [noteItemName, setNoteItemName] = useState<string | undefined>(
+    undefined
+  );
+  const [showFinishedModal, setShowFinishedModal] = useState(false);
+  const [finishedOrderId, setFinishedOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -112,7 +116,10 @@ export default function OrderNotification() {
                 {index + 1}
               </span>
               <button
-                onClick={() => markAsFinished(order.order_id)}
+                onClick={() => {
+                  setFinishedOrderId(order.order_id);
+                  setShowFinishedModal(true);
+                }}
                 className="bg-[#A7F586] hover:bg-gray-400 transition-colors px-1 border text-black text-sm md:text-lg"
               >
                 Finished
@@ -149,7 +156,9 @@ export default function OrderNotification() {
                 {order.items.map((item, idx) => (
                   <div
                     key={idx}
-                    className={`truncate px-2 py-1 ${item.note ? "text-blue-600 cursor-pointer underline" : ""}`}
+                    className={`truncate px-2 py-1 ${
+                      item.note ? "text-blue-600 cursor-pointer underline" : ""
+                    }`}
                     title={item.name}
                     onClick={() => {
                       if (item.note) {
@@ -200,6 +209,38 @@ export default function OrderNotification() {
         itemName={noteItemName}
         onClose={() => setNoteOpen(false)}
       />
+
+      {/* Finished Confirmation Modal */}
+      {showFinishedModal && (
+        <div className="fixed inset-0 bg-white/50 flex items-center justify-center transition-opacity duration-300 z-[9999]">
+          <div className="bg-white rounded-md p-6 w-[250px] text-center space-y-4 shadow-lg">
+            <p className="text-md text-black font-bold mt-3">
+              Mark this order as finished?
+            </p>
+            <div className="flex justify-between font-bold">
+              <Button
+                variant="red"
+                type="button"
+                onClick={() => setShowFinishedModal(false)}
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg"
+              >
+                No
+              </Button>
+              <Button
+                variant="green"
+                type="button"
+                onClick={() => {
+                  if (finishedOrderId) markAsFinished(finishedOrderId);
+                  setShowFinishedModal(false);
+                }}
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg"
+              >
+                Yes
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

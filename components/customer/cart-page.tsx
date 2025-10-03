@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
 import DashboardHeader from "@/components/ui/header";
+import { Button } from "@/components/ui/button";
 
 export default function CartPage({
   tableId,
@@ -27,6 +28,8 @@ export default function CartPage({
   };
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [selectedCartItem, setSelectedCartItem] = useState<number | null>(null);
   const router = useRouter();
 
   const BackIcon = () => (
@@ -346,8 +349,11 @@ export default function CartPage({
                     +
                   </button>
                   <button
-                    className="bg-red-500 rounded-full w-9 h-9 flex items-center justify-center shadow-md"
-                    onClick={() => removeItem(i.cartitem_id)}
+                    className="bg-red-500 hover:bg-red-600 rounded-full w-9 h-9 flex items-center justify-center shadow-md transition-colors duration-150"
+                    onClick={() => {
+                      setSelectedCartItem(i.cartitem_id);
+                      setShowConfirmModal(true);
+                    }}
                   >
                     <TrashIcon />
                   </button>
@@ -555,6 +561,37 @@ export default function CartPage({
             >
               <span className="font-bold text-black text-2xl">Cash/Card</span>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Remove Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-white/50 flex items-center justify-center transition-opacity duration-300 z-[9999]">
+          <div className="bg-white rounded-md p-6 w-[280px] text-center space-y-4 shadow-lg">
+            <p className="text-md text-black font-bold mt-3">
+              Remove this item from cart?
+            </p>
+            <div className="flex justify-between font-bold">
+              <Button
+                variant="red"
+                type="button"
+                onClick={() => setShowConfirmModal(false)}
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg text-black"
+              >
+                No
+              </Button>
+              <Button
+                variant="green"
+                onClick={() => {
+                  if (selectedCartItem !== null) removeItem(selectedCartItem);
+                  setShowConfirmModal(false);
+                }}
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg text-black"
+              >
+                Yes
+              </Button>
+            </div>
           </div>
         </div>
       )}

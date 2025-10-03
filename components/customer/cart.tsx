@@ -94,7 +94,11 @@ export default function Cart({
                 }
               : undefined;
           } else {
-            const mi = item.menuitem as { name: string; price: number; thumbnail?: string };
+            const mi = item.menuitem as {
+              name: string;
+              price: number;
+              thumbnail?: string;
+            };
             menuitemObj = {
               name: mi.name,
               price: mi.price,
