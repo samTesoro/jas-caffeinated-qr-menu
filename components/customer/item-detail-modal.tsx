@@ -45,7 +45,7 @@ export default function ItemDetailModal({
   const addToCart = async () => {
     const supabase = createClient();
     let session_id: string;
-
+    
     if (sessionId) {
       session_id = sessionId;
     } else {
@@ -56,34 +56,55 @@ export default function ItemDetailModal({
       }
       session_id = storedSessionId;
     }
+    
+    try {
+      // Single query to get cart and existing cart items
+      const { data: cartData } = await supabase
+        .from("cart")
+        .select(`
+          cart_id,
+          cartitem!inner (
+            cartitem_id,
+            quantity,
+            subtotal_price,
+            menuitem_id
+          )
+        `)
+        .eq("session_id", session_id)
+        .eq("checked_out", false)
+        .eq("cartitem.menuitem_id", item.menuitem_id)
+        .order("time_created", { ascending: false })
+        .maybeSingle();
 
-    let cart_id = null;
+      let cart_id = null;
+      let existingItem = null;
 
-    // Try to find existing cart for this session
-    const { data: cartData, error: cartError } = await supabase
-      .from("cart")
-      .select("cart_id")
-      .eq("session_id", session_id)
-      .eq("checked_out", false)
-      .order("time_created", { ascending: false })
-      .maybeSingle();
+      if (cartData) {
+        cart_id = cartData.cart_id;
+        existingItem = cartData.cartitem?.[0];
+      } else {
+        // Try to get cart without the item filter
+        const { data: emptyCartData } = await supabase
+          .from("cart")
+          .select("cart_id")
+          .eq("session_id", session_id)
+          .eq("checked_out", false)
+          .order("time_created", { ascending: false })
+          .maybeSingle();
 
-    if (cartError) {
-      alert("Failed to fetch cart: " + JSON.stringify(cartError));
-      return;
-    }
+        if (emptyCartData) {
+          cart_id = emptyCartData.cart_id;
+        }
+      }
 
-    if (cartData && cartData.cart_id) {
-      cart_id = cartData.cart_id;
-    } else {
-      // Try to create a new cart with proper error handling
-      try {
+      // Create cart if it doesn't exist
+      if (!cart_id) {
         const { data: newCart, error: newCartError } = await supabase
           .from("cart")
           .insert({ session_id, total_price: 0, checked_out: false, table_number: parseInt(tableId || "0") })
           .select("cart_id")
           .single();
-
+          
         if (newCartError) {
           if (newCartError.code === "23505") {
             // Retry once if duplicate key
@@ -92,19 +113,11 @@ export default function ItemDetailModal({
               .select("cart_id")
               .eq("session_id", session_id)
               .eq("checked_out", false)
-              .order("time_created", { ascending: false })
-              .maybeSingle();
-
-            if (retryError || !retryCart?.cart_id) {
-              alert(
-                "Failed to create or retrieve cart: " +
-                  JSON.stringify(retryError || "No cart found")
-              );
-              return;
-            }
-            cart_id = retryCart.cart_id;
-          } else {
-            alert("Failed to create cart: " + JSON.stringify(newCartError));
+              .single();
+            cart_id = retryCart?.cart_id;
+          }
+          if (!cart_id) {
+            alert("Failed to create cart");
             return;
           }
         } else {

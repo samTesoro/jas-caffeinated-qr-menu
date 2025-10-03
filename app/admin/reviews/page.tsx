@@ -3,10 +3,12 @@ import Taskbar from "@/components/admin/taskbar-admin";
 import DashboardHeader from "@/components/ui/header";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import ReviewList from "@/components/admin/review-list";
 import { useRouter } from "next/navigation";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 
 export default function ReviewsPage() {
+
   const router = useRouter();
   const [permissions, setPermissions] = useState<{
     view_menu: boolean;
@@ -34,9 +36,7 @@ export default function ReviewsPage() {
       try {
         const { data, error } = await supabase
           .from("adminusers")
-          .select(
-            "view_menu, view_orders, view_super, view_history, view_reviews"
-          )
+          .select("view_menu, view_orders, view_super, view_history, view_reviews")
           .eq("user_id", adminId)
           .single();
         if (error || !data) {
@@ -82,17 +82,19 @@ export default function ReviewsPage() {
     }
   }, [permissions, isLoading, router]);
 
+
   if (isLoading) {
     return <LoadingSpinner message="Loading..." />;
   }
   if (!permissions.view_reviews) {
     return null;
   }
+
   return (
     <div className="min-h-screen bg-[#ebebeb]">
       <DashboardHeader />
-      <OrderReviews />
       <Taskbar permissions={permissions} />
+      <ReviewList permissions={permissions} />
     </div>
   );
 }

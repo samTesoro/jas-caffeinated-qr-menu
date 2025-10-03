@@ -34,9 +34,7 @@ export default function MenuPage() {
       console.log("Fetching permissions for user_id:", adminId); // Debugging log
 
       if (!adminId) {
-        console.error(
-          "User ID is null or undefined. Redirecting to login page."
-        );
+        console.error("User ID is null or undefined. Redirecting to login page.");
         router.replace("/auth/login");
         return;
       }
@@ -44,9 +42,7 @@ export default function MenuPage() {
       try {
         const { data, error } = await supabase
           .from("adminusers")
-          .select(
-            "view_menu, view_orders, view_super, view_history, view_reviews"
-          )
+          .select("view_menu, view_orders, view_super, view_history, view_reviews")
           .eq("user_id", adminId)
           .single();
 
@@ -105,7 +101,23 @@ export default function MenuPage() {
   }
 
   return (
-    <div>
+    <div className="min-h-screen bg-[#ebebeb] pb-10">
+      <div style={{ position: "fixed", top: 10, left: 10, zIndex: 1000 }}>
+        <Link href="/customer">
+          <button
+            style={{
+              padding: "8px 16px",
+              background: "#f59e42",
+              color: "white",
+              borderRadius: "6px",
+              fontWeight: "bold",
+            }}
+          >
+            Go to Customer (Debug)
+          </button>
+        </Link>
+      </div>
+
       <DashboardHeader />
 
       {userEmail && (
