@@ -79,7 +79,7 @@ export default function OrderReviews() {
               </div>
 
               {/* Rating */}
-              <div className="flex justify-center items-center">
+              <div className="flex justify-center items-center font-semibold">
                 {r.rating}/5
               </div>
             </div>
