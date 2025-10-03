@@ -11,6 +11,7 @@ type Permissions = {
   view_menu?: boolean;
   view_reviews?: boolean;
   create_account?: boolean;
+  view_tables?: boolean;
 };
 
 export default function Taskbar({
@@ -20,6 +21,7 @@ export default function Taskbar({
     view_menu: true,
     view_reviews: true,
     create_account: true,
+    view_tables: true,
   },
 }: {
   permissions?: Permissions;
@@ -36,6 +38,11 @@ export default function Taskbar({
       href: "/admin/menu",
       label: "Menu",
       perm: permissions.view_menu,
+    },
+    {
+      href: "/admin/table",
+      label: "Table",
+      perm: permissions.view_tables ?? true,
     },
     {
       href: "/admin/history",
