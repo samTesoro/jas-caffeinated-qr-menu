@@ -64,6 +64,7 @@ type User = {
   view_history: boolean;
   view_menu: boolean;
   view_reviews: boolean;
+  view_tables?: boolean;
   manage_menu: boolean;
   is_blocked?: boolean;
 };
@@ -71,6 +72,7 @@ type User = {
 export default function ViewAccounts() {
   // Block a user by setting is_blocked to true in Supabase
   const handleBlock = async (user_id: string) => {
+    const supabase = createClient();
     const { error } = await supabase.from("adminusers").update({ is_blocked: true }).eq("user_id", user_id);
     if (!error) {
       setUsers((prev) => prev.map((u) => u.user_id === user_id ? { ...u, is_blocked: true } : u));
@@ -82,6 +84,7 @@ export default function ViewAccounts() {
 
   // Unblock a user by setting is_blocked to false in Supabase
   const handleUnblock = async (user_id: string) => {
+    const supabase = createClient();
     const { error } = await supabase.from("adminusers").update({ is_blocked: false }).eq("user_id", user_id);
     if (!error) {
       setUsers((prev) => prev.map((u) => u.user_id === user_id ? { ...u, is_blocked: false } : u));
@@ -90,7 +93,6 @@ export default function ViewAccounts() {
       console.error("Unblock error:", error.message);
     }
   };
-  const supabase = createClient();
   const router = useRouter();
 
   const [users, setUsers] = useState<User[]>([]);
@@ -108,13 +110,14 @@ export default function ViewAccounts() {
     user_id: string;
     username: string;
   }>(null);
-  const [blockedUsers, setBlockedUsers] = useState<string[]>([]);
+  // removed unused local block tracking
 
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
 
   useEffect(() => {
     const fetchUsers = async () => {
+      const supabase = createClient();
       const { data, error } = await supabase.from("adminusers").select("*");
       if (!error && data) {
         setUsers(data as User[]);
@@ -133,13 +136,22 @@ export default function ViewAccounts() {
       matchesCategory = u.is_blocked === true;
     } else if (category === "unblocked") {
       matchesCategory = u.is_blocked !== true;
-    } else if (category) {
-      matchesCategory = (u as any)[category] === true;
+    } else if (category === 'view_orders') {
+      matchesCategory = u.view_orders === true;
+    } else if (category === 'view_history') {
+      matchesCategory = u.view_history === true;
+    } else if (category === 'view_menu') {
+      matchesCategory = u.view_menu === true;
+    } else if (category === 'view_reviews') {
+      matchesCategory = u.view_reviews === true;
+    } else if (category === 'view_tables') {
+      matchesCategory = u.view_tables === true;
     }
     return matchesSearch && matchesCategory;
   });
 
   const handleDelete = async (user_id: string) => {
+    const supabase = createClient();
     const { error } = await supabase.from("adminusers").delete().eq("user_id", user_id);
     if (!error) {
       setUsers((prev) => prev.filter((u) => u.user_id !== user_id));
@@ -147,11 +159,6 @@ export default function ViewAccounts() {
     } else {
       console.error("Delete error:", error.message);
     }
-  };
-
-  const handleBlockLocal = (user_id: string) => {
-    setBlockedUsers((prev) => [...prev, user_id]);
-    setBlockUser(null);
   };
 
   return (
@@ -177,12 +184,16 @@ export default function ViewAccounts() {
             <option value="view_history">View Order History</option>
             <option value="view_menu">View and Edit Menu</option>
             <option value="view_reviews">View Reviews</option>
+            <option value="view_tables">View Tables</option>
             <option value="blocked">Blocked</option>
             <option value="unblocked">Unblocked</option>
           </select>
         </div>
       </div>
 
+      {loading ? (
+        <div className="text-center text-gray-500 py-8">Loading...</div>
+      ) : (
       <div className="max-h-[400px] overflow-y-auto space-y-3 border p-2">
         {filteredUsers.length > 0 ? (
           filteredUsers.map((user) => {
@@ -228,6 +239,12 @@ export default function ViewAccounts() {
                       Allow “View Reviews”?:{" "}
                       <span className="text-black font-bold">
                         {user.view_reviews ? "Yes" : "No"}
+                      </span>
+                    </p>
+                    <p className="text-black">
+                      Allow “View Tables”?:{" "}
+                      <span className="text-black font-bold">
+                        {user.view_tables ? "Yes" : "No"}
                       </span>
                     </p>
                   </div>
@@ -278,6 +295,7 @@ export default function ViewAccounts() {
           <p className="text-center text-gray-500 py-4">No accounts found</p>
         )}
       </div>
+      )}
 
       <div className="flex justify-center items-center mt-7 pb-10">
         <button
@@ -292,10 +310,9 @@ export default function ViewAccounts() {
       {deleteUser && (
         <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-300">
           <div className="bg-white p-6 rounded-lg shadow-xl text-center w-80">
-            <h2 className="text-lg font-bold mb-4 text-black">
-              Delete{" "}
-              <span className="text-red-400">"{deleteUser.username}"</span>?
-            </h2>
+              <h2 className="text-lg font-bold mb-4 text-black">
+                Delete <span className="text-red-400">&quot;{deleteUser.username}&quot;</span>?
+              </h2>
             <div className="flex justify-center gap-4">
               <Button onClick={() => setDeleteUser(null)} variant="red">
                 No
@@ -316,7 +333,7 @@ export default function ViewAccounts() {
         <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-300">
           <div className="bg-white p-6 rounded-lg shadow-xl text-center w-80">
             <h2 className="text-lg font-bold text-black mb-4">
-              Block <span className="text-red-600">"{blockUser.username}"</span>
+              Block <span className="text-red-600">&quot;{blockUser.username}&quot;</span>
               ?
             </h2>
             <div className="flex justify-center gap-4">
@@ -335,10 +352,9 @@ export default function ViewAccounts() {
       {unblockUser && (
         <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-300">
           <div className="bg-white p-6 rounded-lg shadow-xl text-center w-80">
-            <h2 className="text-lg font-bold text-black mb-4">
-              Unblock{" "}
-              <span className="text-red-600">"{unblockUser.username}"</span>?
-            </h2>
+              <h2 className="text-lg font-bold text-black mb-4">
+                Unblock <span className="text-red-600">&quot;{unblockUser.username}&quot;</span>?
+              </h2>
             <div className="flex justify-center gap-4">
               <Button onClick={() => setUnblockUser(null)} variant="red">
                 No
