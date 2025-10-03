@@ -380,7 +380,7 @@ export default function CartPage({
             className={`rounded-full w-16 h-16 flex items-center justify-center shadow-lg ${
               cart.length === 0
                 ? "bg-gray-400 cursor-not-allowed"
-                : "bg-green-400 text-white"
+                : "bg-green-400 hover:bg-green-500 text-white"
             }`}
             onClick={() => {
               if (cart.length > 0) setShowPaymentModal(true);

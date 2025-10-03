@@ -34,6 +34,11 @@ export default function Cart({
   onClose: () => void;
   onConfirm: () => void;
 }) {
+  const [showConfirmModal, setShowConfirmModal] = React.useState(false);
+  const [selectedCartItem, setSelectedCartItem] = React.useState<number | null>(
+    null
+  );
+
   React.useEffect(() => {
     const fetchCart = async () => {
       const supabase = createClient(); // Use ES6 import for Supabase client
@@ -94,7 +99,11 @@ export default function Cart({
                 }
               : undefined;
           } else {
-            const mi = item.menuitem as { name: string; price: number; thumbnail?: string };
+            const mi = item.menuitem as {
+              name: string;
+              price: number;
+              thumbnail?: string;
+            };
             menuitemObj = {
               name: mi.name,
               price: mi.price,
@@ -136,11 +145,15 @@ export default function Cart({
       )
     );
   };
+
   const removeItem = async (cartitem_id: number) => {
     const supabase = createClient();
     setCart(cart.filter((i) => i.cartitem_id !== cartitem_id));
     await supabase.from("cartitem").delete().eq("cartitem_id", cartitem_id);
+    setShowConfirmModal(false);
+    setSelectedCartItem(null);
   };
+
   const total = cart.reduce((sum, i) => sum + (i.subtotal_price || 0), 0);
 
   return (
@@ -181,7 +194,10 @@ export default function Cart({
                 </button>
                 <button
                   className="bg-red-400 text-white rounded w-6 h-6 flex items-center justify-center ml-2"
-                  onClick={() => removeItem(i.cartitem_id)}
+                  onClick={() => {
+                    setSelectedCartItem(i.cartitem_id);
+                    setShowConfirmModal(true);
+                  }}
                 >
                   🗑️
                 </button>
@@ -207,6 +223,33 @@ export default function Cart({
           </button>
         </div>
       </div>
+
+      {/* Confirm Remove Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center transition-opacity duration-300 z-50">
+          <div className="bg-white rounded-md p-6 w-[250px] text-center space-y-4 shadow-lg">
+            <p className="text-md text-black font-bold mt-3">
+              Remove this item from cart?
+            </p>
+            <div className="flex justify-between font-bold">
+              <button
+                type="button"
+                onClick={() => setShowConfirmModal(false)}
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg bg-[#f87171] text-white"
+              >
+                No
+              </button>
+              <button
+                type="button"
+                onClick={() => selectedCartItem && removeItem(selectedCartItem)}
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg bg-[#4ade80] text-white"
+              >
+                Yes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -4,8 +4,18 @@ import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { v4 as uuidv4 } from "uuid";
 
-type CartItem = { cartitem_id?: number; quantity: number; subtotal_price: number; menuitem_id: number };
-type MenuItem = { menuitem_id: number; name: string; price: number; thumbnail?: string | null };
+type CartItem = {
+  cartitem_id?: number;
+  quantity: number;
+  subtotal_price: number;
+  menuitem_id: number;
+};
+type MenuItem = {
+  menuitem_id: number;
+  name: string;
+  price: number;
+  thumbnail?: string | null;
+};
 
 export default function ItemDetailModal({
   item,
@@ -45,7 +55,7 @@ export default function ItemDetailModal({
   const addToCart = async () => {
     const supabase = createClient();
     let session_id: string;
-    
+
     if (sessionId) {
       session_id = sessionId;
     } else {
@@ -56,12 +66,13 @@ export default function ItemDetailModal({
       }
       session_id = storedSessionId;
     }
-    
+
     try {
       // Single query to get cart and existing cart items
       const { data: cartData } = await supabase
         .from("cart")
-        .select(`
+        .select(
+          `
           cart_id,
           cartitem!inner (
             cartitem_id,
@@ -69,7 +80,8 @@ export default function ItemDetailModal({
             subtotal_price,
             menuitem_id
           )
-        `)
+        `
+        )
         .eq("session_id", session_id)
         .eq("checked_out", false)
         .eq("cartitem.menuitem_id", item.menuitem_id)
@@ -101,10 +113,15 @@ export default function ItemDetailModal({
       if (!cart_id) {
         const { data: newCart, error: newCartError } = await supabase
           .from("cart")
-          .insert({ session_id, total_price: 0, checked_out: false, table_number: parseInt(tableId || "0") })
+          .insert({
+            session_id,
+            total_price: 0,
+            checked_out: false,
+            table_number: parseInt(tableId || "0"),
+          })
           .select("cart_id")
           .single();
-          
+
         if (newCartError) {
           if (newCartError.code === "23505") {
             // Retry once if duplicate key
@@ -133,12 +150,12 @@ export default function ItemDetailModal({
           .from("cartitem")
           .update({ quantity: newQty, subtotal_price: newSubtotal })
           .eq("cartitem_id", existingItem.cartitem_id);
-        
+
         if (updateError) {
           alert("Failed to update cart item");
           return;
         }
-        
+
         setCart(
           cart.map((i) =>
             i.menuitem_id === item.menuitem_id
@@ -154,19 +171,19 @@ export default function ItemDetailModal({
           cart_id: cart_id,
           note: note || null,
         } as const;
-        
+
         const { error: itemError } = await supabase
           .from("cartitem")
           .insert([cartItem]);
-        
+
         if (itemError) {
           alert("Failed to add item to cart");
           return;
         }
-        
-  setCart([...cart, { ...cartItem }]);
+
+        setCart([...cart, { ...cartItem }]);
       }
-      
+
       onClose();
     } catch (error) {
       console.error("Cart error:", error);
@@ -244,7 +261,7 @@ export default function ItemDetailModal({
 
           {/* Add to Cart Button */}
           <button
-            className="w-full bg-orange-400 text-white py-3 px-3 md:py-3 md:px-2 rounded-xl font-semibold text-lg mt-auto mb-[120px] sm:mb-0"
+            className="w-full bg-orange-400 hover:bg-orange-500 text-white py-3 px-3 md:py-3 md:px-2 rounded-xl font-semibold text-lg mt-auto mb-[120px] sm:mb-0"
             onClick={addToCart}
           >
             Add to Cart - ₱{item.price * qty}.00

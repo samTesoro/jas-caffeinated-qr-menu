@@ -6,7 +6,6 @@ import MenuList from "./menu-list";
 import ConfirmModal from "./confirm-modal";
 import DashboardHeader from "../ui/header";
 
-
 type CustomerMenuProps = {
   tableId: string;
   sessionId: string;
@@ -57,13 +56,13 @@ export default function CustomerMenu({
           .order("time_created", { ascending: false })
           .limit(1)
           .maybeSingle();
-          
+
         if (error) {
           console.error("Error fetching existing cart:", error);
           return;
         }
-        
-  let cart_id: number | undefined;
+
+        let cart_id: number | undefined;
         if (existing && existing.cart_id) {
           cart_id = existing.cart_id;
         } else {
@@ -81,7 +80,7 @@ export default function CustomerMenu({
             ])
             .select("cart_id")
             .single();
-            
+
           if (createError) {
             // If error is duplicate key (23505), another process created the cart
             if (createError.code === "23505") {
@@ -94,9 +93,11 @@ export default function CustomerMenu({
                 .order("time_created", { ascending: false })
                 .limit(1)
                 .maybeSingle();
-                
+
               if (retryError || !retryCart?.cart_id) {
-                console.warn("No existing cart found, will create new one if needed");
+                console.warn(
+                  "No existing cart found, will create new one if needed"
+                );
                 return;
               }
               cart_id = retryCart.cart_id;
@@ -111,7 +112,7 @@ export default function CustomerMenu({
             return;
           }
         }
-        
+
         // Fetch cart items for this cart
         const { data: items } = await supabase
           .from("cartitem")
