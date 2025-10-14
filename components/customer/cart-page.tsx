@@ -410,7 +410,7 @@ export default function CartPage({
               Choose Payment Method
             </h3>
             <button
-              className="w-full px-1 py-2 flex items-center justify-center border-none"
+              className="hover:bg-gray-500 transition-colors w-full px-1 py-2 flex items-center justify-center border-none"
               style={{
                 background: "#F2F2F2",
                 borderRadius: "12px",
@@ -489,7 +489,7 @@ export default function CartPage({
             </button>
             <div className="mb-3" />
             <button
-              className="w-full px-1 py-2 mb-3 flex items-center justify-center border-none"
+              className="hover:bg-gray-500 transition-colors w-full px-1 py-2 mb-3 flex items-center justify-center border-none"
               style={{
                 background: "#F2F2F2",
                 borderRadius: "12px",
@@ -559,7 +559,7 @@ export default function CartPage({
                 }
               }}
             >
-              <span className="font-bold text-black text-2xl">Cash/Card</span>
+              <span className="font-bold text-black text-2xl ">Cash/Card</span>
             </button>
           </div>
         </div>
@@ -568,7 +568,7 @@ export default function CartPage({
       {/* Confirm Remove Modal */}
       {showConfirmModal && (
         <div className="fixed inset-0 bg-white/50 flex items-center justify-center transition-opacity duration-300 z-[9999]">
-          <div className="bg-white rounded-md p-6 w-[280px] text-center space-y-4 shadow-lg">
+          <div className="bg-white rounded-md p-6 w-[90vw] max-w-[250px] md:max-w-[350px] text-center space-y-4 shadow-lg">
             <p className="text-md text-black font-bold mt-3">
               Remove this item from cart?
             </p>
@@ -577,7 +577,7 @@ export default function CartPage({
                 variant="red"
                 type="button"
                 onClick={() => setShowConfirmModal(false)}
-                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg text-black"
+                className="border-transparent font-semibold hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
               >
                 No
               </Button>
@@ -587,7 +587,7 @@ export default function CartPage({
                   if (selectedCartItem !== null) removeItem(selectedCartItem);
                   setShowConfirmModal(false);
                 }}
-                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg text-black"
+                className="border-transparent font-semibold hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
               >
                 Yes
               </Button>

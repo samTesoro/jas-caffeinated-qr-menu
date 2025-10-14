@@ -26,6 +26,8 @@ export default function CashCardOrderConfirmation({
   }, [tableId, router]);
 
   const handleGoToTable = () => {
+    sessionStorage.setItem("hasOrderedBefore", "true");
+
     if (sessionId) {
       router.push(`/customer/${tableId}/session/${sessionId}`);
     } else if (tableId) {
@@ -77,7 +79,7 @@ export default function CashCardOrderConfirmation({
       </div>
       <div className="w-full bg-[#393939] h-20 flex items-center justify-center">
         <button
-          className="px-6 py-2 bg-[#E59C53] text-white rounded-full font-extrabold shadow hover:bg-[#d4883e] transition text-xl border-0"
+          className=" px-6 py-2 bg-[#E59C53] text-white rounded-full font-extrabold shadow hover:bg-[#8f4a05] transition text-xl border-0"
           onClick={handleGoToTable}
         >
           Back to home page

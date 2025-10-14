@@ -153,8 +153,8 @@ export default function EditAccountPage() {
       </form>
 
       {showConfirmModal && (
-        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center transition-opacity duration-300">
-          <div className="bg-white rounded-md p-6 w-[300px] max-w-sm text-center space-y-4 shadow-xl">
+        <div className="fixed inset-0 bg-white/50 flex items-center justify-center transition-opacity duration-300 z-[9999]">
+          <div className="bg-white rounded-md p-8 w-[90vw] max-w-xs sm:max-w-[350px] text-center space-y-4 shadow-lg">
             <p className="text-lg font-bold text-black">Confirm changes?</p>
 
             <div className="text-left text-black">
@@ -191,6 +191,7 @@ export default function EditAccountPage() {
                 type="button"
                 variant="red"
                 onClick={() => setShowConfirmModal(false)}
+                className="border-transparent font-semibold hover:bg-gray-200 w-[100px] py-3 rounded-lg transition-colors"
               >
                 No
               </Button>
@@ -201,6 +202,7 @@ export default function EditAccountPage() {
                   setShowConfirmModal(false);
                   handleUpdate();
                 }}
+                className="border-transparent font-semibold hover:bg-gray-200 w-[100px] py-3 rounded-lg transition-colors"
               >
                 Yes
               </Button>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import DashboardHeader from "@/components/ui/header";
 import LoadingSpinner from "@/components/ui/loading-spinner";
+import { Button } from "../ui/button";
 
 type TableState = { table_num: number; is_active: boolean };
 
@@ -11,7 +12,10 @@ export default function TableManagement() {
   const [tables, setTables] = useState<TableState[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<number | null>(null);
-  const [confirmTarget, setConfirmTarget] = useState<{ table_num: number; next: boolean } | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<{
+    table_num: number;
+    next: boolean;
+  } | null>(null);
 
   useEffect(() => {
     const run = async () => {
@@ -24,14 +28,21 @@ export default function TableManagement() {
         if (error) throw error;
         type Row = { table_num: number; is_active: boolean | null };
         const byNum = new Map<number, boolean>();
-        (data as Row[] | null)?.forEach((r) => byNum.set(r.table_num, !!r.is_active));
+        (data as Row[] | null)?.forEach((r) =>
+          byNum.set(r.table_num, !!r.is_active)
+        );
         const list: TableState[] = Array.from({ length: 7 }, (_, i) => {
           const n = i + 1;
           return { table_num: n, is_active: byNum.get(n) ?? false };
         });
         setTables(list);
       } catch {
-        setTables(Array.from({ length: 7 }, (_, i) => ({ table_num: i + 1, is_active: false })));
+        setTables(
+          Array.from({ length: 7 }, (_, i) => ({
+            table_num: i + 1,
+            is_active: false,
+          }))
+        );
       } finally {
         setLoading(false);
       }
@@ -49,7 +60,11 @@ export default function TableManagement() {
     const current = tables.find((t) => t.table_num === table_num);
     if (!current) return;
     // optimistic update
-    setTables((prev) => prev.map((t) => (t.table_num === table_num ? { ...t, is_active: next } : t)));
+    setTables((prev) =>
+      prev.map((t) =>
+        t.table_num === table_num ? { ...t, is_active: next } : t
+      )
+    );
     setSaving(table_num);
     try {
       const supabase = createClient();
@@ -74,7 +89,11 @@ export default function TableManagement() {
       }
     } catch {
       // revert on failure
-      setTables((prev) => prev.map((t) => (t.table_num === table_num ? { ...t, is_active: !next } : t)));
+      setTables((prev) =>
+        prev.map((t) =>
+          t.table_num === table_num ? { ...t, is_active: !next } : t
+        )
+      );
     } finally {
       setSaving(null);
     }
@@ -87,7 +106,9 @@ export default function TableManagement() {
       <DashboardHeader />
 
       <div className="px-8 max-w-md mx-auto">
-        <h2 className="text-2xl md:text-3xl font-bold text-black mt-4 mb-6 text-center">Change Table Status</h2>
+        <h2 className="text-xl md:text-3xl font-bold text-black mt-4 mb-6 text-center">
+          Change Table Status
+        </h2>
 
         <div className="grid grid-cols-3 gap-6 place-items-center">
           {tables.map((t) => (
@@ -104,40 +125,45 @@ export default function TableManagement() {
           ))}
         </div>
 
-        <div className="mt-8 space-y-2 text-sm text-black">
-          <div className="flex items-center gap-2">
-            <span className="inline-block w-4 h-4 bg-gray-300 border border-black" />
-            <span>Inactive</span>
+        <div className="flex flex-col items-end mt-11 space-y-2 text-sm text-black">
+          <div className="flex items-center gap-2 min-w-[90px]">
+            <span className="inline-block w-4 h-4 bg-gray-300 border border-black align-middle" />
+            <span className="align-middle">Inactive</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="inline-block w-4 h-4 bg-red-500 border border-black" />
-            <span>Active</span>
+          <div className="flex items-center gap-2 min-w-[90px]">
+            <span className="inline-block w-4 h-4 bg-red-500 border border-black align-middle" />
+            <span className="align-middle">Active</span>
           </div>
         </div>
       </div>
 
       {confirmTarget && (
-        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-300">
-          <div className="bg-white rounded-md p-6 w-[320px] max-w-sm text-center space-y-4 shadow-xl">
+        <div className="fixed inset-0 bg-white/50 flex items-center justify-center transition-opacity duration-300 z-[9999]">
+          <div className="bg-white rounded-md p-6 w-[90vw] max-w-[250px] text-center space-y-4 shadow-lg">
             <h3 className="text-lg font-bold text-black">Confirm Change</h3>
             <p className="text-black text-sm">
-              Set Table {confirmTarget.table_num} to {confirmTarget.next ? "Active" : "Inactive"}?
+              Set Table {confirmTarget.table_num} to{" "}
+              {confirmTarget.next ? "Active" : "Inactive"}?
             </p>
             <div className="flex justify-center gap-3 pt-2">
-              <button
-                className="px-4 py-2 rounded-md bg-gray-200 text-black"
+              <Button
+                variant="red"
+                className="border-transparent font-semibold hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
                 onClick={() => setConfirmTarget(null)}
               >
-                Cancel
-              </button>
-              <button
-                className="px-4 py-2 rounded-md bg-orange-400 text-white"
+                No
+              </Button>
+              <Button
+                variant="green"
+                className="border-transparent font-semibold hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
                 onClick={() => {
-                  const t = confirmTarget; setConfirmTarget(null); if (t) performToggle(t.table_num, t.next);
+                  const t = confirmTarget;
+                  setConfirmTarget(null);
+                  if (t) performToggle(t.table_num, t.next);
                 }}
               >
-                Confirm
-              </button>
+                Yes
+              </Button>
             </div>
           </div>
         </div>

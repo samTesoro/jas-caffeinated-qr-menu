@@ -175,10 +175,10 @@ export default function MenuItemForm({
           e.preventDefault();
           setShowConfirmModal(true);
         }}
-        className={cn("space-y-5")}
+        className={cn("space-y-5", "md:px-[600px]")}
       >
         <div className="max-w-2xl mx-auto mt-2 mb-4 px-7">
-          <h2 className="text-xl font-bold mb-2 text-black">
+          <h2 className="text-xl md:text-center font-bold mb-2 text-black">
             {item ? "Edit Item" : "Add Item"}
           </h2>
         </div>
@@ -364,8 +364,8 @@ export default function MenuItemForm({
 
       {/* Confirm Add / Edit */}
       {showConfirmModal && (
-        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center transition-opacity duration-300">
-          <div className="bg-white rounded-md p-6 w-[250] text-center space-y-4 shadow-lg">
+        <div className="fixed inset-0 bg-white/50 flex items-center justify-center transition-opacity duration-300 z-[9999]">
+          <div className="bg-white rounded-md p-6 w-[90vw] max-w-[250px] text-center space-y-4 shadow-lg">
             <p className="text-md text-black font-bold mt-3">
               {item ? "Save changes?" : "Add this menu item?"}
             </p>
@@ -374,7 +374,7 @@ export default function MenuItemForm({
                 variant="red"
                 type="button"
                 onClick={() => setShowConfirmModal(false)}
-                className="border-transparent hover:bg-gray-200 w-[90] py-3 rounded-lg"
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
               >
                 No
               </Button>
@@ -382,7 +382,7 @@ export default function MenuItemForm({
                 variant="green"
                 type="button"
                 onClick={saveItem}
-                className="border-transparent hover:bg-gray-200 w-[90] py-3 rounded-lg"
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
               >
                 Yes
               </Button>
@@ -393,18 +393,24 @@ export default function MenuItemForm({
 
       {/* Confirm Delete */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center transition-opacity duration-300">
-          <div className="bg-white rounded-xl p-6 w-[300px] text-center space-y-4 shadow-lg">
+        <div className="fixed inset-0 bg-white/50 flex items-center justify-center transition-opacity duration-300 z-[9999]">
+          <div className="bg-white rounded-md p-6 w-[90vw] max-w-xs sm:max-w-[250px] md:max-w-[400px] text-center space-y-4 shadow-lg">
             <p className="text-sm text-black">Delete this item?</p>
             <div className="flex justify-between">
               <Button
                 variant="orange"
                 type="button"
                 onClick={() => setShowDeleteModal(false)}
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
               >
                 No
               </Button>
-              <Button variant="red" type="button" onClick={deleteItem}>
+              <Button
+                variant="red"
+                type="button"
+                onClick={deleteItem}
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
+              >
                 Yes
               </Button>
             </div>
