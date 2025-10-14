@@ -138,7 +138,7 @@ export default function MenuList({
   sessionId,
   tableId,
 }: MenuListProps) {
-  type MenuItem = { menuitem_id: number; name: string; price: number; thumbnail?: string; category: string; status: string };
+  type MenuItem = { menuitem_id: number; name: string; price: number; thumbnail?: string; category: string; status: string; description?: string | null };
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [search, setSearch] = useState("");
@@ -148,25 +148,71 @@ export default function MenuList({
 
   useEffect(() => {
     setLoading(true);
-    setSearch("");
-    setSelectedItem(null);
-    const supabase = createClient();
-    let query = supabase.from("menuitem").select("*");
-    if (activeTab === "Favorites") {
-      query = query.eq("is_favorites", true).eq("status", "Available");
+    // Only reset local search when switching tabs if there is no active search
+    if (search.trim() === "") {
+      setSelectedItem(null);
+      const supabase = createClient();
+      let query = supabase
+        .from("menuitem")
+        .select("menuitem_id, name, price, thumbnail, category, status, description")
+        .eq("status", "Available");
+      if (activeTab === "Favorites") {
+        query = query.eq("is_favorites", true);
+      } else {
+        query = query.eq("category", activeTab);
+      }
+      query.limit(50).then(({ data }) => {
+        setMenuItems(data || []);
+        console.debug('[menu-list] fetched items count:', (data || []).length, 'sample:', (data || [])[0]);
+        setLoading(false);
+      });
     } else {
-      query = query.eq("category", activeTab).eq("status", "Available");
-    }
-    query.then(({ data }) => {
-      setMenuItems(data || []);
+      // If there's an active search, don't override the search-results by refetching category items
       setLoading(false);
-    });
-  }, [activeTab]); // Refetch and reset on tab change
+    }
+  }, [activeTab, search]); // Refetch and reset on tab change; guarded so it won't override active search results
+
+  // Debounced server-side search across all categories when a search term exists
+  useEffect(() => {
+    const term = search.trim();
+    if (term === "") return; // handled by the activeTab effect
+
+    setLoading(true);
+    const timer = setTimeout(async () => {
+      try {
+        const supabase = createClient();
+        // Search name OR description across all categories (case-insensitive)
+        // Use ilike with %term%
+        const ilikeTerm = `%${term.replace(/%/g, "\\%")}%`;
+        const { data, error } = await supabase
+          .from("menuitem")
+          .select("menuitem_id, name, price, thumbnail, category, status, description")
+          .eq("status", "Available")
+          .or(`name.ilike.${ilikeTerm},description.ilike.${ilikeTerm}`)
+          .limit(50);
+        if (error) {
+          console.error('[menu-list] search error', error);
+          setMenuItems([]);
+        } else {
+          setMenuItems(data || []);
+          console.debug('[menu-list] search fetched items count:', (data || []).length, 'term:', term);
+        }
+      } catch (err) {
+        console.error('[menu-list] search exception', err);
+        setMenuItems([]);
+      } finally {
+        setLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [search]);
 
   let filtered;
   if (search.trim() !== "") {
+    const term = search.toLowerCase();
     filtered = menuItems.filter((i) =>
-      i.name.toLowerCase().includes(search.toLowerCase())
+      (i.name || "").toLowerCase().includes(term) || (i.description || "")!.toLowerCase().includes(term)
     );
   } else {
     filtered = menuItems;
@@ -223,16 +269,22 @@ export default function MenuList({
       {loading ? (
         <div className="text-center text-gray-500 py-8">Loading items...</div>
       ) : (
-        <div className="grid grid-cols-2 gap-7 sm:gap-2 place-items-center mb-40">
-          {filtered.map((item) => (
-            <MenuItemCard
-              key={item.menuitem_id ? String(item.menuitem_id) : item.name}
-              item={item}
-              setModalItem={setSelectedItem}
-              mode="customer"
-              onAdd={() => setSelectedItem(item)}
-            />
-          ))}
+        <div>
+          {filtered.length === 0 ? (
+            <div className="text-center text-gray-500 py-8">No items found</div>
+          ) : (
+            <div className="grid grid-cols-2 gap-7 sm:gap-2 place-items-center mb-40">
+              {filtered.map((item) => (
+                <MenuItemCard
+                  key={item.menuitem_id ? String(item.menuitem_id) : item.name}
+                  item={item}
+                  setModalItem={setSelectedItem}
+                  mode="customer"
+                  onAdd={() => setSelectedItem(item)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -247,7 +299,7 @@ export default function MenuList({
         />
       )}
 
-      <NotificationModal open={notifOpen} onClose={() => setNotifOpen(false)} />
+  <NotificationModal open={notifOpen} onClose={() => setNotifOpen(false)} sessionId={sessionId} />
       {/* Reviews Modal */}
       {reviewsOpen && (
         <ReviewModal onClose={() => setReviewsOpen(false)} tableId={tableId} sessionId={sessionId} />

@@ -146,40 +146,129 @@ export async function POST(request: NextRequest) {
 }
 
 // Fetch all orders with cart details for order notifications
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { searchParams } = new URL(request.url);
+    const sessionId = searchParams.get("sessionId");
 
-    // Optimized query - only fetch necessary fields for faster load times, excluding cancelled orders
-    const { data: orders, error } = await supabase
-      .from("order")
-      .select(
-        `
-        order_id,
-        date_ordered,
-        time_ordered,
-        payment_type,
-        isfinished,
-        iscancelled,
-        customer_id,
-        cart_id,
-        cart!order_cart_id_fkey (
-          table_number,
-          cartitem (
-            quantity,
-            note,
-            menuitem (
-              name
+    let orders: any[] = [];
+    let error = null;
+    if (sessionId) {
+      // Try to find customer by sessionId
+      const { data: customer } = await supabase
+        .from("customer")
+        .select("customer_id")
+        .eq("session_id", sessionId)
+        .maybeSingle();
+      console.log("[orders] sessionId:", sessionId);
+      console.log("[orders] found customer_id:", customer?.customer_id);
+      if (customer?.customer_id) {
+        // Orders for this customer
+        const { data, error: orderError } = await supabase
+          .from("order")
+          .select(`
+            order_id,
+            date_ordered,
+            time_ordered,
+            payment_type,
+            isfinished,
+            iscancelled,
+            customer_id,
+            cart_id,
+            cart!order_cart_id_fkey (
+              table_number,
+              cartitem (
+                quantity,
+                note,
+                menuitem (
+                  name
+                )
+              )
+            )
+          `)
+          .eq("customer_id", customer.customer_id)
+          .order("time_ordered", { ascending: true })
+          .limit(20);
+        orders = data || [];
+        error = orderError;
+        console.log("[orders] orders for customer_id:", orders.length);
+      }
+      // Also find orders by cart.session_id
+      const { data: carts } = await supabase
+        .from("cart")
+        .select("cart_id")
+        .eq("session_id", sessionId);
+      const cartIds = (carts || []).map((c: any) => c.cart_id);
+      console.log("[orders] found cartIds:", cartIds);
+      if (cartIds.length > 0) {
+        const { data: cartOrders, error: cartOrderError } = await supabase
+          .from("order")
+          .select(`
+            order_id,
+            date_ordered,
+            time_ordered,
+            payment_type,
+            isfinished,
+            iscancelled,
+            customer_id,
+            cart_id,
+            cart!order_cart_id_fkey (
+              table_number,
+              cartitem (
+                quantity,
+                note,
+                menuitem (
+                  name
+                )
+              )
+            )
+          `)
+          .in("cart_id", cartIds)
+          .order("time_ordered", { ascending: true })
+          .limit(20);
+        if (cartOrderError) error = cartOrderError;
+        console.log("[orders] orders for cartIds:", (cartOrders || []).length);
+        // Merge/deduplicate orders
+        const allOrders = [...orders, ...(cartOrders || [])];
+        // Deduplicate by order_id
+        const seen = new Set();
+        orders = allOrders.filter((o) => {
+          if (seen.has(o.order_id)) return false;
+          seen.add(o.order_id);
+          return true;
+        });
+        console.log("[orders] total deduped orders:", orders.length);
+      }
+    } else {
+      // No sessionId: fallback to recent orders
+      const { data, error: orderError } = await supabase
+        .from("order")
+        .select(`
+          order_id,
+          date_ordered,
+          time_ordered,
+          payment_type,
+          isfinished,
+          iscancelled,
+          customer_id,
+          cart_id,
+          cart!order_cart_id_fkey (
+            table_number,
+            cartitem (
+              quantity,
+              note,
+              menuitem (
+                name
+              )
             )
           )
-        )
-      `
-      )
-      .eq("isfinished", false)
-      .eq("iscancelled", false)
-      .order("time_ordered", { ascending: true })
-      .limit(50); // Limit to 50 most recent orders for better performance
-
+        `)
+        .order("time_ordered", { ascending: true })
+        .limit(20);
+      orders = data || [];
+      error = orderError;
+    }
     if (error) {
       console.error("Error fetching orders:", error);
       return NextResponse.json(
@@ -188,19 +277,19 @@ export async function GET() {
       );
     }
 
-    // Simplified transformation for faster processing
-  type OrderItem = { item_name: string; quantity: number; note?: string | null };
+    type OrderItem = { item_name: string; quantity: number; note?: string | null };
     type OrderRow = {
       order_id: number | string;
       isfinished: boolean;
+      iscancelled: boolean;
       customer_id: number | null;
       time_ordered: string;
       payment_type: string;
-  cart?: { table_number?: number | null; cartitem?: Array<{ quantity: number; note?: string | null; menuitem?: { name?: string | null } | null }> } | null;
+      cart?: { table_number?: number | null; cartitem?: Array<{ quantity: number; note?: string | null; menuitem?: { name?: string | null } | null }> } | null;
     };
     const transformedOrders = ((orders as unknown as OrderRow[]) || []).map((order) => ({
       order_id: order.order_id.toString(),
-      isfinished: order.isfinished,
+      status: order.iscancelled ? "cancelled" : order.isfinished ? "finished" : "preparing",
       customer_id: order.customer_id,
       time_ordered: order.time_ordered,
       payment_type: order.payment_type,

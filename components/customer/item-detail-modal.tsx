@@ -1,11 +1,11 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { v4 as uuidv4 } from "uuid";
 
 type CartItem = { cartitem_id?: number; quantity: number; subtotal_price: number; menuitem_id: number };
-type MenuItem = { menuitem_id: number; name: string; price: number; thumbnail?: string | null };
+type MenuItem = { menuitem_id: number; name: string; price: number; thumbnail?: string | null; description?: string | null };
 
 export default function ItemDetailModal({
   item,
@@ -24,6 +24,41 @@ export default function ItemDetailModal({
 }) {
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
+    const [fetchedDescription, setFetchedDescription] = useState<string | null | undefined>(item.description);
+
+  useEffect(() => {
+    console.debug('[item-detail-modal] opened item:', item);
+  }, [item]);
+
+  // If description is missing from the passed item, attempt to fetch it directly
+  useEffect(() => {
+    let mounted = true;
+    if (!item.description) {
+      const supabase = createClient();
+      (async () => {
+        try {
+          const res = await supabase
+            .from('menuitem')
+            .select('description')
+            .eq('menuitem_id', item.menuitem_id)
+            .maybeSingle();
+          if (!mounted) return;
+          const { data, error } = res as { data: { description?: string | null } | null; error: unknown };
+          if (error) {
+            console.debug('[item-detail-modal] failed to fetch description', error);
+            return;
+          }
+          console.debug('[item-detail-modal] fetched description from supabase:', data?.description);
+          setFetchedDescription(data?.description ?? null);
+        } catch (e) {
+          console.debug('[item-detail-modal] fetch error', e);
+        }
+      })();
+    } else {
+      setFetchedDescription(item.description);
+    }
+    return () => { mounted = false; };
+  }, [item]);
 
   const BackIcon = () => (
     <svg
@@ -175,10 +210,10 @@ export default function ItemDetailModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 z-30 flex items-center justify-center">
+    <div className="fixed inset-0 bg-black bg-opacity-40 z-30 flex items-center justify-center p-4">
       <div
-        className="bg-white w-full h-full max-w-md mx-auto rounded-none md:rounded-lg md:h-auto md:p-8 p-0 relative flex flex-col md:mb-[100px]"
-        style={{ maxHeight: "100vh md:max-h-[85vh]" }}
+        className="bg-white w-[88%] max-w-sm mx-auto rounded-lg md:rounded-lg h-auto p-3 md:p-6 relative flex flex-col"
+        style={{ maxHeight: '80vh', transform: 'translateY(-30px)' }}
       >
         <button
           className="absolute top-4 left-4 z-10 flex items-center justify-center rounded-full w-10 h-10"
@@ -193,13 +228,18 @@ export default function ItemDetailModal({
           alt={item.name}
           width={800}
           height={400}
-          className="w-full h-[280px] md:h-[200px] object-cover rounded-b-none md:rounded-sm mb-4"
+          className="w-full h-[140px] md:h-[180px] object-cover rounded-b-none md:rounded-sm mb-4"
         />
 
-        <div className="flex-1 flex flex-col px-6 pt-4 pb-3 overflow-y-auto">
+  <div className="flex-1 flex flex-col px-3 pt-3 pb-3 overflow-y-auto" style={{ maxHeight: '65vh' }}>
           {/* Name + Price */}
-          <div className="flex items-center justify-between">
-            <div className="font-bold text-black text-xl">{item.name}</div>
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="font-bold text-black text-lg md:text-xl">{item.name}</div>
+                <div className="mt-1 text-gray-700 text-xs md:text-sm max-w-[60vw] md:max-w-xs">
+                {fetchedDescription ? fetchedDescription : <span className="text-gray-400 italic">No description available</span>}
+              </div>
+            </div>
             <div className="text-right">
               <div className="text-black text-lg font-semibold">
                 ₱{item.price}.00
@@ -221,7 +261,7 @@ export default function ItemDetailModal({
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            className="w-full border rounded-xl p-3 mb-5 text-md bg-[#f7f7f7] text-black resize-y h-[120px] overflow-y-auto"
+            className="w-full border rounded-xl p-3 mb-4 text-sm md:text-md bg-[#f7f7f7] text-black resize-y h-[140px] md:h-[160px] overflow-y-auto"
             placeholder="Add your request (subject to restaurant’s discretion)"
           />
 
@@ -243,12 +283,14 @@ export default function ItemDetailModal({
           </div>
 
           {/* Add to Cart Button */}
-          <button
-            className="w-full bg-orange-400 text-white py-3 px-3 md:py-3 md:px-2 rounded-xl font-semibold text-lg mt-auto mb-[120px] sm:mb-0"
-            onClick={addToCart}
-          >
-            Add to Cart - ₱{item.price * qty}.00
-          </button>
+          <div className="sticky bottom-0 left-0 w-full bg-white pt-2 md:pt-4">
+            <button
+              className="w-full bg-orange-400 text-white py-2 px-3 md:py-3 md:px-2 rounded-xl font-semibold text-sm md:text-lg mb-0"
+              onClick={addToCart}
+            >
+              Add to Cart - ₱{item.price * qty}.00
+            </button>
+          </div>
         </div>
       </div>
     </div>
