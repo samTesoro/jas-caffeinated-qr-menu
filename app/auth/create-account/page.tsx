@@ -49,7 +49,7 @@ export default function CreateAccountPage() {
 
   return (
     <main className="min-h-screen bg-[#ebebeb] flex flex-col items-center">
-  <DashboardHeader />
+      <DashboardHeader />
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -149,8 +149,8 @@ export default function CreateAccountPage() {
       </form>
 
       {showConfirmModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-          <div className="bg-white rounded-md p-6 w-[300px] max-w-sm text-center space-y-4">
+        <div className="fixed inset-0 bg-white/50 flex items-center justify-center transition-opacity duration-300 z-[9999]">
+          <div className="bg-white rounded-md p-8 w-[90vw] max-w-xs sm:max-w-[350px] text-center space-y-4 shadow-lg">
             <p className="text-lg font-bold text-black">
               Confirm Admin Account?
             </p>
@@ -193,6 +193,7 @@ export default function CreateAccountPage() {
                 variant="red"
                 type="button"
                 onClick={() => setShowConfirmModal(false)}
+                className="border-transparent font-semibold hover:bg-gray-200 w-[100px] py-3 rounded-lg transition-colors"
               >
                 No
               </Button>
@@ -203,6 +204,7 @@ export default function CreateAccountPage() {
                   setShowConfirmModal(false);
                   handleSubmit();
                 }}
+                className="border-transparent font-semibold hover:bg-gray-200 w-[100px] py-3 rounded-lg transition-colors"
               >
                 Yes
               </Button>

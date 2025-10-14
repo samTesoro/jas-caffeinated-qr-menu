@@ -11,7 +11,6 @@ interface Order {
   items: OrderItem[];
   paymentMethod: string;
 }
-
 interface OrderItem {
   name: string;
   quantity: number;
@@ -27,6 +26,8 @@ export default function OrderNotification() {
   );
   const [showFinishedModal, setShowFinishedModal] = useState(false);
   const [finishedOrderId, setFinishedOrderId] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -102,14 +103,15 @@ export default function OrderNotification() {
   };
 
   return (
-    <div className="px-8 md:px-[500px] py-3 w-full pb-20">
+    <div className=" md:px-24 lg:px-[600px] py-3 w-full pb-20 px-6">
       <div className="mx-auto mb-4">
         <h2 className="text-2xl font-bold text-black md:text-3xl">Orders</h2>
       </div>
+
       <hr className="border-black my-4" />
 
       {orders.map((order, index) => (
-        <div key={order.order_id} className="mb-6">
+        <div key={order.order_id} className="mb-3">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
               <span className="text-2xl font-bold text-black p-1">
@@ -126,7 +128,10 @@ export default function OrderNotification() {
               </button>
             </div>
             <button
-              onClick={() => deleteOrder(order.order_id)}
+              onClick={() => {
+                setDeleteOrderId(order.order_id);
+                setShowDeleteModal(true);
+              }}
               className="text-black hover:text-red-700"
             >
               <X className="w-5 h-5 md:w-7 md:h-7" />
@@ -135,7 +140,7 @@ export default function OrderNotification() {
 
           <hr className="border-black my-2" />
 
-          <div className="grid grid-cols-[65px_90px_100px_60px] md:grid-cols-[1fr_2fr_3fr_1fr] gap-2 mb-2 font-semibold text-black text-sm md:text-lg">
+          <div className="grid grid-cols-[65px_90px_100px_60px] md:grid-cols-[1fr_2fr_3fr_1fr] lg:grid-cols-[1fr_2fr_3fr_1fr] gap-2 mb-2 font-semibold text-black text-sm md:text-lg">
             <div className="text-center">Table No.</div>
             <div className="text-center">Time</div>
             <div className="text-center">Order</div>
@@ -144,7 +149,7 @@ export default function OrderNotification() {
 
           <hr className="border-black my-2" />
 
-          <div className="grid grid-cols-[65px_90px_100px_60px] md:grid-cols-[1fr_2fr_3fr_1fr] gap-2 mb-2 text-black text-sm md:text-lg">
+          <div className="grid grid-cols-[65px_90px_100px_60px] md:grid-cols-[1fr_2fr_3fr_1fr] lg:grid-cols-[1fr_2fr_3fr_1fr] gap-2 mb-2 text-black text-sm md:text-lg">
             <div className="flex justify-center items-center row-span-full text-center">
               {order.tableNo}
             </div>
@@ -213,16 +218,16 @@ export default function OrderNotification() {
       {/* Finished Confirmation Modal */}
       {showFinishedModal && (
         <div className="fixed inset-0 bg-white/50 flex items-center justify-center transition-opacity duration-300 z-[9999]">
-          <div className="bg-white rounded-md p-6 w-[250px] text-center space-y-4 shadow-lg">
-            <p className="text-md text-black font-bold mt-3">
-              Mark this order as finished?
+          <div className="bg-white rounded-md p-6 w-[90vw] max-w-[250px] text-center space-y-4 shadow-lg">
+            <p className="text-md text-black font-bold mt-2">
+              Mark order as finished?
             </p>
             <div className="flex justify-between font-bold">
               <Button
                 variant="red"
                 type="button"
                 onClick={() => setShowFinishedModal(false)}
-                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg"
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
               >
                 No
               </Button>
@@ -233,7 +238,39 @@ export default function OrderNotification() {
                   if (finishedOrderId) markAsFinished(finishedOrderId);
                   setShowFinishedModal(false);
                 }}
-                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg"
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
+              >
+                Yes
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-white/50 flex items-center justify-center transition-opacity duration-300 z-[9999]">
+          <div className="bg-white rounded-md p-6 w-[90vw] max-w-[250px] text-center space-y-4 shadow-lg">
+            <p className="text-md text-black font-bold mt-3">
+              Delete this order?
+            </p>
+            <div className="flex justify-between font-bold">
+              <Button
+                variant="red"
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
+              >
+                No
+              </Button>
+              <Button
+                variant="green"
+                type="button"
+                onClick={() => {
+                  if (deleteOrderId) deleteOrder(deleteOrderId);
+                  setShowDeleteModal(false);
+                }}
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
               >
                 Yes
               </Button>

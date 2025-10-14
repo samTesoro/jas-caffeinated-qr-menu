@@ -114,7 +114,7 @@ export default function ItemCard({
 
         {mode === "customer" && (
           <button
-            className="rounded-full p-1.5 sm:p-2 flex-shrink-0 flex items-center justify-center shadow ml-2"
+            className="rounded-full p-1.5 sm:p-2 flex-shrink-0 hover:bg-red-700 flex items-center justify-center shadow ml-2"
             style={{ width: "32px", height: "32px", background: "#F96666" }}
             onClick={() => onAdd?.(item)}
             title="Add"

@@ -4,22 +4,30 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import DashboardHeader from "@/components/ui/header";
 
-export default function GCashOrderConfirmation({ params }: { params: Promise<{ tableId: string }> }) {
+export default function GCashOrderConfirmation({
+  params,
+}: {
+  params: Promise<{ tableId: string }>;
+}) {
   const router = useRouter();
   const { tableId } = React.use(params);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
   useEffect(() => {
     // Check for session in sessionStorage
-    const storedSessionId = sessionStorage.getItem('sessionId');
+    const storedSessionId = sessionStorage.getItem("sessionId");
     if (storedSessionId) {
       setSessionId(storedSessionId);
       // Redirect to session-based confirmation page
-      router.replace(`/customer/${tableId}/session/${storedSessionId}/gcash-order-confirmation`);
+      router.replace(
+        `/customer/${tableId}/session/${storedSessionId}/gcash-order-confirmation`
+      );
     }
   }, [tableId, router]);
 
   const handleGoToTable = () => {
+    sessionStorage.setItem("hasOrderedBefore", "true");
+
     if (sessionId) {
       router.push(`/customer/${tableId}/session/${sessionId}`);
     } else if (tableId) {
@@ -67,18 +75,34 @@ export default function GCashOrderConfirmation({ params }: { params: Promise<{ t
               className="flex items-center gap-1 px-2 py-1 bg-white rounded shadow text-black font-semibold border border-gray-300 text-sm"
               onClick={handleRedirectGCash}
             >
-              <Image src="/link-icon.png" alt="Link" width={18} height={18} /> Redirect to GCash
+              <Image src="/link-icon.png" alt="Link" width={18} height={18} />{" "}
+              Redirect to GCash
             </button>
             <button
               className="flex items-center gap-1 px-2 py-1 bg-white rounded shadow text-black font-semibold border border-gray-300 text-sm"
               onClick={handleDownloadQR}
             >
-              <Image src="/download-icon.png" alt="Download" width={18} height={18} /> Download QR
+              <Image
+                src="/download-icon.png"
+                alt="Download"
+                width={18}
+                height={18}
+              />{" "}
+              Download QR
             </button>
           </div>
-          <h2 className="font-bold text-black text-base mb-2 text-center">YOUR ORDER WILL ARRIVE SOON.</h2>
-          <p className="text-gray-800 text-center mb-6 text-lg">Please present your GCash receipt on bill out or at the counter to validate your transaction.<br />Thank you!</p>
-          <span className="text-base text-gray-700 text-center mb-6 block">Est. Time of Arrival: 15 mins.</span>
+          <h2 className="font-bold text-black text-base mb-2 text-center">
+            YOUR ORDER WILL ARRIVE SOON.
+          </h2>
+          <p className="text-gray-800 text-center mb-6 text-lg">
+            Please present your GCash receipt on bill out or at the counter to
+            validate your transaction.
+            <br />
+            Thank you!
+          </p>
+          <span className="text-base text-gray-700 text-center mb-6 block">
+            Est. Time of Arrival: 15 mins.
+          </span>
         </div>
       </div>
       <div className="w-full bg-[#393939] h-20 flex items-center justify-center">

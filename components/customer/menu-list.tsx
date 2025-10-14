@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useEffect } from "react";
 import { Button } from "../ui/button";
@@ -20,28 +19,42 @@ function StarIcon({ className = "", ...props }: React.SVGProps<SVGSVGElement>) {
       {...props}
     >
       <circle cx="12" cy="12" r="12" fill="#FFD600" />
-      <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" fill="#fff"/>
+      <path
+        d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"
+        fill="#fff"
+      />
     </svg>
   );
 }
 
 // Review Modal Component (above MenuList)
-function ReviewModal({ onClose, tableId, sessionId }: { onClose: () => void; tableId?: string; sessionId?: string }) {
+function ReviewModal({
+  onClose,
+  tableId,
+  sessionId,
+}: {
+  onClose: () => void;
+  tableId?: string;
+  sessionId?: string;
+}) {
   const [rating, setRating] = React.useState(0);
   const [hover, setHover] = React.useState(0);
   const [comment, setComment] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [showThankYou, setShowThankYou] = React.useState(false);
+
   const handleStarClick = (idx: number) => setRating(idx);
   const handleStarHover = (idx: number) => setHover(idx);
   const handleStarLeave = () => setHover(0);
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     try {
       const supabase = createClient();
-  const { error } = await supabase.from("reviews").insert([
+      const { error } = await supabase.from("reviews").insert([
         {
           rating,
           comment: comment.trim() === "" ? null : comment,
@@ -53,7 +66,7 @@ function ReviewModal({ onClose, tableId, sessionId }: { onClose: () => void; tab
         console.error("Supabase insert error:", error);
         throw error;
       }
-      onClose();
+      setShowThankYou(true);
     } catch (err) {
       console.error("Review submit error:", err);
       setError((err as Error).message || "Failed to submit review");
@@ -61,68 +74,111 @@ function ReviewModal({ onClose, tableId, sessionId }: { onClose: () => void; tab
       setLoading(false);
     }
   };
+
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
-      <div className="bg-white rounded-lg shadow-lg p-8 relative min-w-[340px] min-h-[260px] flex flex-col items-center">
-        <button
-          className="absolute top-2 right-2 text-gray-500 hover:text-black"
-          onClick={onClose}
-          aria-label="Close reviews modal"
-        >
-          <span style={{ fontSize: 24, fontWeight: 'bold' }}>&times;</span>
-        </button>
-  <h2 className="mb-3 font-bold" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 16, color: '#000' }}>Leave us a Review</h2>
-        <div className="flex flex-row items-center mb-4">
-          {[1,2,3,4,5].map((idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => handleStarClick(idx)}
-              onMouseEnter={() => handleStarHover(idx)}
-              onMouseLeave={handleStarLeave}
-              aria-label={`Rate ${idx} star${idx > 1 ? 's' : ''}`}
-              className="focus:outline-none"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill={(hover || rating) >= idx ? "#E5D453" : "none"}
-                stroke="#000"
-                strokeWidth="1"
-                className="w-10 h-10"
-              >
-                <polygon points="12,2 15,9 22,9.5 17,14.5 18.5,22 12,18 5.5,22 7,14.5 2,9.5 9,9" />
-              </svg>
-            </button>
-          ))}
-        </div>
-  <form onSubmit={handleSend} className="w-full flex flex-col items-center bg-white">
-          <label className="block text-black mb-1 text-md w-full text-center font-semibold">Reviews/Comments</label>
-          <textarea
-            className="w-full border border-black rounded-lg p-2 mb-4 text-black bg-white placeholder-gray-400"
-            rows={4}
-            maxLength={150}
-            value={comment}
-            onChange={e => setComment(e.target.value)}
-            placeholder="Don’t be shy! J.A.S. Caffeinated is always willing to improve its service for your next visit."
-          />
-          {error && <div className="text-red-600 text-sm mb-2">{error}</div>}
-          <Button
-            type="submit"
-            variant="orange"
-            className="w-full h-10 text-white font-semibold text-md mt-2 rounded-lg border-0 !bg-[#E59C53] !text-white !border-none !shadow-none hover:!bg-[#E59C53] active:!bg-[#E59C53] focus:!bg-[#E59C53]"
-            style={{ border: 'none' }}
-            disabled={loading || rating === 0}
+    <div className="fixed inset-0 bg-white/50 z-50 flex items-center justify-center">
+      {!showThankYou ? (
+        <div className="bg-white rounded-lg shadow-lg p-8 relative min-w-[90vw] max-w-xs sm:min-w-[340px] sm:max-w-md min-h-[260px] flex flex-col items-center">
+          <button
+            className="absolute top-2 right-2 text-gray-500 hover:text-black"
+            onClick={onClose}
+            aria-label="Close reviews modal"
           >
-            {loading ? "Sending..." : "Send"}
+            <span style={{ fontSize: 24, fontWeight: "bold" }}>&times;</span>
+          </button>
+          <h2
+            className="mb-3 font-bold"
+            style={{
+              fontFamily: "Inter, sans-serif",
+              fontWeight: 700,
+              fontSize: 16,
+              color: "#000",
+            }}
+          >
+            Leave us a Review
+          </h2>
+          <div className="flex flex-row items-center mb-4">
+            {[1, 2, 3, 4, 5].map((idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => handleStarClick(idx)}
+                onMouseEnter={() => handleStarHover(idx)}
+                onMouseLeave={handleStarLeave}
+                aria-label={`Rate ${idx} star${idx > 1 ? "s" : ""}`}
+                className="focus:outline-none"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill={(hover || rating) >= idx ? "#E5D453" : "none"}
+                  stroke="#000"
+                  strokeWidth="1"
+                  className="w-10 h-10"
+                >
+                  <polygon points="12,2 15,9 22,9.5 17,14.5 18.5,22 12,18 5.5,22 7,14.5 2,9.5 9,9" />
+                </svg>
+              </button>
+            ))}
+          </div>
+          <form
+            onSubmit={handleSend}
+            className="w-full flex flex-col items-center bg-white"
+          >
+            <label className="block text-black mb-1 text-md w-full text-center font-semibold">
+              Reviews/Comments
+            </label>
+            <textarea
+              className="w-full border border-black rounded-lg p-2 mb-4 text-black bg-white placeholder-gray-400"
+              rows={4}
+              maxLength={150}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Don’t be shy! J.A.S. Caffeinated is always willing to improve its service for your next visit."
+            />
+            {error && <div className="text-red-600 text-sm mb-2">{error}</div>}
+            <Button
+              type="submit"
+              variant="orange"
+              className="w-full h-8 font-semibold text-md mt-2 rounded-2xl border-0 !bg-[#E59C53] !text-white !border-none !shadow-none hover:!bg-[#E59C53] active:!bg-[#E59C53] focus:!bg-[#E59C53]"
+              style={{ border: "none" }}
+              disabled={loading || rating === 0}
+            >
+              {loading ? "Sending..." : "Send"}
+            </Button>
+          </form>
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg shadow-lg p-8 relative min-w-[90vw] max-w-xs sm:min-w-[250px] sm:max-w-md flex flex-col items-center justify-center text-center">
+          <h2 className="font-bold text-lg mb-4 text-black">
+            Thank you for your <br />
+            honest review!
+          </h2>
+          <p className="text-black mb-6 text-sm">
+            We at J.A.S. Caffeinated are always willing to serve you better, and
+            treat you best.
+            <br />
+            Until your next visit!
+          </p>
+          <Button
+            variant="orange"
+            className="w-full h-8 font-semibold text-md rounded-2xl border-0 !bg-[#E59C53] !text-white !border-none !shadow-none hover:!bg-[#E59C53] active:!bg-[#E59C53] focus:!bg-[#E59C53]"
+            onClick={onClose}
+          >
+            Back
           </Button>
-        </form>
-      </div>
+        </div>
+      )}
     </div>
   );
 }
 
-type CartItem = { cartitem_id?: number; quantity: number; subtotal_price: number; menuitem_id: number };
+type CartItem = {
+  cartitem_id?: number;
+  quantity: number;
+  subtotal_price: number;
+  menuitem_id: number;
+};
 interface MenuListProps {
   activeTab: string;
   cart: CartItem[];
@@ -138,7 +194,14 @@ export default function MenuList({
   sessionId,
   tableId,
 }: MenuListProps) {
-  type MenuItem = { menuitem_id: number; name: string; price: number; thumbnail?: string; category: string; status: string };
+  type MenuItem = {
+    menuitem_id: number;
+    name: string;
+    price: number;
+    thumbnail?: string;
+    category: string;
+    status: string;
+  };
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [search, setSearch] = useState("");
@@ -250,8 +313,12 @@ export default function MenuList({
       <NotificationModal open={notifOpen} onClose={() => setNotifOpen(false)} />
       {/* Reviews Modal */}
       {reviewsOpen && (
-        <ReviewModal onClose={() => setReviewsOpen(false)} tableId={tableId} sessionId={sessionId} />
+        <ReviewModal
+          onClose={() => setReviewsOpen(false)}
+          tableId={tableId}
+          sessionId={sessionId}
+        />
       )}
-  </div>
+    </div>
   );
 }

@@ -10,12 +10,15 @@
   padding: 0 0 8px 0;
   z-index: 100;
   border-top: 2px solid #222;
-  box-shadow: 0 -2px 8px rgba(0,0,0,0.12);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.12);
 }
 
 @media (max-width: 430px) {
   .taskbar {
-    padding-bottom: env(safe-area-inset-bottom, 8px); /* For iPhones with notches */
+    padding-bottom: env(
+      safe-area-inset-bottom,
+      8px
+    ); /* For iPhones with notches */
   }
 }
 
@@ -30,7 +33,7 @@
   color: white;
   text-decoration: none;
   font-size: 18px;
-  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
   padding: 12px 0;
   flex: 1;
   text-align: center;
@@ -38,9 +41,9 @@
 }
 
 .active {
-  color: #E59C53;
+  color: #e59c53;
   font-weight: bold;
-  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
 }
 
 .starButton {
@@ -55,7 +58,7 @@
 }
 
 .starActive {
-  color: #E59C53;
+  color: #e59c53;
   font-weight: bold;
 }
 
@@ -78,10 +81,10 @@
 
 .disabled {
   color: gray;
-  pointer-events: none; 
+  pointer-events: none;
   cursor: not-allowed;
   opacity: 0.5;
-  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
 }
 
 .icon {
@@ -90,4 +93,36 @@
   object-fit: contain;
   display: block;
   margin: 0 auto;
+  transition: transform 150ms ease-in-out, filter 150ms ease-in-out;
+  will-change: transform, filter;
+}
+
+.icon:hover {
+  filter: brightness(1.05);
+}
+
+.icon:active {
+  transform: translateY(0) scale(0.98);
+  filter: brightness(0.98);
+}
+
+.link:hover {
+  color: #f5b780; /* slightly brighter than the active color */
+}
+
+.cartBadge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: red;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
 }

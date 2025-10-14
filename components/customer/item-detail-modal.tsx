@@ -1,11 +1,22 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { v4 as uuidv4 } from "uuid";
+import { createPortal } from "react-dom";
 
-type CartItem = { cartitem_id?: number; quantity: number; subtotal_price: number; menuitem_id: number };
-type MenuItem = { menuitem_id: number; name: string; price: number; thumbnail?: string | null };
+type CartItem = {
+  cartitem_id?: number;
+  quantity: number;
+  subtotal_price: number;
+  menuitem_id: number;
+};
+type MenuItem = {
+  menuitem_id: number;
+  name: string;
+  price: number;
+  thumbnail?: string | null;
+};
 
 export default function ItemDetailModal({
   item,
@@ -45,7 +56,7 @@ export default function ItemDetailModal({
   const addToCart = async () => {
     const supabase = createClient();
     let session_id: string;
-    
+
     if (sessionId) {
       session_id = sessionId;
     } else {
@@ -56,12 +67,13 @@ export default function ItemDetailModal({
       }
       session_id = storedSessionId;
     }
-    
+
     try {
       // Single query to get cart and existing cart items
       const { data: cartData } = await supabase
         .from("cart")
-        .select(`
+        .select(
+          `
           cart_id,
           cartitem!inner (
             cartitem_id,
@@ -69,7 +81,8 @@ export default function ItemDetailModal({
             subtotal_price,
             menuitem_id
           )
-        `)
+        `
+        )
         .eq("session_id", session_id)
         .eq("checked_out", false)
         .eq("cartitem.menuitem_id", item.menuitem_id)
@@ -101,10 +114,15 @@ export default function ItemDetailModal({
       if (!cart_id) {
         const { data: newCart, error: newCartError } = await supabase
           .from("cart")
-          .insert({ session_id, total_price: 0, checked_out: false, table_number: parseInt(tableId || "0") })
+          .insert({
+            session_id,
+            total_price: 0,
+            checked_out: false,
+            table_number: parseInt(tableId || "0"),
+          })
           .select("cart_id")
           .single();
-          
+
         if (newCartError) {
           if (newCartError.code === "23505") {
             // Retry once if duplicate key
@@ -133,12 +151,12 @@ export default function ItemDetailModal({
           .from("cartitem")
           .update({ quantity: newQty, subtotal_price: newSubtotal })
           .eq("cartitem_id", existingItem.cartitem_id);
-        
+
         if (updateError) {
           alert("Failed to update cart item");
           return;
         }
-        
+
         setCart(
           cart.map((i) =>
             i.menuitem_id === item.menuitem_id
@@ -154,19 +172,19 @@ export default function ItemDetailModal({
           cart_id: cart_id,
           note: note || null,
         } as const;
-        
+
         const { error: itemError } = await supabase
           .from("cartitem")
           .insert([cartItem]);
-        
+
         if (itemError) {
           alert("Failed to add item to cart");
           return;
         }
-        
-  setCart([...cart, { ...cartItem }]);
+
+        setCart([...cart, { ...cartItem }]);
       }
-      
+
       onClose();
     } catch (error) {
       console.error("Cart error:", error);
@@ -174,29 +192,41 @@ export default function ItemDetailModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 z-30 flex items-center justify-center">
+  // mount guard for portals (prevents SSR errors)
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  const modalUI = (
+    <div className="fixed inset-0 z-[10000] bg-white/50">
       <div
-        className="bg-white w-full h-full max-w-md mx-auto rounded-none md:rounded-lg md:h-auto md:p-8 p-0 relative flex flex-col md:mb-[100px]"
-        style={{ maxHeight: "100vh md:max-h-[85vh]" }}
-      >
-        <button
-          className="absolute top-4 left-4 z-10 flex items-center justify-center rounded-full w-10 h-10"
-          onClick={onClose}
-          style={{ backgroundColor: "#F87171" }}
-        >
-          <BackIcon />
-        </button>
+        className="hidden md:block absolute inset-0 bg-black/40"
+        onClick={onClose}
+      />
 
-        <Image
-          src={item.thumbnail || "/default-food.png"}
-          alt={item.name}
-          width={800}
-          height={400}
-          className="w-full h-[280px] md:h-[200px] object-cover rounded-b-none md:rounded-sm mb-4"
-        />
+      <div className="absolute inset-0 bg-white overflow-y-auto md:relative md:mx-auto md:my-6 md:w-[90vw] md:max-w-xl md:max-h-[90vh] md:overflow-y-auto md:bg-white md:rounded-xl md:shadow-xl flex flex-col">
+        <div className="relative w-full h-[250px] md:h-[300px]">
+          <Image
+            src={item.thumbnail || "/default-food.png"}
+            alt={item.name}
+            width={1200}
+            height={400}
+            className="w-full h-full object-cover"
+          />
 
-        <div className="flex-1 flex flex-col px-6 pt-4 pb-3 overflow-y-auto">
+          <button
+            className="absolute top-4 left-4 z-10 flex items-center justify-center rounded-full w-10 h-10 bg-red-400/90 hover:bg-red-500 transition"
+            onClick={onClose}
+          >
+            <BackIcon />
+          </button>
+
+          <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-transparent" />
+        </div>
+
+        <div className="flex-1 flex flex-col px-6 pt-6 pb-3 overflow-y-auto">
           {/* Name + Price */}
           <div className="flex items-center justify-between">
             <div className="font-bold text-black text-xl">{item.name}</div>
@@ -226,7 +256,7 @@ export default function ItemDetailModal({
           />
 
           {/* Quantity */}
-          <div className="flex items-center justify-center gap-7 mb-6">
+          <div className="flex items-center justify-center gap-7 mb-6 mt-8">
             <button
               className="bg-green-300 rounded-full w-8 h-8 text-2xl"
               onClick={() => setQty((q) => Math.max(1, q - 1))}
@@ -244,7 +274,7 @@ export default function ItemDetailModal({
 
           {/* Add to Cart Button */}
           <button
-            className="w-full bg-orange-400 text-white py-3 px-3 md:py-3 md:px-2 rounded-xl font-semibold text-lg mt-auto mb-[120px] sm:mb-0"
+            className="w-full bg-orange-400 text-white py-3 px-3 md:py-3 md:px-2 rounded-xl font-semibold text-lg mt-auto sm:mb-0 mt-8"
             onClick={addToCart}
           >
             Add to Cart - ₱{item.price * qty}.00
@@ -253,4 +283,7 @@ export default function ItemDetailModal({
       </div>
     </div>
   );
+
+  if (!mounted) return null;
+  return createPortal(modalUI, document.body);
 }

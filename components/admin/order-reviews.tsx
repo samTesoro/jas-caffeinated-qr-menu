@@ -39,6 +39,7 @@ export default function ReviewList({ permissions }: ReviewListProps) {
     const ids = reviews.map((r) => r.id);
     setClearedIds(ids);
     localStorage.setItem("clearedReviewIds", JSON.stringify(ids));
+    setShowClearModal(false);
   };
 
   useEffect(() => {
@@ -63,7 +64,7 @@ export default function ReviewList({ permissions }: ReviewListProps) {
   }
 
   return (
-    <div className="px-8 md:px-[500px] py-3 w-full pb-20">
+    <div className="px-6 sm:px-8 md:px-24 lg:px-[600px] py-3 w-full pb-20">
       <div className="flex justify-between items-center mb-2">
         <h2 className="text-2xl md:text-3xl font-bold text-black">
           View Reviews
@@ -133,7 +134,7 @@ export default function ReviewList({ permissions }: ReviewListProps) {
       {/* Confirm Clear Modal */}
       {showClearModal && (
         <div className="fixed inset-0 bg-white/50 flex items-center justify-center transition-opacity duration-300 z-[9999]">
-          <div className="bg-white rounded-md p-6 w-[250px] text-center space-y-4 shadow-lg">
+          <div className="bg-white rounded-md p-6 w-[90vw] max-w-[250px] text-center space-y-4 shadow-lg">
             <p className="text-md text-black font-bold mt-3">
               Clear all reviews?
             </p>
@@ -142,7 +143,7 @@ export default function ReviewList({ permissions }: ReviewListProps) {
                 variant="red"
                 type="button"
                 onClick={() => setShowClearModal(false)}
-                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg"
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
               >
                 No
               </Button>
@@ -150,7 +151,7 @@ export default function ReviewList({ permissions }: ReviewListProps) {
                 variant="green"
                 type="button"
                 onClick={clearReviews}
-                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg"
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
               >
                 Yes
               </Button>
