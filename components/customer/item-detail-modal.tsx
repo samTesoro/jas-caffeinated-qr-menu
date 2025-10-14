@@ -1,12 +1,23 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { v4 as uuidv4 } from "uuid";
 import { createPortal } from "react-dom";
 
-type CartItem = { cartitem_id?: number; quantity: number; subtotal_price: number; menuitem_id: number };
-type MenuItem = { menuitem_id: number; name: string; price: number; thumbnail?: string | null; description?: string | null };
+type CartItem = {
+  cartitem_id?: number;
+  quantity: number;
+  subtotal_price: number;
+  menuitem_id: number;
+};
+type MenuItem = {
+  menuitem_id: number;
+  name: string;
+  price: number;
+  thumbnail?: string | null;
+  description?: string | null;
+};
 
 export default function ItemDetailModal({
   item,
@@ -25,41 +36,7 @@ export default function ItemDetailModal({
 }) {
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
-    const [fetchedDescription, setFetchedDescription] = useState<string | null | undefined>(item.description);
-
-  useEffect(() => {
-    console.debug('[item-detail-modal] opened item:', item);
-  }, [item]);
-
-  // If description is missing from the passed item, attempt to fetch it directly
-  useEffect(() => {
-    let mounted = true;
-    if (!item.description) {
-      const supabase = createClient();
-      (async () => {
-        try {
-          const res = await supabase
-            .from('menuitem')
-            .select('description')
-            .eq('menuitem_id', item.menuitem_id)
-            .maybeSingle();
-          if (!mounted) return;
-          const { data, error } = res as { data: { description?: string | null } | null; error: unknown };
-          if (error) {
-            console.debug('[item-detail-modal] failed to fetch description', error);
-            return;
-          }
-          console.debug('[item-detail-modal] fetched description from supabase:', data?.description);
-          setFetchedDescription(data?.description ?? null);
-        } catch (e) {
-          console.debug('[item-detail-modal] fetch error', e);
-        }
-      })();
-    } else {
-      setFetchedDescription(item.description);
-    }
-    return () => { mounted = false; };
-  }, [item]);
+  const [fetchedDescription, setFetchedDescription] = useState<string | null | undefined>(undefined);
 
   const BackIcon = () => (
     <svg
@@ -217,34 +194,75 @@ export default function ItemDetailModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 z-30 flex items-center justify-center p-4">
+  // mount guard for portals (prevents SSR errors)
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  // If description is missing from the passed item, attempt to fetch it directly
+  useEffect(() => {
+    let mounted = true;
+    if ((item as any).description) {
+      setFetchedDescription((item as any).description ?? null);
+      return;
+    }
+    const supabase = createClient();
+    (async () => {
+      try {
+        const res = await supabase
+          .from('menuitem')
+          .select('description')
+          .eq('menuitem_id', item.menuitem_id)
+          .maybeSingle();
+        if (!mounted) return;
+        const { data, error } = res as { data?: { description?: string | null } | null; error?: unknown };
+        if (error) {
+          console.debug('[item-detail-modal] description fetch error', error);
+          return;
+        }
+        setFetchedDescription(data?.description ?? null);
+      } catch (err) {
+        console.debug('[item-detail-modal] description fetch exception', err);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [item]);
+
+  const modalUI = (
+    <div className="fixed inset-0 z-[10000] bg-white/50">
       <div
-        className="bg-white w-[88%] max-w-sm mx-auto rounded-lg md:rounded-lg h-auto p-3 md:p-6 relative flex flex-col"
-        style={{ maxHeight: '80vh', transform: 'translateY(-30px)' }}
-      >
-        <button
-          className="absolute top-4 left-4 z-10 flex items-center justify-center rounded-full w-10 h-10"
-          onClick={onClose}
-          style={{ backgroundColor: "#F87171" }}
-        >
-          <BackIcon />
-        </button>
+        className="hidden md:block absolute inset-0 bg-black/40"
+        onClick={onClose}
+      />
 
-        <Image
-          src={item.thumbnail || "/default-food.png"}
-          alt={item.name}
-          width={800}
-          height={400}
-          className="w-full h-[140px] md:h-[180px] object-cover rounded-b-none md:rounded-sm mb-4"
-        />
+      <div className="absolute inset-0 bg-white overflow-y-auto md:relative md:mx-auto md:my-6 md:w-[90vw] md:max-w-xl md:max-h-[90vh] md:overflow-y-auto md:bg-white md:rounded-xl md:shadow-xl flex flex-col">
+        <div className="relative w-full h-[250px] md:h-[300px]">
+          <Image
+            src={item.thumbnail || "/default-food.png"}
+            alt={item.name}
+            width={1200}
+            height={400}
+            className="w-full h-full object-cover"
+          />
 
-  <div className="flex-1 flex flex-col px-3 pt-3 pb-3 overflow-y-auto" style={{ maxHeight: '65vh' }}>
+          <button
+            className="absolute top-4 left-4 z-10 flex items-center justify-center rounded-full w-10 h-10 bg-red-400/90 hover:bg-red-500 transition"
+            onClick={onClose}
+          >
+            <BackIcon />
+          </button>
+
+          <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-transparent" />
+        </div>
+
+        <div className="flex-1 flex flex-col px-6 pt-6 pb-3 overflow-y-auto">
           {/* Name + Price */}
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="font-bold text-black text-lg md:text-xl">{item.name}</div>
-                <div className="mt-1 text-gray-700 text-xs md:text-sm max-w-[60vw] md:max-w-xs">
+          <div className="flex items-center justify-between">
+            <div className="pr-4">
+              <div className="font-bold text-black text-xl">{item.name}</div>
+              <div className="mt-1 text-gray-700 text-xs md:text-sm max-w-[60vw] md:max-w-xs">
                 {fetchedDescription ? fetchedDescription : <span className="text-gray-400 italic">No description available</span>}
               </div>
             </div>
@@ -269,7 +287,7 @@ export default function ItemDetailModal({
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            className="w-full border rounded-xl p-3 mb-4 text-sm md:text-md bg-[#f7f7f7] text-black resize-y h-[140px] md:h-[160px] overflow-y-auto"
+            className="w-full border rounded-xl p-3 mb-5 text-md bg-[#f7f7f7] text-black resize-y h-[120px] overflow-y-auto"
             placeholder="Add your request (subject to restaurant’s discretion)"
           />
 
@@ -291,14 +309,9 @@ export default function ItemDetailModal({
           </div>
 
           {/* Add to Cart Button */}
-          <div className="sticky bottom-0 left-0 w-full bg-white pt-2 md:pt-4">
-            <button
-              className="w-full bg-orange-400 text-white py-2 px-3 md:py-3 md:px-2 rounded-xl font-semibold text-sm md:text-lg mb-0"
-              onClick={addToCart}
-            >
-              Add to Cart - ₱{item.price * qty}.00
-            </button>
-          </div>
+          <button className="w-full bg-orange-400 text-white py-3 px-3 md:py-3 md:px-2 rounded-xl font-semibold text-lg mt-auto sm:mb-0" onClick={addToCart}>
+            Add to Cart - ₱{item.price * qty}.00
+          </button>
         </div>
       </div>
     </div>
