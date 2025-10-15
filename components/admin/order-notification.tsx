@@ -67,9 +67,13 @@ export default function OrderNotification() {
               })) ?? [],
             paymentMethod: order.payment_type ?? "",
           }))
-          .sort(
-            (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime()
-          );
+          .sort((a, b) => {
+            const today = new Date().toISOString().split("T")[0];
+            const dateA = new Date(`${today}T${a.time}`);
+            const dateB = new Date(`${today}T${b.time}`);
+            return dateB.getTime() - dateA.getTime();
+          });
+
         setOrders(transformed);
       } catch {
         setOrders([]);
