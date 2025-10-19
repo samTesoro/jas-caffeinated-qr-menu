@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import styles from "./taskbar.module.css";
+import styles from "./taskbar-admin.module.css";
 import Image from "next/image";
 import { LogoutButton } from "@/components/logout-button";
 

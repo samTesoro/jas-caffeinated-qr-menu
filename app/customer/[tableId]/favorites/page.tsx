@@ -1,7 +1,8 @@
-import CustomerMenu from '@/components/customer/menu';
+import { redirect } from 'next/navigation';
 
-export default async function FavoritesPage(props: any) {
-  const { params } = await props;
-  const { tableId } = params;
-  return <CustomerMenu tableId={tableId} initialTab="Favorites" />;
+type PageProps = { params: Promise<{ tableId: string }> };
+
+export default async function FavoritesPage({ params }: PageProps) {
+  const { tableId } = await params;
+  redirect(`/customer/${tableId}/session/${crypto.randomUUID()}/favorites`);
 }

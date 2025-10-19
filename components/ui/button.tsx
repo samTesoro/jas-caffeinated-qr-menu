@@ -10,6 +10,9 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
+        outline: "bg-transparent text-black border border-black",
+        default: "bg-white text-black border border-black",
+        ghost: "bg-transparent text-black border-0 hover:bg-black/5",
         red: "bg-[#F96666] text-black hover:opacity-80",
         green: "bg-[#A7F586] text-black hover:opacity-80",
         orange: "bg-[#E59C53] text-black hover:bg-transparent",
@@ -18,6 +21,7 @@ const buttonVariants = cva(
         default: "h-6 px-4 py-1 w-[30%]",
         sm: "h-7 px-2 text-xs",
         lg: "h-10 px-4",
+        icon: "h-8 w-8 p-0",
       },
     },
     defaultVariants: {

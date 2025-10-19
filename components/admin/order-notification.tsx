@@ -84,8 +84,18 @@ export default function OrderNotification() {
     return () => clearInterval(interval);
   }, []);
 
-  const deleteOrder = (id: string) => {
-    setOrders((prev) => prev.filter((order) => order.order_id !== id));
+  const deleteOrder = async (id: string) => {
+    try {
+      const res = await fetch(`/api/orders/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ iscancelled: true }),
+      });
+      if (!res.ok) throw new Error('Failed to cancel order');
+      setOrders((prev) => prev.filter((order) => order.order_id !== id));
+    } catch (err) {
+      console.error('Error cancelling order:', err);
+    }
   };
 
   const markAsFinished = async (id: string) => {

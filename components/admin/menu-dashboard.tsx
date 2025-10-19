@@ -7,7 +7,7 @@ type MenuItem = {
   price: number;
   status: string;
   thumbnail?: string;
-  description?: string;
+  description?: string | null;
 };
 
 import { useState } from 'react';

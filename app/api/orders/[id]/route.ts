@@ -4,14 +4,16 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
+export const runtime = 'nodejs';
+
 // Update the status of an order (mark as finished or cancelled)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { isfinished, iscancelled } = await request.json();
-    const orderId = params.id;
+    const { id: orderId } = await params;
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 

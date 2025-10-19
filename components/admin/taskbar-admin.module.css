@@ -33,12 +33,17 @@
   padding: 8px 0; /* Reduced padding */
   flex: 1;
   text-align: center;
-  transition: color 0.2s;
+  transition: color 0.2s ease, background-color 0.2s ease;
 }
 
 .active {
   color: #E59C53;
   font-weight: bold;
+}
+
+/* Hover: highlight link when not disabled */
+.link:hover {
+  color: #E59C53;
 }
 
 .starButton {
@@ -50,11 +55,17 @@
   padding: 8px 0; /* Reduced padding */
   flex: 1;
   text-align: center;
+  transition: color 0.2s ease, background-color 0.2s ease;
 }
 
 .starActive {
   color: #E59C53;
   font-weight: bold;
+}
+
+/* Hover for star when permitted */
+.starButton:hover {
+  color: #E59C53;
 }
 
 .backButton {
@@ -72,6 +83,13 @@
 .backIcon {
   width: 25px;
   height: 25px;
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+/* Subtle hover for back button */
+.backButton:hover .backIcon {
+  filter: brightness(1.2);
+  transform: scale(1.05);
 }
 
 .disabled {

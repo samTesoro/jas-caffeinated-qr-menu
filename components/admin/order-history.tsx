@@ -72,9 +72,23 @@ export default function OrderHistory() {
     fetchOrders();
   }, []);
 
-  const clearHistory = () => {
-    setOrder([]);
-    setShowClearModal(false);
+  const clearHistory = async () => {
+    try {
+      const res = await fetch('/api/history', { method: 'PATCH' });
+      const body = await res.json().catch(() => ({} as any));
+      if (!res.ok) {
+        const message = (body && (body.error || body.message)) || 'Failed to clear history';
+        console.error('Clear history error:', res.status, message);
+        alert(message);
+        return;
+      }
+      // After clearing, refetch to update UI
+      setOrder([]);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setShowClearModal(false);
+    }
   };
 
   return (

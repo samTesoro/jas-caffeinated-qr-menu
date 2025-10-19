@@ -16,7 +16,7 @@ interface MenuItem {
   thumbnail?: string;
   favorites?: string;
   estimatedTime?: number;
-  description?: string;
+  description?: string | null;
 }
 
 // removed broken line
@@ -168,7 +168,7 @@ export default function MenuItemForm({
           {errorMsg}
         </div>
       )}
-      <DashboardHeader showBack={false} />
+  <DashboardHeader />
 
       <form
         onSubmit={(e) => {
@@ -202,7 +202,7 @@ export default function MenuItemForm({
             </label>
             <input
               name="description"
-              value={form.description}
+              value={form.description ?? ""}
               onChange={handleChange}
               className="w-full py-1 px-2 border-2 border-black bg-white text-black h-8"
             />

@@ -14,7 +14,7 @@ export interface MenuItem {
   price: number;
   status: string;
   thumbnail?: string;
-  description?: string;
+  description?: string | null;
 }
 
 export default function MenuItemList({
@@ -22,7 +22,7 @@ export default function MenuItemList({
   refresh,
 }: // setRefresh,
 {
-  onEdit: (item: MenuItem | null) => void;
+  onEdit: (item: MenuItem) => void;
   refresh: boolean;
   setRefresh: (r: boolean) => void;
 }) {
