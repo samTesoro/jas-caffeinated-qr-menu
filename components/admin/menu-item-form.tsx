@@ -60,7 +60,8 @@ export default function MenuItemForm({
         status: item.status || "Available",
         thumbnail: item.thumbnail || "",
         favorites: item.favorites || "No",
-        estimatedTime: item.estimatedTime || 0,
+        // Use est_time if present, fallback to estimatedTime, fallback to 0
+        estimatedTime: (item as any).est_time ?? item.estimatedTime ?? 0,
         description: item.description || "",
       });
     }
@@ -78,19 +79,32 @@ export default function MenuItemForm({
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    const supabase = createClient();
-    const filePath = `public/${
-      typeof window !== "undefined" ? Date.now() : "ssr"
-    }-${file.name}`;
-    const { data, error } = await supabase.storage
-      .from("thumbnails")
-      .upload(filePath, file, { upsert: true });
-    if (!error && data) {
-      const url = supabase.storage.from("thumbnails").getPublicUrl(filePath)
-        .data.publicUrl;
-      setForm({ ...form, thumbnail: url });
+    setErrorMsg(null);
+    try {
+      const supabase = createClient();
+      const filePath = `public/${
+        typeof window !== "undefined" ? Date.now() : "ssr"
+      }-${file.name}`;
+      console.log("Uploading to:", filePath);
+      const { data, error } = await supabase.storage
+        .from("thumbnails")
+        .upload(filePath, file, { upsert: true });
+      console.log("Upload result:", { data, error });
+      if (!error && data) {
+        const url = supabase.storage.from("thumbnails").getPublicUrl(filePath)
+          .data.publicUrl;
+        console.log("Public URL:", url);
+        setForm({ ...form, thumbnail: url });
+      } else if (error) {
+        setErrorMsg("Thumbnail upload failed: " + (error.message || "Unknown error"));
+        console.error("Supabase upload error:", error);
+      }
+    } catch (err) {
+      setErrorMsg("Unexpected error during upload.");
+      console.error("Unexpected upload error:", err);
+    } finally {
+      setUploading(false);
     }
-    setUploading(false);
   };
 
   const saveItem = async () => {
@@ -285,7 +299,7 @@ export default function MenuItemForm({
               Thumbnail
             </label>
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 border flex items-center justify-center text-center overflow-hidden border-2 border-black">
+              <div className="w-10 h-10 flex items-center justify-center text-center overflow-hidden border-2 border-black">
                 {form.thumbnail ? (
                   <Image
                     src={form.thumbnail}
@@ -394,11 +408,13 @@ export default function MenuItemForm({
       {/* Confirm Delete */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-white/50 flex items-center justify-center transition-opacity duration-300 z-[9999]">
-          <div className="bg-white rounded-md p-6 w-[90vw] max-w-xs sm:max-w-[250px] md:max-w-[400px] text-center space-y-4 shadow-lg">
-            <p className="text-sm text-black">Delete this item?</p>
-            <div className="flex justify-between">
+          <div className="bg-white rounded-md p-6 w-[90vw] max-w-[250px] text-center space-y-4 shadow-lg">
+            <p className="text-md text-black font-bold mt-3">
+              Delete this item?
+            </p>
+            <div className="flex justify-between font-bold">
               <Button
-                variant="orange"
+                variant="red"
                 type="button"
                 onClick={() => setShowDeleteModal(false)}
                 className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
@@ -406,7 +422,7 @@ export default function MenuItemForm({
                 No
               </Button>
               <Button
-                variant="red"
+                variant="green"
                 type="button"
                 onClick={deleteItem}
                 className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"

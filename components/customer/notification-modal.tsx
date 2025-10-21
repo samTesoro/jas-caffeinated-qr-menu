@@ -172,8 +172,8 @@ export default function NotificationModal({ open, onClose, sessionId }: Notifica
             <div className="bg-white rounded-lg p-6 w-[90%] max-w-xs shadow-lg flex flex-col items-center">
               <h3 className="text-lg font-bold mb-4 text-black text-center">Are you sure you want to cancel this order?</h3>
               <div className="flex flex-row items-center gap-4 mt-2 w-full justify-center">
-                <Button variant="green" onClick={confirmCancel} className="min-w-[100px] text-lg py-2">Yes</Button>
                 <Button variant="red" onClick={cancelCancel} className="min-w-[100px] text-lg py-2">No</Button>
+                <Button variant="green" onClick={confirmCancel} className="min-w-[100px] text-lg py-2">Yes</Button>
               </div>
             </div>
           </div>
