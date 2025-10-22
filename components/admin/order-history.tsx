@@ -78,7 +78,7 @@ export default function OrderHistory() {
   };
 
   return (
-    <div className="px-6 sm:px-8 md:px-24 lg:px-[600px] py-3 w-full pb-20">
+    <div className="flex flex-col w-full min-h-screen py-3 pb-[150px] px-7 md:px-24 lg:px-[300px]">
       <div className="flex justify-between items-center mb-2">
         <h2 className="text-2xl md:text-3xl font-bold text-black">
           Order History
