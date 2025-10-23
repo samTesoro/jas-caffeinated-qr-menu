@@ -18,9 +18,9 @@ const buttonVariants = cva(
         orange: "bg-[#E59C53] text-black hover:bg-transparent",
       },
       size: {
-        default: "h-6 px-4 py-1 w-[30%]",
-        sm: "h-7 px-2 text-xs",
-        lg: "h-10 px-4",
+        default: "h-9 px-4",
+        sm: "h-8 px-3 text-xs",
+        lg: "h-10 px-5",
         icon: "h-8 w-8 p-0",
       },
     },

@@ -9,16 +9,34 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 export const runtime = 'nodejs';
 
 // Fetch finished, not-cleared orders for history view
-export async function GET() {
+export async function GET(request: NextRequest) {
 	const supabase = createClient(supabaseUrl, supabaseAnonKey);
-	const { data, error } = await supabase
+	const { searchParams } = new URL(request.url);
+	const from = searchParams.get('from') || undefined; // YYYY-MM-DD
+	const to = searchParams.get('to') || undefined;     // YYYY-MM-DD
+	const includeCleared = (searchParams.get('includeCleared') || 'false').toLowerCase() === 'true';
+
+	let query = supabase
 		.from("order")
 		.select(
 			`order_id, date_ordered, time_ordered, isfinished, customer_id, cart:cart_id (table_number, cartitem (quantity, menuitem (name)))`
 		)
 		.eq("isfinished", true)
-			.or('iscleared.is.false,iscleared.is.null')
-		.eq("iscancelled", false)
+		.eq("iscancelled", false);
+
+	if (!includeCleared) {
+		// default behavior: only show not-cleared (NULL treated as not cleared)
+		query = query.or('iscleared.is.false,iscleared.is.null');
+	}
+
+	if (from) {
+		query = query.gte('date_ordered', from);
+	}
+	if (to) {
+		query = query.lte('date_ordered', to);
+	}
+
+	const { data, error } = await query
 		.order("date_ordered", { ascending: false })
 		.order("time_ordered", { ascending: false });
 
