@@ -76,11 +76,11 @@ export default function MenuItemList({
           />
         </div>
 
-        <div className="flex flex-row gap-10 sm:justify-between sm:items-center sm:w-[100px] md:w-full max-w-[350px] mb-6">
+        <div className="flex flex-row gap-4 sm:justify-between sm:items-center sm:w-[100px] md:w-full max-w-[350px] mb-6">
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="w-full text-center py-1 px-2 border-2 border-black bg-white text-black text-xs h-7"
+            className="w-full text-center py-1 px-2 border-2 border-black bg-white text-black text-xs h-7 rounded-lg"
           >
             <option value="All">Select category</option>
             {categories.map((cat) => (

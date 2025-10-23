@@ -179,7 +179,7 @@ export default function ViewAccounts() {
   };
 
   return (
-    <div className="pt-6 px-6 md:px-[600px]">
+    <div className="flex flex-col w-full min-h-screen py-3 pb-20 px-7 md:px-24 lg:px-[300px]">
       <h1 className="text-2xl font-bold mb-4 text-black">View Accounts</h1>
 
       <div className="w-full mb-4">
@@ -189,12 +189,16 @@ export default function ViewAccounts() {
             placeholder="Search username..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="border rounded p-2 text-black bg-white flex-1 min-w-0"
+            className="border rounded-2xl py-2 px-4 text-black bg-white flex-1 min-w-0"
           />
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="border rounded p-2 text-black bg-[#D9D9D9] w-full sm:w-auto"
+            className="border rounded-2xl px-4 py-2 text-black bg-[#D9D9D9] w-full sm:w-auto text-sm sm:text-base"
+            style={{
+              fontSize: "inherit", // Ensures the options inherit the font size
+              lineHeight: "1.5", // Matches the dropdown box height
+            }}
           >
             <option value="">All Categories</option>
             <option value="view_orders">View Orders</option>
@@ -327,7 +331,7 @@ export default function ViewAccounts() {
 
       <div className="flex justify-center items-center mt-7 pb-10">
         <button
-          className="px-2 border bg-[#ebebeb] text-black"
+          className="px-2 border bg-[#ebebeb] text-black hover:bg-green-300"
           onClick={() => router.push("/auth/create-account")}
         >
           Add Account

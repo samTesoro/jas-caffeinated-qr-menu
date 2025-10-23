@@ -117,8 +117,8 @@ export default function OrderNotification() {
   };
 
   return (
-    <div className=" md:px-24 lg:px-[600px] py-3 w-full pb-20 px-6">
-      <div className="mx-auto mb-4">
+    <div className="flex flex-col w-full min-h-screen py-3 pb-20 px-7 md:px-24 lg:px-[300px]">
+      <div className="mb-4">
         <h2 className="text-2xl font-bold text-black md:text-3xl">Orders</h2>
       </div>
 

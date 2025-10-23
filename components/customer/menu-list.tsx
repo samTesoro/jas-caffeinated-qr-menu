@@ -15,7 +15,7 @@ function StarIcon({ className = "", ...props }: React.SVGProps<SVGSVGElement>) {
       xmlns="http://www.w3.org/2000/svg"
       fill="currentColor"
       viewBox="0 0 24 24"
-      className={className}
+      className={`${className} hover:fill-[#E59C53] transition-colors`}
       {...props}
     >
       <circle cx="12" cy="12" r="12" fill="#FFD600" />
@@ -194,7 +194,15 @@ export default function MenuList({
   sessionId,
   tableId,
 }: MenuListProps) {
-  type MenuItem = { menuitem_id: number; name: string; price: number; thumbnail?: string; category: string; status: string; description?: string | null };
+  type MenuItem = {
+    menuitem_id: number;
+    name: string;
+    price: number;
+    thumbnail?: string;
+    category: string;
+    status: string;
+    description?: string | null;
+  };
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [search, setSearch] = useState("");
@@ -210,7 +218,9 @@ export default function MenuList({
       const supabase = createClient();
       let query = supabase
         .from("menuitem")
-        .select("menuitem_id, name, price, thumbnail, category, status, description")
+        .select(
+          "menuitem_id, name, price, thumbnail, category, status, description"
+        )
         .eq("status", "Available");
       if (activeTab === "Favorites") {
         query = query.eq("is_favorites", true);
@@ -219,7 +229,12 @@ export default function MenuList({
       }
       query.limit(50).then(({ data }) => {
         setMenuItems(data || []);
-        console.debug('[menu-list] fetched items count:', (data || []).length, 'sample:', (data || [])[0]);
+        console.debug(
+          "[menu-list] fetched items count:",
+          (data || []).length,
+          "sample:",
+          (data || [])[0]
+        );
         setLoading(false);
       });
     } else {
@@ -242,19 +257,26 @@ export default function MenuList({
         const ilikeTerm = `%${term.replace(/%/g, "\\%")}%`;
         const { data, error } = await supabase
           .from("menuitem")
-          .select("menuitem_id, name, price, thumbnail, category, status, description")
+          .select(
+            "menuitem_id, name, price, thumbnail, category, status, description"
+          )
           .eq("status", "Available")
           .or(`name.ilike.${ilikeTerm},description.ilike.${ilikeTerm}`)
           .limit(50);
         if (error) {
-          console.error('[menu-list] search error', error);
+          console.error("[menu-list] search error", error);
           setMenuItems([]);
         } else {
           setMenuItems(data || []);
-          console.debug('[menu-list] search fetched items count:', (data || []).length, 'term:', term);
+          console.debug(
+            "[menu-list] search fetched items count:",
+            (data || []).length,
+            "term:",
+            term
+          );
         }
       } catch (err) {
-        console.error('[menu-list] search exception', err);
+        console.error("[menu-list] search exception", err);
         setMenuItems([]);
       } finally {
         setLoading(false);
@@ -267,8 +289,10 @@ export default function MenuList({
   let filtered;
   if (search.trim() !== "") {
     const term = search.toLowerCase();
-    filtered = menuItems.filter((i) =>
-      (i.name || "").toLowerCase().includes(term) || (i.description || "")!.toLowerCase().includes(term)
+    filtered = menuItems.filter(
+      (i) =>
+        (i.name || "").toLowerCase().includes(term) ||
+        (i.description || "")!.toLowerCase().includes(term)
     );
   } else {
     filtered = menuItems;
@@ -286,7 +310,7 @@ export default function MenuList({
             onClick={() => setNotifOpen(true)}
           >
             <div
-              className="bg-gray-300 rounded-full flex items-center justify-center"
+              className="bg-gray-300 hover:bg-gray-400 rounded-full flex items-center justify-center"
               style={{ width: "45px", height: "45px" }}
             >
               <Image
@@ -355,7 +379,11 @@ export default function MenuList({
         />
       )}
 
-  <NotificationModal open={notifOpen} onClose={() => setNotifOpen(false)} sessionId={sessionId} />
+      <NotificationModal
+        open={notifOpen}
+        onClose={() => setNotifOpen(false)}
+        sessionId={sessionId}
+      />
       {/* Reviews Modal */}
       {reviewsOpen && (
         <ReviewModal

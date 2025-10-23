@@ -64,7 +64,7 @@ export default function ReviewList({ permissions }: ReviewListProps) {
   }
 
   return (
-    <div className="px-6 sm:px-8 md:px-24 lg:px-[600px] py-3 w-full pb-20">
+    <div className="flex flex-col w-full min-h-screen py-3 pb-20 px-7 md:px-24 lg:px-[300px]">
       <div className="flex justify-between items-center mb-2">
         <h2 className="text-2xl md:text-3xl font-bold text-black">
           View Reviews
@@ -83,7 +83,7 @@ export default function ReviewList({ permissions }: ReviewListProps) {
       </div>
       <hr className="border-black my-2" />
       {/* Table header */}
-      <div className="grid grid-cols-[1fr_3.5fr_1fr] gap-2 font-semibold text-black text-sm md:text-lg">
+      <div className="grid grid-cols-[1fr_3.5fr_1fr] gap-2 font-semibold text-black text-sm md:text-lg lg:text-xl">
         <div className="text-center">Date/Time</div>
         <div className="text-center">Review</div>
         <div className="text-center">Rating</div>

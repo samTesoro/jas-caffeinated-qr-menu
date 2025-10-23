@@ -36,7 +36,9 @@ export default function ItemDetailModal({
 }) {
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
-  const [fetchedDescription, setFetchedDescription] = useState<string | null | undefined>(undefined);
+  const [fetchedDescription, setFetchedDescription] = useState<
+    string | null | undefined
+  >(undefined);
 
   const BackIcon = () => (
     <svg
@@ -212,32 +214,34 @@ export default function ItemDetailModal({
     (async () => {
       try {
         const res = await supabase
-          .from('menuitem')
-          .select('description')
-          .eq('menuitem_id', item.menuitem_id)
+          .from("menuitem")
+          .select("description")
+          .eq("menuitem_id", item.menuitem_id)
           .maybeSingle();
         if (!mounted) return;
-        const { data, error } = res as { data?: { description?: string | null } | null; error?: unknown };
+        const { data, error } = res as {
+          data?: { description?: string | null } | null;
+          error?: unknown;
+        };
         if (error) {
-          console.debug('[item-detail-modal] description fetch error', error);
+          console.debug("[item-detail-modal] description fetch error", error);
           return;
         }
         setFetchedDescription(data?.description ?? null);
       } catch (err) {
-        console.debug('[item-detail-modal] description fetch exception', err);
+        console.debug("[item-detail-modal] description fetch exception", err);
       }
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [item]);
 
   const modalUI = (
-    <div className="fixed inset-0 z-[10000] bg-white/50">
-      <div
-        className="hidden md:block absolute inset-0 bg-black/40"
-        onClick={onClose}
-      />
+    <div className="fixed inset-0 z-[10000] bg-white/50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
-      <div className="absolute inset-0 bg-white overflow-y-auto md:relative md:mx-auto md:my-6 md:w-[90vw] md:max-w-xl md:max-h-[90vh] md:overflow-y-auto md:bg-white md:rounded-xl md:shadow-xl flex flex-col">
+      <div className="relative bg-white w-[90vw] max-w-xl max-h-[90vh] overflow-y-auto rounded-xl shadow-xl flex flex-col">
         <div className="relative w-full h-[250px] md:h-[300px]">
           <Image
             src={item.thumbnail || "/default-food.png"}
@@ -263,7 +267,13 @@ export default function ItemDetailModal({
             <div className="pr-4">
               <div className="font-bold text-black text-xl">{item.name}</div>
               <div className="mt-1 text-gray-700 text-xs md:text-sm max-w-[60vw] md:max-w-xs">
-                {fetchedDescription ? fetchedDescription : <span className="text-gray-400 italic">No description available</span>}
+                {fetchedDescription ? (
+                  fetchedDescription
+                ) : (
+                  <span className="text-gray-400 italic">
+                    No description available
+                  </span>
+                )}
               </div>
             </div>
             <div className="text-right">
@@ -309,7 +319,10 @@ export default function ItemDetailModal({
           </div>
 
           {/* Add to Cart Button */}
-          <button className="w-full bg-orange-400 text-white py-3 px-3 md:py-3 md:px-2 rounded-xl font-semibold text-lg mt-auto sm:mb-0" onClick={addToCart}>
+          <button
+            className="w-full bg-orange-400 text-white py-3 px-3 md:py-3 md:px-2 rounded-xl font-semibold text-lg mt-auto sm:mb-0"
+            onClick={addToCart}
+          >
             Add to Cart - ₱{item.price * qty}.00
           </button>
         </div>

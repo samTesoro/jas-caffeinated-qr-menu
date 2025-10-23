@@ -17,6 +17,9 @@ export default function TableManagement() {
     next: boolean;
   } | null>(null);
 
+  const [showAddConfirm, setShowAddConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   useEffect(() => {
     const run = async () => {
       setLoading(true);
@@ -68,7 +71,7 @@ export default function TableManagement() {
     setSaving(table_num);
     try {
       const supabase = createClient();
-      // Upsert-like behavior: update if exists, else insert
+
       const { data: existing } = await supabase
         .from("customer")
         .select("customer_id")
@@ -99,7 +102,44 @@ export default function TableManagement() {
     }
   };
 
+  const addTable = async () => {
+    const nextNum =
+      tables.length > 0 ? Math.max(...tables.map((t) => t.table_num)) + 1 : 1;
+    const newTable = { table_num: nextNum, is_active: true };
+
+    setTables((prev) => [...prev, newTable]);
+
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("customer")
+        .insert({ table_num: nextNum, is_active: true });
+      if (error) throw error;
+    } catch (err) {
+      console.error("Error adding table:", err);
+      setTables((prev) => prev.filter((t) => t.table_num !== nextNum));
+    }
+  };
+
+  const deleteTable = async (table_num: number) => {
+    setTables((prev) => prev.filter((t) => t.table_num !== table_num));
+
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("customer")
+        .delete()
+        .eq("table_num", table_num);
+      if (error) throw error;
+    } catch (err) {
+      console.error("Error deleting table:", err);
+    }
+  };
+
   if (loading) return <LoadingSpinner message="Loading..." />;
+
+  const lastTableNum =
+    tables.length > 0 ? Math.max(...tables.map((t) => t.table_num)) : null;
 
   return (
     <div className="min-h-screen bg-[#ebebeb] pb-24">
@@ -109,6 +149,25 @@ export default function TableManagement() {
         <h2 className="text-xl md:text-3xl font-bold text-black mt-4 mb-6 text-center">
           Change Table Status
         </h2>
+
+        <div className="flex justify-between mb-5">
+          <Button
+            variant="orange"
+            onClick={() => setShowAddConfirm(true)}
+            className="text-black px-2 rounded-lg border-transparent font-semibold"
+          >
+            Add
+          </Button>
+          {tables.length > 0 && (
+            <Button
+              variant="red"
+              onClick={() => setShowDeleteConfirm(true)}
+              className="text-black px-2 rounded-lg border-transparent font-semibold"
+            >
+              Delete
+            </Button>
+          )}
+        </div>
 
         <div className="grid grid-cols-3 gap-6 place-items-center">
           {tables.map((t) => (
@@ -136,6 +195,66 @@ export default function TableManagement() {
           </div>
         </div>
       </div>
+
+      {showAddConfirm && (
+        <div className="fixed inset-0 bg-white/50 flex items-center justify-center transition-opacity duration-300 z-[9999]">
+          <div className="bg-white rounded-md p-6 w-[90vw] max-w-[250px] text-center space-y-4 shadow-lg">
+            <p className="text-md text-black font-bold mt-3">Add new table?</p>
+            <div className="flex justify-between font-bold">
+              <Button
+                variant="red"
+                type="button"
+                onClick={() => setShowAddConfirm(false)}
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
+              >
+                No
+              </Button>
+              <Button
+                variant="green"
+                type="button"
+                onClick={() => {
+                  setShowAddConfirm(false);
+                  addTable();
+                }}
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
+              >
+                Yes
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-white/50 flex items-center justify-center transition-opacity duration-300 z-[9999]">
+          <div className="bg-white rounded-md p-6 w-[90vw] max-w-[250px] text-center space-y-4 shadow-lg">
+            <p className="text-md text-black font-bold mt-3">
+              Delete table {lastTableNum}?
+            </p>
+            <div className="flex justify-between font-bold">
+              <Button
+                variant="red"
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
+              >
+                No
+              </Button>
+              <Button
+                variant="green"
+                type="button"
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  if (lastTableNum) deleteTable(lastTableNum);
+                }}
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
+              >
+                Yes
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {confirmTarget && (
         <div className="fixed inset-0 bg-white/50 flex items-center justify-center transition-opacity duration-300 z-[9999]">

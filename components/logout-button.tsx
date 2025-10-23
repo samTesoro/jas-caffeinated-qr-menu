@@ -3,59 +3,42 @@
 import React from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { Button } from "./ui/button";
 
-export function LogoutButton({ children }: { children?: React.ReactNode }) {
+export function LogoutButton() {
   const router = useRouter();
-  const [showModal, setShowModal] = React.useState(false);
 
   const logout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/auth/login");
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut(); // Logs the user out
+      router.push("/auth/login"); // Redirects to the login page
+    } catch (error) {
+      console.error("Error during logout:", error);
+    }
   };
 
   return (
-    <>
-      <button
-        onClick={() => setShowModal(true)}
-        style={{
-          background: "none",
-          border: "none",
-          padding: 0,
-          cursor: "pointer",
-          fontFamily: "Inter, sans-serif",
-          fontWeight: 700,
-          color: "black",
-        }}
+    <button
+      onClick={logout}
+      className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-700 transition-colors z-50 relative"
+    >
+      {/* Logout Icon */}
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="transition-colors duration-200 hover:stroke-red-700"
       >
-        {children ? children : "Logout"}
-      </button>
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-md p-6 w-[250px] text-center space-y-4">
-            <p className="text-md text-black font-bold mt-3">Log out?</p>
-            <div className="flex justify-between font-bold">
-              <Button
-                variant="red"
-                type="button"
-                onClick={() => setShowModal(false)}
-                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg"
-              >
-                No
-              </Button>
-              <Button
-                variant="green"
-                type="button"
-                onClick={logout}
-                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg"
-              >
-                Yes
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+        <polyline points="16 17 21 12 16 7" />
+        <line x1="21" y1="12" x2="9" y2="12" />
+      </svg>
+    </button>
   );
 }
