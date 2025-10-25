@@ -45,20 +45,35 @@ export default function OrderHistory() {
         const response = await fetch("/api/history");
         if (!response.ok) throw new Error("Failed to fetch order history");
         const data = await response.json();
+
+        const formatDateTime = (dateStr?: string, timeStr?: string) => {
+          if (!dateStr || !timeStr) return "";
+          const dateObj = new Date(`${dateStr}T${timeStr}`);
+          const formattedDate = dateObj.toLocaleDateString("en-US", {
+            month: "2-digit",
+            day: "2-digit",
+            year: "numeric",
+          });
+          const formattedTime = dateObj.toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          });
+          return `${formattedDate} ${formattedTime}`;
+        };
+
         // Transform backend data to match UI
         const orderArr: Order[] = ((data as BackendOrder[]) || []).map((o) => ({
           id: o.order_id?.toString() || "",
           tableNo: o.customer_id?.toString() || "N/A",
-          time:
-            o.date_ordered && o.time_ordered
-              ? `${o.date_ordered} ${o.time_ordered}`
-              : "",
+          time: formatDateTime(o.date_ordered, o.time_ordered), // formatted output // dreame
           items:
             o.cart?.cartitem?.map((item) => ({
               name: item.menuitem?.name || "Unknown Item",
               quantity: item.quantity || 0,
             })) || [],
         }));
+
         setOrder(orderArr);
       } catch (err: unknown) {
         let message = "Unknown error";

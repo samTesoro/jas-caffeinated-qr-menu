@@ -51,6 +51,17 @@ export default function OrderNotification() {
           items?: Item[];
           payment_type: string;
         }
+
+        const convertTo12Hour = (timeString: string): string => {
+          if (!timeString) return "";
+          const [hourStr, minuteStr] = timeString.split(":");
+          let hour = parseInt(hourStr, 10);
+          const minute = parseInt(minuteStr, 10);
+          const ampm = hour >= 12 ? "PM" : "AM";
+          hour = hour % 12 || 12;
+          return `${hour}:${minute.toString().padStart(2, "0")} ${ampm}`;
+        };
+
         const transformed = (data as Order[])
           .map((order) => ({
             order_id: order.order_id?.toString() ?? "",
@@ -58,7 +69,7 @@ export default function OrderNotification() {
               ? "Finished"
               : ("Preparing" as "Preparing" | "Finished"),
             tableNo: String(order.customer_id ?? "N/A"),
-            time: order.time_ordered ?? "",
+            time: convertTo12Hour(order.time_ordered ?? ""),
             items:
               order.items?.map((item) => ({
                 name: item.item_name,
@@ -68,9 +79,21 @@ export default function OrderNotification() {
             paymentMethod: order.payment_type ?? "",
           }))
           .sort((a, b) => {
-            const today = new Date().toISOString().split("T")[0];
-            const dateA = new Date(`${today}T${a.time}`);
-            const dateB = new Date(`${today}T${b.time}`);
+            const to24HourDate = (time: string) => {
+              const [timePart, modifier] = time.split(" ");
+              const [h, m] = timePart.split(":").map(Number);
+              let hour = h;
+              if (modifier === "PM" && h !== 12) hour += 12;
+              if (modifier === "AM" && h === 12) hour = 0;
+              const today = new Date().toISOString().split("T")[0];
+              return new Date(
+                `${today}T${hour.toString().padStart(2, "0")}:${m
+                  .toString()
+                  .padStart(2, "0")}:00`
+              );
+            };
+            const dateA = to24HourDate(a.time);
+            const dateB = to24HourDate(b.time);
             return dateB.getTime() - dateA.getTime();
           });
 
@@ -128,7 +151,7 @@ export default function OrderNotification() {
                 }}
                 className="bg-[#A7F586] hover:bg-gray-400 transition-colors px-1 border text-black text-sm md:text-lg"
               >
-                Finished
+                Mark as finished
               </button>
             </div>
             <button
