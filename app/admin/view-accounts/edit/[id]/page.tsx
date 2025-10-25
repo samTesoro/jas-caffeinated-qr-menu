@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 export default function EditAccountPage() {
   const supabase = createClient();
   const router = useRouter();
-  const { id } = useParams();
+  const params = useParams();
+  const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");

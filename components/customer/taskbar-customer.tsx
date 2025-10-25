@@ -30,6 +30,7 @@ export default function MenuTaskbar({
   // Use prop tableId first, then extract from pathname as fallback
   const tableId = useMemo(() => {
     if (propTableId) return propTableId;
+    if (!pathname) return null;
     const match = pathname.match(/customer\/(\w+)/);
     return match ? match[1] : null;
   }, [pathname, propTableId]);
