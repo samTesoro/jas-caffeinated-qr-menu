@@ -4,6 +4,7 @@ import React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import DashboardHeader from "@/components/ui/header";
+import EstimatedTimeDisplay from "@/components/customer/estimated-time";
 
 export default function SessionGCashOrderConfirmation({ params }: { params: Promise<{ tableId: string, sessionId: string }> }) {
   const router = useRouter();
@@ -52,7 +53,7 @@ export default function SessionGCashOrderConfirmation({ params }: { params: Prom
           </div>
           <h2 className="font-bold text-black text-base mb-2 text-center">YOUR ORDER WILL ARRIVE SOON.</h2>
           <p className="text-gray-800 text-center mb-6 text-lg">Please present your GCash receipt on bill out or at the counter to validate your transaction.<br />Thank you!</p>
-          <span className="text-base text-gray-700 text-center mb-6 block">Est. Time of Arrival: 15 mins.</span>
+          <EstimatedTimeDisplay tableId={tableId} sessionId={sessionId} />
         </div>
       </div>
       <div className="w-full bg-[#393939] h-20 flex items-center justify-center">

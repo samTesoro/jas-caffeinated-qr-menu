@@ -66,8 +66,9 @@ router.get('/api/orders', async (req, res) => {
         ci.menuitem_id,
         ci.quantity,
         ci.subtotal_price,
-        mi.name as item_name,
-        mi.description as item_description
+          mi.name as item_name,
+          mi.description as item_description,
+          mi.est_time as est_time
       FROM "order" o
       JOIN cart c ON o.cart_id = c.cart_id
       LEFT JOIN cartitem ci ON c.cart_id = ci.cart_id
@@ -96,18 +97,43 @@ router.get('/api/orders', async (req, res) => {
       }
       
       if (row.cartitem_id) {
-        orders[row.order_id].items.push({
+        const item = {
           cartitem_id: row.cartitem_id,
           menuitem_id: row.menuitem_id,
           quantity: row.quantity,
           subtotal_price: row.subtotal_price,
           item_name: row.item_name,
-          item_description: row.item_description
-        });
+          item_description: row.item_description,
+          est_time: row.est_time
+        };
+        orders[row.order_id].items.push(item);
       }
     });
-    
-    res.status(200).json(Object.values(orders));
+    // Compute per-order ETA as the max est_time among its items (conservative single-value)
+    const capacity = 3; // match server heuristic elsewhere
+    const out = Object.values(orders).map((o) => {
+      const items = o.items || [];
+      const perItemEstimates = [];
+      for (const it of items) {
+        const qty = it.quantity || 1;
+        const est = it.est_time || 0;
+        for (let i = 0; i < qty; i++) perItemEstimates.push(est);
+      }
+      const sum = perItemEstimates.reduce((s, v) => s + v, 0);
+      const maxItem = perItemEstimates.length ? Math.max(...perItemEstimates) : 0;
+      // per-order prep: max(maxItem, sum / capacity)
+      const prep = Math.max(maxItem, perItemEstimates.length ? sum / Math.max(1, capacity) : 0);
+      const estimated = Math.max(1, Math.ceil(maxItem));
+      const upper = Math.ceil(estimated * 1.3) + 1;
+      return {
+        ...o,
+        estimated,
+        range: { min: estimated, max: upper },
+        prepMinutes: Math.ceil(prep),
+      };
+    });
+
+    res.status(200).json(out);
   } catch (error) {
     console.error('Error fetching orders:', error);
     res.status(500).json({ error: 'Failed to fetch orders' });

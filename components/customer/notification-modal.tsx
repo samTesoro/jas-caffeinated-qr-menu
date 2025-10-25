@@ -2,6 +2,7 @@
 import React from "react";
 import { X } from "lucide-react";
 import { Button } from "../ui/button";
+import EstimatedTimeDisplay from "./estimated-time";
 
 
 interface OrderItem {
@@ -33,8 +34,10 @@ export default function NotificationModal({ open, onClose, sessionId }: Notifica
   React.useEffect(() => {
     if (!open || !sessionId) return;
     let active = true;
+    const firstLoad = { current: true } as { current: boolean };
     const fetchOrders = async () => {
-      setLoading(true);
+      // Only show the loading state on the initial fetch to avoid UI "refresh" on every poll
+      if (firstLoad.current) setLoading(true);
       setError(null);
       try {
         const res = await fetch(`/api/orders?sessionId=${sessionId}`);
@@ -44,7 +47,10 @@ export default function NotificationModal({ open, onClose, sessionId }: Notifica
       } catch (err) {
         if (active) setError(err instanceof Error ? err.message : "Error fetching orders");
       } finally {
-        if (active) setLoading(false);
+        if (active && firstLoad.current) {
+          setLoading(false);
+          firstLoad.current = false;
+        }
       }
     };
     fetchOrders();
@@ -161,7 +167,21 @@ export default function NotificationModal({ open, onClose, sessionId }: Notifica
                   </div>
                 </div>
 
-                <p className="text-xs text-right text-black mt-1">{order.time_ordered}</p>
+                <div className="flex items-center justify-between mt-1">
+                  <p className="text-xs text-black">{order.time_ordered}</p>
+                  <div className="text-xs text-gray-700">
+                    {/* show per-order estimate from /api/orders when available, otherwise fall back */}
+                    {typeof (order as any).estimated === 'number' && (order as any).range ? (
+                      ((order as any).range.min === (order as any).range.max) ? (
+                        <span>Est. time: ~{(order as any).estimated} min</span>
+                      ) : (
+                        <span>Est. time: ~{(order as any).range.min}–{(order as any).range.max} min</span>
+                      )
+                    ) : (
+                      <EstimatedTimeDisplay orderId={order.order_id} />
+                    )}
+                  </div>
+                </div>
               </div>
             ))}
           </div>

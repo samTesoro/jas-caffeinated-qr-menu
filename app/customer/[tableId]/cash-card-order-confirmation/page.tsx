@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import DashboardHeader from "@/components/ui/header";
+import EstimatedTimeDisplay from "@/components/customer/estimated-time";
 
 export default function CashCardOrderConfirmation({
   params,
@@ -72,9 +73,7 @@ export default function CashCardOrderConfirmation({
             <br />
             Thank you!
           </p>
-          <span className="text-base text-gray-700 text-center mb-6 block">
-            Est. Time of Arrival: 15 mins.
-          </span>
+          <EstimatedTimeDisplay tableId={tableId} sessionId={sessionId} />
         </div>
       </div>
       <div className="w-full bg-[#393939] h-20 flex items-center justify-center">
