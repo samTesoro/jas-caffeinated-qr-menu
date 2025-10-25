@@ -191,8 +191,7 @@ export async function GET(request: NextRequest) {
             )
           `)
           .eq("customer_id", customer.customer_id)
-            .eq("isfinished", false)
-            .eq("iscancelled", false)
+          .eq("iscancelled", false)
           .order("time_ordered", { ascending: true })
           .limit(20);
         orders = data || [];
@@ -230,7 +229,6 @@ export async function GET(request: NextRequest) {
             )
           `)
           .in("cart_id", cartIds)
-          .eq("isfinished", false)
           .eq("iscancelled", false)
           .order("time_ordered", { ascending: true })
           .limit(20);
@@ -270,8 +268,7 @@ export async function GET(request: NextRequest) {
               )
             )
           )
-        `)
-  .eq("isfinished", false)
+    `)
   .eq("iscancelled", false)
   .order("time_ordered", { ascending: true })
   .limit(20);

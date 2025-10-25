@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/client";
 import DashboardHeader from "@/components/ui/header";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { Button } from "../ui/button";
+import QRCode from "qrcode";
+import Image from "next/image";
 
 type TableState = { table_num: number; is_active: boolean };
 
@@ -19,6 +21,9 @@ export default function TableManagement() {
 
   const [showAddConfirm, setShowAddConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [qrMode, setQrMode] = useState(false);
+  const [qrForTable, setQrForTable] = useState<number | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const run = async () => {
@@ -34,18 +39,20 @@ export default function TableManagement() {
         (data as Row[] | null)?.forEach((r) =>
           byNum.set(r.table_num, !!r.is_active)
         );
-        const list: TableState[] = Array.from({ length: 7 }, (_, i) => {
+        // Determine how many tables to render initially based on highest active table, capped at 15, minimum 1
+        const rows = (data as Row[] | null) ?? [];
+        const maxActive = rows
+          .filter((r) => r.is_active === true)
+          .reduce((acc, r) => Math.max(acc, r.table_num), 0);
+        const initialCount = Math.min(Math.max(maxActive || 1, 1), 15);
+        const list: TableState[] = Array.from({ length: initialCount }, (_, i) => {
           const n = i + 1;
           return { table_num: n, is_active: byNum.get(n) ?? false };
         });
         setTables(list);
       } catch {
-        setTables(
-          Array.from({ length: 7 }, (_, i) => ({
-            table_num: i + 1,
-            is_active: false,
-          }))
-        );
+        // Fallback to a single table when loading fails
+        setTables([{ table_num: 1, is_active: false }]);
       } finally {
         setLoading(false);
       }
@@ -103,18 +110,34 @@ export default function TableManagement() {
   };
 
   const addTable = async () => {
-    const nextNum =
-      tables.length > 0 ? Math.max(...tables.map((t) => t.table_num)) + 1 : 1;
+    const nextNum = tables.length > 0 ? Math.max(...tables.map((t) => t.table_num)) + 1 : 1;
+    if (nextNum > 15) return; // cap at 15
     const newTable = { table_num: nextNum, is_active: true };
 
+    // optimistic add to view
     setTables((prev) => [...prev, newTable]);
 
     try {
       const supabase = createClient();
-      const { error } = await supabase
+      // If a row exists for nextNum, update to active; else insert a new row
+      const { data: existing } = await supabase
         .from("customer")
-        .insert({ table_num: nextNum, is_active: true });
-      if (error) throw error;
+        .select("customer_id")
+        .eq("table_num", nextNum)
+        .maybeSingle();
+
+      if (existing?.customer_id) {
+        const { error: updErr } = await supabase
+          .from("customer")
+          .update({ is_active: true })
+          .eq("customer_id", existing.customer_id);
+        if (updErr) throw updErr;
+      } else {
+        const { error: insErr } = await supabase
+          .from("customer")
+          .insert({ table_num: nextNum, is_active: true });
+        if (insErr) throw insErr;
+      }
     } catch (err) {
       console.error("Error adding table:", err);
       setTables((prev) => prev.filter((t) => t.table_num !== nextNum));
@@ -122,18 +145,60 @@ export default function TableManagement() {
   };
 
   const deleteTable = async (table_num: number) => {
-    setTables((prev) => prev.filter((t) => t.table_num !== table_num));
-
+    // Guard: never delete table 1 from the view
+    if (table_num <= 1) return;
     try {
       const supabase = createClient();
       const { error } = await supabase
         .from("customer")
-        .delete()
+        .update({ is_active: false })
         .eq("table_num", table_num);
       if (error) throw error;
     } catch (err) {
-      console.error("Error deleting table:", err);
+      console.error("Error marking table inactive:", err);
+    } finally {
+      // Remove the highest visible table from the view (e.g., 15 -> 14 -> ...), but keep routes intact
+      setTables((prev) => {
+        const filtered = prev.filter((t) => t.table_num !== table_num);
+        // Ensure minimum of 1 visible table
+        return filtered.length >= 1 ? filtered : prev;
+      });
     }
+  };
+
+  const addDisabled = tables.length >= 15;
+  const deleteDisabled = tables.length <= 1;
+
+  // When in QR mode, clicking an active table opens QR modal
+  const handleTableClick = async (table_num: number, isActive: boolean) => {
+    if (qrMode) {
+      if (!isActive) return; // only currently available (active) tables
+      const url = `http://192.168.0.221:3000/customer/${table_num}`;
+      try {
+        const dataUrl = await QRCode.toDataURL(url, { width: 512, margin: 1 });
+        setQrDataUrl(dataUrl);
+        setQrForTable(table_num);
+      } catch (e) {
+        console.error("Failed to generate QR:", e);
+      }
+      return;
+    }
+    requestToggle(table_num);
+  };
+
+  const closeQrModal = () => {
+    setQrForTable(null);
+    setQrDataUrl(null);
+  };
+
+  const downloadQr = () => {
+    if (!qrDataUrl || !qrForTable) return;
+    const link = document.createElement("a");
+    link.href = qrDataUrl;
+    link.download = `table-${qrForTable}-qr.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   if (loading) return <LoadingSpinner message="Loading..." />;
@@ -150,19 +215,28 @@ export default function TableManagement() {
           Change Table Status
         </h2>
 
-        <div className="flex justify-between mb-5">
+        <div className="flex justify-between items-center mb-5 gap-2">
           <Button
             variant="orange"
             onClick={() => setShowAddConfirm(true)}
             className="text-black px-2 rounded-lg border-transparent font-semibold"
+            disabled={addDisabled}
           >
             Add
+          </Button>
+          <Button
+            variant={qrMode ? "green" : "orange"}
+            onClick={() => setQrMode((s) => !s)}
+            className="text-black px-2 rounded-lg border-transparent font-semibold"
+          >
+            {qrMode ? "QR Mode: On" : "Generate QR"}
           </Button>
           {tables.length > 0 && (
             <Button
               variant="red"
               onClick={() => setShowDeleteConfirm(true)}
               className="text-black px-2 rounded-lg border-transparent font-semibold"
+              disabled={deleteDisabled}
             >
               Delete
             </Button>
@@ -174,7 +248,7 @@ export default function TableManagement() {
             <button
               key={t.table_num}
               aria-label={`Table ${t.table_num}`}
-              onClick={() => requestToggle(t.table_num)}
+              onClick={() => handleTableClick(t.table_num, t.is_active)}
               className={`rounded-md w-20 h-20 flex items-center justify-center shadow text-xl font-semibold transition-colors ${
                 t.is_active ? "bg-red-500 text-white" : "bg-gray-300 text-black"
               } ${saving === t.table_num ? "opacity-70" : ""}`}
@@ -193,6 +267,7 @@ export default function TableManagement() {
             <span className="inline-block w-4 h-4 bg-red-500 border border-black align-middle" />
             <span className="align-middle">Active</span>
           </div>
+          <div className="text-xs text-gray-600 pt-2">Note: Minimum 1 table, maximum 15 tables. {qrMode && <span className="ml-2 text-gray-800 font-semibold">QR mode is active — click an active table to preview/download its QR.</span>}</div>
         </div>
       </div>
 
@@ -283,6 +358,41 @@ export default function TableManagement() {
               >
                 Yes
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {qrForTable && qrDataUrl && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[10000]">
+          <div className="relative bg-white rounded-md p-4 w-[92vw] max-w-[380px] shadow-lg">
+            <button
+              aria-label="Close"
+              onClick={closeQrModal}
+              className="absolute right-2 top-2 w-7 h-7 rounded-full flex items-center justify-center text-gray-700 hover:bg-gray-100"
+              title="Close"
+            >
+              ✕
+            </button>
+            <h3 className="text-center text-black font-bold text-lg mb-3">Table {qrForTable} QR</h3>
+            <div className="w-full flex items-center justify-center">
+              {qrDataUrl && (
+                <Image
+                  src={qrDataUrl}
+                  alt={`QR for table ${qrForTable}`}
+                  width={260}
+                  height={260}
+                  unoptimized
+                />
+              )}
+            </div>
+            <div className="flex justify-center mt-4">
+              <button
+                onClick={downloadQr}
+                className="flex items-center gap-1 px-3 py-2 bg-white rounded shadow text-black font-semibold border border-gray-300 text-sm"
+              >
+                Download QR
+              </button>
             </div>
           </div>
         </div>

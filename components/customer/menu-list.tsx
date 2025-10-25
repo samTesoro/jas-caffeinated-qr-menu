@@ -209,6 +209,7 @@ export default function MenuList({
   const [loading, setLoading] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false); //state for modal
   const [reviewsOpen, setReviewsOpen] = useState(false); // state for reviews modal
+  const [ongoingCount, setOngoingCount] = useState(0);
 
   useEffect(() => {
     setLoading(true);
@@ -286,6 +287,31 @@ export default function MenuList({
     return () => clearTimeout(timer);
   }, [search]);
 
+  // Poll orders count to display a badge on the notification bell
+  useEffect(() => {
+    let active = true;
+    if (!sessionId) return;
+    const fetchCount = async () => {
+      try {
+        const res = await fetch(`/api/orders?sessionId=${sessionId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const count = Array.isArray(data)
+          ? data.filter((o: any) => o?.status === 'preparing').length
+          : 0;
+        if (active) setOngoingCount(count);
+      } catch {
+        // ignore
+      }
+    };
+    fetchCount();
+    const interval = setInterval(fetchCount, 5000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [sessionId]);
+
   let filtered;
   if (search.trim() !== "") {
     const term = search.toLowerCase();
@@ -321,6 +347,11 @@ export default function MenuList({
                 style={{ objectFit: "contain" }}
               />
             </div>
+            {ongoingCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] leading-none rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-[4px] border border-white">
+                {ongoingCount}
+              </span>
+            )}
           </div>
 
           {/* Search bar (center, flex-grow) */}
