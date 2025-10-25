@@ -26,32 +26,67 @@ export default function NotificationModal({ open, onClose, sessionId }: Notifica
 
   const [orders, setOrders] = React.useState<Order[]>([]);
   const [loading, setLoading] = React.useState(false);
+  const [initialLoad, setInitialLoad] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [showConfirm, setShowConfirm] = React.useState(false);
   const [pendingCancelId, setPendingCancelId] = React.useState<string | null>(null);
+  const [now, setNow] = React.useState<number>(Date.now());
+
+  // Utility to get or set the cancel window start time in localStorage
+  const getCancelStart = React.useCallback((orderId: string) => {
+    const key = `orderCancelStart:${orderId}`;
+    const existing = (typeof window !== 'undefined') ? window.localStorage.getItem(key) : null;
+    if (existing) return parseInt(existing, 10) || Date.now();
+    const ts = Date.now();
+    try { if (typeof window !== 'undefined') window.localStorage.setItem(key, String(ts)); } catch {}
+    return ts;
+  }, []);
+
+  const getRemainingMs = React.useCallback((orderId: string) => {
+    const start = getCancelStart(orderId);
+    const end = start + 2 * 60 * 1000; // 2 minutes
+    return Math.max(0, end - now);
+  }, [getCancelStart, now]);
+
+  const formatRemaining = (ms: number) => {
+    const totalSec = Math.ceil(ms / 1000);
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
 
   React.useEffect(() => {
     if (!open || !sessionId) return;
     let active = true;
-    const fetchOrders = async () => {
-      setLoading(true);
+    const fetchOrders = async (isInitial = false) => {
+      if (isInitial) setLoading(true);
       setError(null);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
       try {
-        const res = await fetch(`/api/orders?sessionId=${sessionId}`);
+        const res = await fetch(`/api/orders?sessionId=${sessionId}` , { signal: controller.signal });
         if (!res.ok) throw new Error("Failed to fetch orders");
         const data = await res.json();
         if (active) setOrders(data);
-      } catch (err) {
-        if (active) setError(err instanceof Error ? err.message : "Error fetching orders");
+      } catch (err: any) {
+        if (!active) return;
+        const aborted = err?.name === 'AbortError';
+        setError(aborted ? 'Timed out fetching orders. Please try again.' : (err instanceof Error ? err.message : 'Error fetching orders'));
       } finally {
-        if (active) setLoading(false);
+        clearTimeout(timeout);
+        if (active && isInitial) {
+          setLoading(false);
+          setInitialLoad(false);
+        }
       }
     };
-    fetchOrders();
-    const interval = setInterval(fetchOrders, 5000);
+    fetchOrders(true);
+    const interval = setInterval(() => fetchOrders(false), 5000);
+    const tick = setInterval(() => setNow(Date.now()), 1000);
     return () => {
       active = false;
       clearInterval(interval);
+      clearInterval(tick);
     };
   }, [open, sessionId]);
 
@@ -104,7 +139,7 @@ export default function NotificationModal({ open, onClose, sessionId }: Notifica
         <h2 className="text-xl font-bold mb-4 text-black">My Orders</h2>
         <hr className="border-black mb-4" />
 
-        {loading ? (
+        {loading && initialLoad ? (
           <div className="text-center text-gray-500 py-8">Loading orders...</div>
         ) : error ? (
           <div className="text-center text-red-500 py-8">{error}</div>
@@ -150,13 +185,25 @@ export default function NotificationModal({ open, onClose, sessionId }: Notifica
                       <Button
                         variant="red"
                         size="default"
-                        className="w-full text-xs py-1"
-                        onClick={() => handleCancel(order.order_id)}
+                        className={`w-full text-xs py-1 ${getRemainingMs(order.order_id) <= 0 ? 'opacity-50 cursor-not-allowed bg-gray-300 border-gray-300 text-gray-600' : ''}`}
+                        onClick={() => getRemainingMs(order.order_id) > 0 && handleCancel(order.order_id)}
+                        disabled={getRemainingMs(order.order_id) <= 0}
                       >
                         Cancel Order
                       </Button>
+                    ) : order.status === 'finished' ? (
+                      <span className="text-xs text-green-600 font-medium">Finished</span>
                     ) : (
                       <div className="h-8" />
+                    )}
+                    {order.status === 'preparing' && (
+                      <div className="text-[10px] text-gray-600 mt-1">
+                        {getRemainingMs(order.order_id) > 0 ? (
+                          <>Cancel available for <span className="font-semibold">{formatRemaining(getRemainingMs(order.order_id))}</span></>
+                        ) : (
+                          <>Cancel window expired</>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
