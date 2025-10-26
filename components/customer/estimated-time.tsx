@@ -6,6 +6,7 @@ interface Props {
   orderId?: string;
   sessionId?: string | null;
   tableId?: string | null;
+  small?: boolean;
 }
 
 export default function EstimatedTimeDisplay({ orderId, sessionId, tableId }: Props) {
@@ -107,22 +108,24 @@ export default function EstimatedTimeDisplay({ orderId, sessionId, tableId }: Pr
   }, [orderId, sessionId, tableId]);
 
   // Show loading only if we have no estimate yet. If we have a prior estimate, keep displaying it while refreshing in background.
+  const inlineClass = "text-[10px] text-gray-700 leading-none";
+
   if (loading && estimate == null) {
-    return <span className="text-base text-gray-700 text-center mb-6 block">Estimating time…</span>;
+    return <span className={inlineClass}>Estimating time…</span>;
   }
   if (error && estimate == null) {
-    return <span className="text-base text-gray-700 text-center mb-6 block">Est. unavailable</span>;
+    return <span className={inlineClass}>Est. unavailable</span>;
   }
   if (estimate != null && range) {
     if (range.min === range.max) {
       return (
-        <span className="text-base text-gray-700 text-center mb-6 block">Est. time: ~{estimate} min</span>
+        <span className={inlineClass}>Est. time: ~{estimate} min</span>
       );
     }
     return (
-      <span className="text-base text-gray-700 text-center mb-6 block">Est. time: ~{range.min}–{range.max} min</span>
+      <span className={inlineClass}>Est. time: ~{range.min}–{range.max} min</span>
     );
   }
-  
+
   return null;
 }

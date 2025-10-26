@@ -197,36 +197,39 @@ export default function NotificationModal({ open, onClose, sessionId }: Notifica
                       >
                         Cancel Order
                       </Button>
-                    ) : order.status === 'finished' ? (
-                      <span className="text-xs text-green-600 font-medium">Finished</span>
                     ) : (
                       <div className="h-8" />
                     )}
                     {order.status === 'preparing' && (
                       <div className="text-[10px] text-gray-600 mt-1">
                         {getRemainingMs(order.order_id) > 0 ? (
-                          <>Cancel available for <span className="font-semibold">{formatRemaining(getRemainingMs(order.order_id))}</span></>
+                          <>
+                            Cancel available for <span className="font-semibold">{formatRemaining(getRemainingMs(order.order_id))}</span>
+                          </>
                         ) : (
                           <>Cancel window expired</>
                         )}
+
+                        {/* ETA shown on its own line below the cancel message */}
+                        <div className="text-[10px] text-gray-700 mt-1 leading-none">
+                          {typeof (order as any).estimated === 'number' && (order as any).range ? (
+                            ((order as any).range.min === (order as any).range.max) ? (
+                              <>Est. ~{(order as any).estimated} min</>
+                            ) : (
+                              <>Est. ~{(order as any).range.min}–{(order as any).range.max} min</>
+                            )
+                          ) : (
+                            <EstimatedTimeDisplay orderId={order.order_id} small />
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between mt-1">
-                  <p className="text-xs text-black">{order.time_ordered}</p>
-                  <div className="text-xs text-gray-700">
-                    {/* show per-order estimate from /api/orders when available, otherwise fall back */}
-                    {typeof (order as any).estimated === 'number' && (order as any).range ? (
-                      ((order as any).range.min === (order as any).range.max) ? (
-                        <span>Est. time: ~{(order as any).estimated} min</span>
-                      ) : (
-                        <span>Est. time: ~{(order as any).range.min}–{(order as any).range.max} min</span>
-                      )
-                    ) : (
-                      <EstimatedTimeDisplay orderId={order.order_id} />
-                    )}
+                  <div className="flex items-center gap-2 pr-4">
+                    <span className="text-xs text-black leading-none">{order.time_ordered}</span>
                   </div>
                 </div>
               </div>
