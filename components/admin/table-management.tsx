@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import DashboardHeader from "@/components/ui/header";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { Button } from "../ui/button";
 import QRCode from "qrcode";
@@ -208,10 +207,8 @@ export default function TableManagement() {
 
   return (
     <div className="min-h-screen bg-[#ebebeb] pb-24">
-      <DashboardHeader />
-
       <div className="px-8 max-w-md mx-auto">
-        <h2 className="text-xl md:text-3xl font-bold text-black mt-4 mb-6 text-center">
+        <h2 className="text-xl md:text-3xl font-bold text-black mt-0 mb-6 text-center">
           Change Table Status
         </h2>
 

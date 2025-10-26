@@ -15,12 +15,15 @@ export default function OrdersPage() {
     view_super: boolean;
     view_history: boolean;
     view_reviews: boolean;
-  }>({
+    view_tables?: boolean;
+  }>(
+    {
     view_menu: false,
     view_orders: false,
     view_super: false,
     view_history: false,
     view_reviews: false,
+    view_tables: false,
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -39,16 +42,26 @@ export default function OrdersPage() {
       try {
         const { data, error } = await supabase
           .from("adminusers")
-          .select("view_menu, view_orders, view_super, view_history, view_reviews")
+          .select("view_menu, view_orders, view_super, view_history, view_reviews, view_tables")
           .eq("user_id", adminId)
           .single();
 
         console.log("Fetched permissions:", data); // Debugging log
 
+        const isAllowed = (v: unknown) => v === true || v === "true" || v === 1 || v === "1";
+
         if (error || !data) {
           console.error("Error fetching permissions from Supabase:", error);
         } else {
-          setPermissions(data);
+          const normalized = {
+            view_menu: isAllowed((data as any).view_menu),
+            view_orders: isAllowed((data as any).view_orders),
+            view_super: isAllowed((data as any).view_super),
+            view_history: isAllowed((data as any).view_history),
+            view_reviews: isAllowed((data as any).view_reviews),
+            view_tables: isAllowed((data as any).view_tables),
+          };
+          setPermissions(normalized as any);
         }
       } catch (err) {
         console.error("Unexpected error while fetching permissions:", err);

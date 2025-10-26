@@ -16,14 +16,8 @@ type Permissions = {
 };
 
 export default function Taskbar({
-  permissions = {
-    view_orders: true,
-    view_history: true,
-    view_menu: true,
-    view_reviews: true,
-    create_account: true,
-    view_tables: true,
-  },
+  // Default to empty object so unknown/missing permissions are treated as false
+  permissions = {},
 }: {
   permissions?: Permissions;
 }) {
@@ -37,34 +31,34 @@ export default function Taskbar({
     {
       href: "/admin/orders",
       label: "Orders",
-      perm: permissions.view_orders,
+      perm: permissions.view_orders === true,
     },
     {
       href: "/admin/menu",
       label: "Menu",
-      perm: permissions.view_menu,
+      perm: permissions.view_menu === true,
     },
     {
       href: "/admin/table",
       label: "Table",
-      perm: permissions.view_tables ?? true,
+      perm: permissions.view_tables === true,
     },
     {
       href: "/admin/history",
       label: "History",
-      perm: permissions.view_history,
+      perm: permissions.view_history === true,
     },
     {
       href: "/admin/reviews",
       label: "Reviews",
-      perm: permissions.view_reviews,
+      perm: permissions.view_reviews === true,
       icon: (
         <button
           aria-label="Reviews"
           className={`${styles.starButton} ${
             pathname === "/admin/reviews" ? styles.starActive : ""
-          } ${!permissions.view_reviews ? styles.disabled : ""}`}
-          disabled={!permissions.view_reviews}
+          } ${!(permissions.view_reviews === true) ? styles.disabled : ""}`}
+          disabled={!(permissions.view_reviews === true)}
         >
           ★
         </button>
@@ -73,7 +67,7 @@ export default function Taskbar({
     {
       href: "/admin/view-accounts",
       label: "View Accounts",
-      perm: permissions.view_super || permissions.create_account,
+      perm: (permissions.view_super === true) || (permissions.create_account === true),
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -86,7 +80,7 @@ export default function Taskbar({
           strokeLinecap="round"
           strokeLinejoin="round"
           className={`transition-colors duration-200 ${
-            !permissions.view_super && !permissions.create_account
+            !(permissions.view_super === true) && !(permissions.create_account === true)
               ? "stroke-[#808080]" // Disabled
               : pathname === "/admin/view-accounts"
               ? "stroke-[#E59C53]" // Active
