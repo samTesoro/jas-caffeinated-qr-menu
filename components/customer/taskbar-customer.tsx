@@ -18,20 +18,55 @@ export default function MenuTaskbar({
   // 🔸 Dreame fix - Initialize cart count from localStorage
   useEffect(() => {
     const savedCart = JSON.parse(localStorage.getItem("cartItems") || "[]");
-    const count = Array.isArray(savedCart)
-      ? savedCart.reduce((sum, i) => sum + (i.quantity || 0), 0)
+    const uniqueCount = Array.isArray(savedCart)
+      ? (() => {
+          const ids = new Set<string>();
+          for (const i of savedCart) {
+            const id =
+              (i &&
+                (i.menuitem_id ??
+                  i.id ??
+                  i?.menuitem?.menuitem_id ??
+                  i?.menuitem?.id)) ??
+              null;
+            if (id !== null && id !== undefined) ids.add(String(id));
+            else {
+              // Fallback: attempt to build a stable key from name
+              const key = i?.name ?? i?.menuitem?.name ?? JSON.stringify(i);
+              ids.add(String(key));
+            }
+          }
+          return ids.size;
+        })()
       : 0;
-    setCartCount(count);
+    setCartCount(uniqueCount);
   }, []);
 
   // 🔸 Dreame fix - Update count when localStorage changes
   useEffect(() => {
     const recalc = () => {
       const updatedCart = JSON.parse(localStorage.getItem("cartItems") || "[]");
-      const count = Array.isArray(updatedCart)
-        ? updatedCart.reduce((sum, i) => sum + (i.quantity || 0), 0)
+      const uniqueCount = Array.isArray(updatedCart)
+        ? (() => {
+            const ids = new Set<string>();
+            for (const i of updatedCart) {
+              const id =
+                (i &&
+                  (i.menuitem_id ??
+                    i.id ??
+                    i?.menuitem?.menuitem_id ??
+                    i?.menuitem?.id)) ??
+                null;
+              if (id !== null && id !== undefined) ids.add(String(id));
+              else {
+                const key = i?.name ?? i?.menuitem?.name ?? JSON.stringify(i);
+                ids.add(String(key));
+              }
+            }
+            return ids.size;
+          })()
         : 0;
-      setCartCount(count);
+      setCartCount(uniqueCount);
     };
     // Listen to both native storage changes (other tabs) and a custom event we dispatch locally
     window.addEventListener("storage", recalc);

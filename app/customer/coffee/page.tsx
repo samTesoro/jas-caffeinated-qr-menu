@@ -31,10 +31,28 @@ export default function CoffeePage() {
   }, []);
 
   const addToCart = (item: MenuItem) => {
-    const existing = JSON.parse(localStorage.getItem("cartItems") || "[]");
-    existing.push(item);
-    localStorage.setItem("cartItems", JSON.stringify(existing));
-    window.dispatchEvent(new Event("storage"));
+    try {
+      const existing = JSON.parse(localStorage.getItem("cartItems") || "[]");
+      const id =
+        (item as any).menuitem_id ?? (item as any).id ?? item.menuitem_id;
+      if (Array.isArray(existing)) {
+        const filtered = existing.filter(
+          (i: any) => (i.menuitem_id ?? i.id ?? i?.menuitem?.menuitem_id) !== id
+        );
+        const updated = [...filtered, { menuitem_id: id, quantity: 1 }];
+        localStorage.setItem("cartItems", JSON.stringify(updated));
+      } else {
+        localStorage.setItem(
+          "cartItems",
+          JSON.stringify([{ menuitem_id: id, quantity: 1 }])
+        );
+      }
+      // Notify same-tab listeners immediately
+      window.dispatchEvent(new CustomEvent("cart-updated"));
+    } catch {
+      // fall back to storage event if something goes wrong
+      window.dispatchEvent(new Event("storage"));
+    }
   };
 
   return (

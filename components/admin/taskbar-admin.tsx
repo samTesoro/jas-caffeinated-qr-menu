@@ -67,7 +67,8 @@ export default function Taskbar({
     {
       href: "/admin/view-accounts",
       label: "View Accounts",
-      perm: (permissions.view_super === true) || (permissions.create_account === true),
+      perm:
+        permissions.view_super === true || permissions.create_account === true,
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -80,7 +81,8 @@ export default function Taskbar({
           strokeLinecap="round"
           strokeLinejoin="round"
           className={`transition-colors duration-200 ${
-            !(permissions.view_super === true) && !(permissions.create_account === true)
+            !(permissions.view_super === true) &&
+            !(permissions.create_account === true)
               ? "stroke-[#808080]" // Disabled
               : pathname === "/admin/view-accounts"
               ? "stroke-[#E59C53]" // Active
@@ -121,8 +123,13 @@ export default function Taskbar({
           )
         )}
         {/* Logout aligned with other icons, always visible */}
-        <span className={`${styles.link} ${styles.noBounce} flex flex-col items-center justify-center text-center`}>
-          <LogoutButton className="flex items-center justify-center text-white hover:text-[#E59C53]" iconClassName="transition-colors duration-200" />
+        <span
+          className={`${styles.link} ${styles.noBounce} flex flex-col items-center justify-center text-center`}
+        >
+          <LogoutButton
+            className="flex items-center justify-center text-white hover:text-[#E59C53]"
+            iconClassName="transition-colors duration-200"
+          />
         </span>
       </nav>
     </footer>

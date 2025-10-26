@@ -21,7 +21,8 @@ export function LogoutButton({
       await supabase.auth.signOut(); // Logs the user out
       try {
         // Clear custom admin session cookie and localStorage identifiers
-        document.cookie = "admin_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        document.cookie =
+          "admin_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         localStorage.removeItem("user_id");
         localStorage.removeItem("username");
       } catch {}
@@ -41,8 +42,8 @@ export function LogoutButton({
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
+          width="18"
+          height="18"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
