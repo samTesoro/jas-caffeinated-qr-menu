@@ -73,7 +73,6 @@ export default function ItemDetailModal({
     }
 
     try {
-      // Single query to get cart and existing cart items
       const { data: cartData } = await supabase
         .from("cart")
         .select(
@@ -100,7 +99,6 @@ export default function ItemDetailModal({
         cart_id = cartData.cart_id;
         existingItem = cartData.cartitem?.[0];
       } else {
-        // Try to get cart without the item filter
         const { data: emptyCartData } = await supabase
           .from("cart")
           .select("cart_id")
@@ -114,7 +112,6 @@ export default function ItemDetailModal({
         }
       }
 
-      // Create cart if it doesn't exist
       if (!cart_id) {
         const { data: newCart, error: newCartError } = await supabase
           .from("cart")
@@ -129,7 +126,6 @@ export default function ItemDetailModal({
 
         if (newCartError) {
           if (newCartError.code === "23505") {
-            // Retry once if duplicate key
             const { data: retryCart } = await supabase
               .from("cart")
               .select("cart_id")
@@ -147,7 +143,6 @@ export default function ItemDetailModal({
         }
       }
 
-      // Update or insert cart item
       if (existingItem) {
         const newQty = existingItem.quantity + qty;
         const newSubtotal = item.price * newQty;
@@ -189,6 +184,26 @@ export default function ItemDetailModal({
         setCart([...cart, { ...cartItem }]);
       }
 
+      // 🔸 Dreame fix — Sync cart to localStorage for badge updates
+      try {
+        const existingCart = JSON.parse(
+          localStorage.getItem("cartItems") || "[]"
+        );
+        const updatedCart = Array.isArray(existingCart)
+          ? [
+              ...existingCart.filter(
+                (i: any) => i.menuitem_id !== item.menuitem_id
+              ),
+              { menuitem_id: item.menuitem_id, quantity: qty },
+            ]
+          : [{ menuitem_id: item.menuitem_id, quantity: qty }];
+
+        localStorage.setItem("cartItems", JSON.stringify(updatedCart));
+        window.dispatchEvent(new Event("storage")); // Trigger update
+      } catch (e) {
+        console.warn("Failed to sync cart badge:", e);
+      }
+
       onClose();
     } catch (error) {
       console.error("Cart error:", error);
@@ -196,51 +211,16 @@ export default function ItemDetailModal({
     }
   };
 
-  // mount guard for portals (prevents SSR errors)
+  // Mount guard for portals
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
     return () => setMounted(false);
   }, []);
 
-  // If description is missing from the passed item, attempt to fetch it directly
-  useEffect(() => {
-    let mounted = true;
-    if ((item as any).description) {
-      setFetchedDescription((item as any).description ?? null);
-      return;
-    }
-    const supabase = createClient();
-    (async () => {
-      try {
-        const res = await supabase
-          .from("menuitem")
-          .select("description")
-          .eq("menuitem_id", item.menuitem_id)
-          .maybeSingle();
-        if (!mounted) return;
-        const { data, error } = res as {
-          data?: { description?: string | null } | null;
-          error?: unknown;
-        };
-        if (error) {
-          console.debug("[item-detail-modal] description fetch error", error);
-          return;
-        }
-        setFetchedDescription(data?.description ?? null);
-      } catch (err) {
-        console.debug("[item-detail-modal] description fetch exception", err);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [item]);
-
   const modalUI = (
     <div className="fixed inset-0 z-[10000] bg-white/50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-
       <div className="relative bg-white w-[90vw] max-w-xl max-h-[90vh] overflow-y-auto rounded-xl shadow-xl flex flex-col">
         <div className="relative w-full h-[250px] md:h-[300px]">
           <Image
@@ -262,7 +242,6 @@ export default function ItemDetailModal({
         </div>
 
         <div className="flex-1 flex flex-col px-6 pt-6 pb-3 overflow-y-auto">
-          {/* Name + Price */}
           <div className="flex items-center justify-between">
             <div className="pr-4">
               <div className="font-bold text-black text-xl">{item.name}</div>
@@ -286,7 +265,6 @@ export default function ItemDetailModal({
 
           <hr className="my-5 border-black" />
 
-          {/* Note */}
           <div className="flex items-center justify-between mb-3">
             <label className="block text-black font-bold text-lg">
               Note to restaurant
@@ -301,7 +279,6 @@ export default function ItemDetailModal({
             placeholder="Add your request (subject to restaurant’s discretion)"
           />
 
-          {/* Quantity */}
           <div className="flex items-center justify-center gap-7 mb-6 mt-8">
             <button
               className="bg-green-300 rounded-full w-8 h-8 text-2xl"
@@ -318,7 +295,6 @@ export default function ItemDetailModal({
             </button>
           </div>
 
-          {/* Add to Cart Button */}
           <button
             className="w-full bg-orange-400 text-white py-3 px-3 md:py-3 md:px-2 rounded-xl font-semibold text-lg mt-auto sm:mb-0"
             onClick={addToCart}

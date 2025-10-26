@@ -172,14 +172,25 @@ export default function CartPage({
         return;
       }
 
-      setCart(
-        (data || []).map((item) => ({
-          ...item,
-          menuitem: Array.isArray(item.menuitem)
-            ? item.menuitem[0]
-            : item.menuitem,
-        }))
-      );
+      const normalized = (data || []).map((item) => ({
+        ...item,
+        menuitem: Array.isArray(item.menuitem)
+          ? item.menuitem[0]
+          : item.menuitem,
+      }));
+
+      setCart(normalized);
+      // 🔸 Dreame fix — Keep localStorage in sync for badge updates
+      try {
+        const simplified = normalized.map((i) => ({
+          menuitem_id: i.menuitem_id,
+          quantity: i.quantity || 0,
+        }));
+        localStorage.setItem("cartItems", JSON.stringify(simplified));
+        window.dispatchEvent(new CustomEvent("cart-updated"));
+      } catch (e) {
+        console.warn("Failed to sync local cart from DB:", e);
+      }
     };
     fetchCart();
     // End fetchCart and useEffect
@@ -234,14 +245,21 @@ export default function CartPage({
       )
       .eq("cart_id", cart_id);
 
-    setCart(
-      (newCartItems || []).map((item) => ({
-        ...item,
-        menuitem: Array.isArray(item.menuitem)
-          ? item.menuitem[0]
-          : item.menuitem,
-      }))
-    );
+    const normalized = (newCartItems || []).map((item) => ({
+      ...item,
+      menuitem: Array.isArray(item.menuitem) ? item.menuitem[0] : item.menuitem,
+    }));
+    setCart(normalized);
+
+    // 🔸 Dreame fix — Update localStorage and badge
+    try {
+      const simplified = normalized.map((i) => ({
+        menuitem_id: i.menuitem_id,
+        quantity: i.quantity || 0,
+      }));
+      localStorage.setItem("cartItems", JSON.stringify(simplified));
+      window.dispatchEvent(new CustomEvent("cart-updated"));
+    } catch {}
   };
 
   const removeItem = async (cartitem_id: number) => {
@@ -284,15 +302,29 @@ export default function CartPage({
       )
       .eq("cart_id", cart_id);
 
-    setCart(
-      (newCartItems || []).map((item) => ({
-        ...item,
-        menuitem: Array.isArray(item.menuitem)
-          ? item.menuitem[0]
-          : item.menuitem,
-      }))
-    );
+    const normalized = (newCartItems || []).map((item) => ({
+      ...item,
+      menuitem: Array.isArray(item.menuitem) ? item.menuitem[0] : item.menuitem,
+    }));
+    setCart(normalized);
+
+    // 🔸 Dreame fix — Update localStorage and badge
+    try {
+      const simplified = normalized.map((i) => ({
+        menuitem_id: i.menuitem_id,
+        quantity: i.quantity || 0,
+      }));
+      localStorage.setItem("cartItems", JSON.stringify(simplified));
+      window.dispatchEvent(new CustomEvent("cart-updated"));
+    } catch {}
   };
+
+  // Deprecated local-only deletion (kept for reference, not used)
+  // const deleteCartItem = (itemId: string) => {
+  //   const updatedCart = cart.filter((item) => item.id !== itemId);
+  //   setCart(updatedCart);
+  //   localStorage.setItem("cartItems", JSON.stringify(updatedCart));
+  // };
 
   const total = cart.reduce((sum, i) => sum + (i.subtotal_price || 0), 0);
 

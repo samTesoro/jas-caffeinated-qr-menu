@@ -25,30 +25,43 @@ interface NotificationModalProps {
   sessionId?: string;
 }
 
-export default function NotificationModal({ open, onClose, sessionId }: NotificationModalProps) {
+export default function NotificationModal({
+  open,
+  onClose,
+  sessionId,
+}: NotificationModalProps) {
   const [orders, setOrders] = React.useState<Order[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [initialLoad, setInitialLoad] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [showConfirm, setShowConfirm] = React.useState(false);
-  const [pendingCancelId, setPendingCancelId] = React.useState<string | null>(null);
+  const [pendingCancelId, setPendingCancelId] = React.useState<string | null>(
+    null
+  );
   const [now, setNow] = React.useState<number>(Date.now());
 
   // Utility to get or set the cancel window start time in localStorage
   const getCancelStart = React.useCallback((orderId: string) => {
     const key = `orderCancelStart:${orderId}`;
-    const existing = (typeof window !== "undefined") ? window.localStorage.getItem(key) : null;
+    const existing =
+      typeof window !== "undefined" ? window.localStorage.getItem(key) : null;
     if (existing) return parseInt(existing, 10) || Date.now();
     const ts = Date.now();
-    try { if (typeof window !== "undefined") window.localStorage.setItem(key, String(ts)); } catch {}
+    try {
+      if (typeof window !== "undefined")
+        window.localStorage.setItem(key, String(ts));
+    } catch {}
     return ts;
   }, []);
 
-  const getRemainingMs = React.useCallback((orderId: string) => {
-    const start = getCancelStart(orderId);
-    const end = start + 2 * 60 * 1000; // 2 minutes
-    return Math.max(0, end - now);
-  }, [getCancelStart, now]);
+  const getRemainingMs = React.useCallback(
+    (orderId: string) => {
+      const start = getCancelStart(orderId);
+      const end = start + 2 * 60 * 1000; // 2 minutes
+      return Math.max(0, end - now);
+    },
+    [getCancelStart, now]
+  );
 
   const formatRemaining = (ms: number) => {
     const totalSec = Math.ceil(ms / 1000);
@@ -69,14 +82,22 @@ export default function NotificationModal({ open, onClose, sessionId }: Notifica
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 8000);
       try {
-        const res = await fetch(`/api/orders?sessionId=${sessionId}`, { signal: controller.signal });
+        const res = await fetch(`/api/orders?sessionId=${sessionId}`, {
+          signal: controller.signal,
+        });
         if (!res.ok) throw new Error("Failed to fetch orders");
         const data = await res.json();
         if (active) setOrders(data);
       } catch (err: any) {
         if (!active) return;
         const aborted = err?.name === "AbortError";
-        setError(aborted ? "Timed out fetching orders. Please try again." : (err instanceof Error ? err.message : "Error fetching orders"));
+        setError(
+          aborted
+            ? "Timed out fetching orders. Please try again."
+            : err instanceof Error
+            ? err.message
+            : "Error fetching orders"
+        );
       } finally {
         clearTimeout(timeout);
         if (active && isInitial) {
@@ -146,7 +167,9 @@ export default function NotificationModal({ open, onClose, sessionId }: Notifica
         <hr className="border-black mb-4" />
 
         {loading && initialLoad ? (
-          <div className="text-center text-gray-500 py-8">Loading orders...</div>
+          <div className="text-center text-gray-500 py-8">
+            Loading orders...
+          </div>
         ) : error ? (
           <div className="text-center text-red-500 py-8">{error}</div>
         ) : orders.length === 0 ? (
@@ -176,14 +199,23 @@ export default function NotificationModal({ open, onClose, sessionId }: Notifica
 
                   <div className="flex flex-col items-start gap-2 min-h-[60px]">
                     <span className="text-xs">
-                      Status: {order.status === "preparing" ? (
-                        <span className="text-orange-500 font-medium">Preparing</span>
+                      Status:{" "}
+                      {order.status === "preparing" ? (
+                        <span className="text-orange-500 font-medium">
+                          Preparing
+                        </span>
                       ) : order.status === "finished" ? (
-                        <span className="text-green-600 font-medium">Finished</span>
+                        <span className="text-green-600 font-medium">
+                          Finished
+                        </span>
                       ) : order.status === "cancelled" ? (
-                        <span className="text-red-600 font-medium">Cancelled</span>
+                        <span className="text-red-600 font-medium">
+                          Cancelled
+                        </span>
                       ) : (
-                        <span className="text-gray-500 font-medium">Unknown</span>
+                        <span className="text-gray-500 font-medium">
+                          Unknown
+                        </span>
                       )}
                     </span>
 
@@ -191,8 +223,15 @@ export default function NotificationModal({ open, onClose, sessionId }: Notifica
                       <Button
                         variant="red"
                         size="default"
-                        className={`w-full text-xs py-1 ${getRemainingMs(order.order_id) <= 0 ? 'opacity-50 cursor-not-allowed bg-gray-300 border-gray-300 text-gray-600' : ''}`}
-                        onClick={() => getRemainingMs(order.order_id) > 0 && handleCancel(order.order_id)}
+                        className={`w-full text-xs py-1 ${
+                          getRemainingMs(order.order_id) <= 0
+                            ? "opacity-50 cursor-not-allowed bg-gray-300 border-gray-300 text-gray-600"
+                            : ""
+                        }`}
+                        onClick={() =>
+                          getRemainingMs(order.order_id) > 0 &&
+                          handleCancel(order.order_id)
+                        }
                         disabled={getRemainingMs(order.order_id) <= 0}
                       >
                         Cancel Order
@@ -200,11 +239,14 @@ export default function NotificationModal({ open, onClose, sessionId }: Notifica
                     ) : (
                       <div className="h-8" />
                     )}
-                    {order.status === 'preparing' && (
+                    {order.status === "preparing" && (
                       <div className="text-[10px] text-gray-600 mt-1">
                         {getRemainingMs(order.order_id) > 0 ? (
                           <>
-                            Cancel available for <span className="font-semibold">{formatRemaining(getRemainingMs(order.order_id))}</span>
+                            Cancel available for{" "}
+                            <span className="font-semibold">
+                              {formatRemaining(getRemainingMs(order.order_id))}
+                            </span>
                           </>
                         ) : (
                           <>Cancel window expired</>
@@ -212,14 +254,22 @@ export default function NotificationModal({ open, onClose, sessionId }: Notifica
 
                         {/* ETA shown on its own line below the cancel message */}
                         <div className="text-[10px] text-gray-700 mt-1 leading-none">
-                          {typeof (order as any).estimated === 'number' && (order as any).range ? (
-                            ((order as any).range.min === (order as any).range.max) ? (
+                          {typeof (order as any).estimated === "number" &&
+                          (order as any).range ? (
+                            (order as any).range.min ===
+                            (order as any).range.max ? (
                               <>Est. ~{(order as any).estimated} min</>
                             ) : (
-                              <>Est. ~{(order as any).range.min}–{(order as any).range.max} min</>
+                              <>
+                                Est. ~{(order as any).range.min}–
+                                {(order as any).range.max} min
+                              </>
                             )
                           ) : (
-                            <EstimatedTimeDisplay orderId={order.order_id} small />
+                            <EstimatedTimeDisplay
+                              orderId={order.order_id}
+                              small
+                            />
                           )}
                         </div>
                       </div>
@@ -229,7 +279,9 @@ export default function NotificationModal({ open, onClose, sessionId }: Notifica
 
                 <div className="flex items-center justify-between mt-1">
                   <div className="flex items-center gap-2 pr-4">
-                    <span className="text-xs text-black leading-none">{order.time_ordered}</span>
+                    <span className="text-xs text-black leading-none">
+                      {order.time_ordered}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -240,10 +292,24 @@ export default function NotificationModal({ open, onClose, sessionId }: Notifica
         {showConfirm && (
           <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/40">
             <div className="bg-white rounded-lg p-6 w-[90%] max-w-xs shadow-lg flex flex-col items-center">
-              <h3 className="text-lg font-bold mb-4 text-black text-center">Are you sure you want to cancel this order?</h3>
+              <h3 className="text-lg font-bold mb-4 text-black text-center">
+                Are you sure you want to cancel this order?
+              </h3>
               <div className="flex flex-row items-center gap-4 mt-2 w-full justify-center">
-                <Button variant="red" onClick={cancelCancel} className="min-w-[100px] text-lg py-2">No</Button>
-                <Button variant="green" onClick={confirmCancel} className="min-w-[100px] text-lg py-2">Yes</Button>
+                <Button
+                  variant="red"
+                  onClick={cancelCancel}
+                  className="min-w-[100px] text-lg py-2"
+                >
+                  No
+                </Button>
+                <Button
+                  variant="green"
+                  onClick={confirmCancel}
+                  className="min-w-[100px] text-lg py-2"
+                >
+                  Yes
+                </Button>
               </div>
             </div>
           </div>

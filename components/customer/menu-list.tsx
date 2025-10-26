@@ -210,6 +210,34 @@ export default function MenuList({
   const [notifOpen, setNotifOpen] = useState(false); //state for modal
   const [reviewsOpen, setReviewsOpen] = useState(false); // state for reviews modal
   const [ongoingCount, setOngoingCount] = useState(0);
+  const [canOpenReviews, setCanOpenReviews] = useState(false); // disabled until after first checkout
+
+  // Session-based: enable reviews after first checkout in THIS session; auto-open once
+  useEffect(() => {
+    try {
+      const sid =
+        sessionId ||
+        (typeof window !== "undefined"
+          ? sessionStorage.getItem("sessionId") || undefined
+          : undefined);
+      const hasOrdered = sid
+        ? sessionStorage.getItem(`hasOrderedBefore:${sid}`) === "true"
+        : sessionStorage.getItem("hasOrderedBefore") === "true"; // legacy fallback
+      setCanOpenReviews(!!hasOrdered);
+
+      const hasShown = sid
+        ? sessionStorage.getItem(`firstReviewPromptShown:${sid}`) === "true"
+        : sessionStorage.getItem("firstReviewPromptShown") === "true"; // legacy fallback
+      if (hasOrdered && !hasShown) {
+        setReviewsOpen(true);
+        if (sid)
+          sessionStorage.setItem(`firstReviewPromptShown:${sid}`, "true");
+        else sessionStorage.setItem("firstReviewPromptShown", "true");
+      }
+    } catch {
+      // ignore SSR/storage errors
+    }
+  }, [sessionId]);
 
   useEffect(() => {
     setLoading(true);
@@ -297,7 +325,7 @@ export default function MenuList({
         if (!res.ok) return;
         const data = await res.json();
         const count = Array.isArray(data)
-          ? data.filter((o: any) => o?.status === 'preparing').length
+          ? data.filter((o: any) => o?.status === "preparing").length
           : 0;
         if (active) setOngoingCount(count);
       } catch {
@@ -336,7 +364,11 @@ export default function MenuList({
             onClick={() => setNotifOpen(true)}
           >
             <div
-              className="bg-gray-300 hover:bg-gray-400 rounded-full flex items-center justify-center"
+              className={`rounded-full flex items-center justify-center ${
+                ongoingCount > 0
+                  ? "bg-red-400 hover:bg-red-600"
+                  : "bg-gray-300 hover:bg-gray-400"
+              }`}
               style={{ width: "45px", height: "45px" }}
             >
               <Image
@@ -348,7 +380,7 @@ export default function MenuList({
               />
             </div>
             {ongoingCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] leading-none rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-[4px] border border-white">
+              <span className="absolute -top-1 -right-1 bg-green-500 text-white text-[10px] leading-none rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-[4px] border border-white">
                 {ongoingCount}
               </span>
             )}
@@ -367,9 +399,16 @@ export default function MenuList({
 
           {/* Reviews button (right) */}
           <button
-            className="relative flex items-center justify-center cursor-pointer ml-2"
+            className={`relative flex items-center justify-center ml-2 ${
+              canOpenReviews
+                ? "cursor-pointer"
+                : "opacity-50 cursor-not-allowed"
+            }`}
             style={{ width: "45px", height: "45px" }}
-            onClick={() => setReviewsOpen(true)}
+            onClick={() => {
+              if (canOpenReviews) setReviewsOpen(true);
+            }}
+            disabled={!canOpenReviews}
             aria-label="Open reviews"
           >
             <StarIcon className="w-[45px] h-[45px]" />

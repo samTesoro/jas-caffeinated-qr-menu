@@ -13,20 +13,35 @@ export default function MenuTaskbar({
   sessionId?: string;
 }) {
   const pathname = usePathname();
-  const [cartCount, setCartCount] = useState(0); // 🔸 Track cart item count
+  const [cartCount, setCartCount] = useState(0); // 🔸 Dreame fix - Track cart item count
+
+  // 🔸 Dreame fix - Initialize cart count from localStorage
   useEffect(() => {
     const savedCart = JSON.parse(localStorage.getItem("cartItems") || "[]");
-    setCartCount(savedCart.length);
+    const count = Array.isArray(savedCart)
+      ? savedCart.reduce((sum, i) => sum + (i.quantity || 0), 0)
+      : 0;
+    setCartCount(count);
   }, []);
 
+  // 🔸 Dreame fix - Update count when localStorage changes
   useEffect(() => {
-    const handleStorage = () => {
+    const recalc = () => {
       const updatedCart = JSON.parse(localStorage.getItem("cartItems") || "[]");
-      setCartCount(updatedCart.length);
+      const count = Array.isArray(updatedCart)
+        ? updatedCart.reduce((sum, i) => sum + (i.quantity || 0), 0)
+        : 0;
+      setCartCount(count);
     };
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+    // Listen to both native storage changes (other tabs) and a custom event we dispatch locally
+    window.addEventListener("storage", recalc);
+    window.addEventListener("cart-updated", recalc as EventListener);
+    return () => {
+      window.removeEventListener("storage", recalc);
+      window.removeEventListener("cart-updated", recalc as EventListener);
+    };
   }, []);
+
   // Use prop tableId first, then extract from pathname as fallback
   const tableId = useMemo(() => {
     if (propTableId) return propTableId;
@@ -37,7 +52,6 @@ export default function MenuTaskbar({
 
   // Helper function to check if path is active
   const isPathActive = (path: string) => {
-    // Check session-based route first, then table-based route
     const sessionPath =
       tableId && sessionId
         ? `/customer/${tableId}/session/${sessionId}/${path}`
@@ -152,30 +166,15 @@ export default function MenuTaskbar({
                 priority
               />
 
-              {/* 🔸 CART BADGE START */}
+              {/* 🔸 Dreame fix - Badge display */}
               {cartCount > 0 && (
                 <span
-                  style={{
-                    position: "absolute",
-                    top: "-6px",
-                    right: "-6px",
-                    background: "red",
-                    color: "white",
-                    fontSize: "12px",
-                    fontWeight: "bold",
-                    borderRadius: "50%",
-                    width: "20px",
-                    height: "20px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    boxShadow: "0 0 4px rgba(0,0,0,0.3)",
-                  }}
+                  className={styles.cartBadge}
+                  title={`${cartCount} item${cartCount > 1 ? "s" : ""} in cart`}
                 >
                   {cartCount}
                 </span>
               )}
-              {/* 🔸 CART BADGE END */}
             </button>
           </Link>
         </div>

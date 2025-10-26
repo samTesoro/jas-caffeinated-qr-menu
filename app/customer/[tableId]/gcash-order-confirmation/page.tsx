@@ -27,7 +27,13 @@ export default function GCashOrderConfirmation({
   }, [tableId, router]);
 
   const handleGoToTable = () => {
+    // Legacy flag
     sessionStorage.setItem("hasOrderedBefore", "true");
+    // Session-scoped flag if available
+    try {
+      const sid = sessionId || sessionStorage.getItem("sessionId");
+      if (sid) sessionStorage.setItem(`hasOrderedBefore:${sid}`, "true");
+    } catch {}
 
     if (sessionId) {
       router.push(`/customer/${tableId}/session/${sessionId}`);
