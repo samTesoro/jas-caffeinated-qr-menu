@@ -16,14 +16,16 @@ export default function ReviewsPage() {
     view_history: boolean;
     view_reviews: boolean;
     view_tables?: boolean;
-  }>({
-    view_menu: false,
-    view_orders: false,
-    view_super: false,
-    view_history: false,
-    view_reviews: false,
-    view_tables: false,
-  });
+  }>(
+    {
+      view_menu: false,
+      view_orders: false,
+      view_super: false,
+      view_history: false,
+      view_reviews: false,
+      view_tables: false,
+    }
+  );
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -55,15 +57,14 @@ export default function ReviewsPage() {
             view_tables: false,
           });
         } else {
-          const normalized = {
+          setPermissions({
             view_menu: isAllowed((data as any).view_menu),
             view_orders: isAllowed((data as any).view_orders),
             view_super: isAllowed((data as any).view_super),
             view_history: isAllowed((data as any).view_history),
             view_reviews: isAllowed((data as any).view_reviews),
             view_tables: isAllowed((data as any).view_tables),
-          };
-          setPermissions(normalized as any);
+          });
         }
       } catch {
         setPermissions({
@@ -98,15 +99,7 @@ export default function ReviewsPage() {
   }, [permissions, isLoading, router]);
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#ebebeb]">
-        <DashboardHeader />
-        <Taskbar permissions={permissions} />
-        <div className="flex items-center justify-center py-16">
-          <LoadingSpinner message="Loading..." />
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading..." />;
   }
   if (!permissions.view_reviews) {
     return null;

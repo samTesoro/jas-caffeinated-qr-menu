@@ -9,24 +9,24 @@ import LoadingSpinner from "@/components/ui/loading-spinner";
 
 export default function OrdersPage() {
   const router = useRouter();
-  const [permissions, setPermissions] = useState<{
-    view_menu: boolean;
-    view_orders: boolean;
-    view_super: boolean;
-    view_history: boolean;
-    view_reviews: boolean;
-    view_tables?: boolean;
-  }>(
-    {
-    view_menu: false,
-    view_orders: false,
-    view_super: false,
-    view_history: false,
-    view_reviews: false,
-    view_tables: false,
-  });
   const [isLoading, setIsLoading] = useState(true);
-
+  const [permissions, setPermissions] = useState<{
+      view_menu: boolean;
+      view_orders: boolean;
+      view_super: boolean;
+      view_history: boolean;
+      view_reviews: boolean;
+      view_tables?: boolean;
+    }>(
+      {
+        view_menu: false,
+        view_orders: false,
+        view_super: false,
+        view_history: false,
+        view_reviews: false,
+        view_tables: false,
+      }
+    );
   useEffect(() => {
     const fetchPermissions = async () => {
       const supabase = createClient();
@@ -46,22 +46,27 @@ export default function OrdersPage() {
           .eq("user_id", adminId)
           .single();
 
-        console.log("Fetched permissions:", data); // Debugging log
-
         const isAllowed = (v: unknown) => v === true || v === "true" || v === 1 || v === "1";
 
         if (error || !data) {
           console.error("Error fetching permissions from Supabase:", error);
+          setPermissions({
+            view_menu: false,
+            view_orders: false,
+            view_super: false,
+            view_history: false,
+            view_reviews: false,
+            view_tables: false,
+          });
         } else {
-          const normalized = {
+          setPermissions({
             view_menu: isAllowed((data as any).view_menu),
             view_orders: isAllowed((data as any).view_orders),
             view_super: isAllowed((data as any).view_super),
             view_history: isAllowed((data as any).view_history),
             view_reviews: isAllowed((data as any).view_reviews),
             view_tables: isAllowed((data as any).view_tables),
-          };
-          setPermissions(normalized as any);
+          });
         }
       } catch (err) {
         console.error("Unexpected error while fetching permissions:", err);
@@ -90,15 +95,7 @@ export default function OrdersPage() {
   }, [isLoading, permissions, router]);
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#ebebeb]">
-        <DashboardHeader />
-        <div className="flex items-center justify-center py-16">
-          <LoadingSpinner message="Loading..." />
-        </div>
-        <Taskbar permissions={permissions} />
-      </div>
-    );
+    return <LoadingSpinner message="Loading..." />;
   }
 
   if (!permissions.view_orders) {

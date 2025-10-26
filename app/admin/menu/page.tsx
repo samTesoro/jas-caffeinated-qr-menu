@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import DashboardHeader from "@/components/ui/header";
 import Taskbar from "@/components/admin/taskbar-admin";
 import LoadingSpinner from "@/components/ui/loading-spinner";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function MenuPage() {
@@ -17,14 +18,16 @@ export default function MenuPage() {
     view_history: boolean;
     view_reviews: boolean;
     view_tables?: boolean;
-  }>({
-    view_menu: false,
-    view_orders: false,
-    view_super: false,
-    view_history: false,
-    view_reviews: false,
-    view_tables: false,
-  }); // Fixed syntax errors
+  }>(
+    {
+      view_menu: false,
+      view_orders: false,
+      view_super: false,
+      view_history: false,
+      view_reviews: false,
+      view_tables: false,
+    }
+  ); // Fixed syntax errors
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
@@ -57,19 +60,34 @@ export default function MenuPage() {
 
         if (error || !data) {
           console.error("Error fetching permissions from Supabase:", error);
+          setPermissions({
+            view_menu: false,
+            view_orders: false,
+            view_super: false,
+            view_history: false,
+            view_reviews: false,
+            view_tables: false,
+          });
         } else {
-          const normalized = {
+          setPermissions({
             view_menu: isAllowed((data as any).view_menu),
             view_orders: isAllowed((data as any).view_orders),
             view_super: isAllowed((data as any).view_super),
             view_history: isAllowed((data as any).view_history),
             view_reviews: isAllowed((data as any).view_reviews),
             view_tables: isAllowed((data as any).view_tables),
-          };
-          setPermissions(normalized as any);
+          });
         }
       } catch (err) {
         console.error("Unexpected error while fetching permissions:", err);
+        setPermissions({
+          view_menu: false,
+          view_orders: false,
+          view_super: false,
+          view_history: false,
+          view_reviews: false,
+          view_tables: false,
+        });
       } finally {
         setIsLoading(false);
       }
@@ -108,15 +126,7 @@ export default function MenuPage() {
   }, []);
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#ebebeb] pb-10">
-        <DashboardHeader />
-        <div className="flex items-center justify-center py-16">
-          <LoadingSpinner />
-        </div>
-        <Taskbar permissions={permissions} />
-      </div>
-    );
+    return <LoadingSpinner />; // Prevent rendering the page until permissions are loaded
   }
 
   if (!permissions.view_menu) {
