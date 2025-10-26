@@ -8,17 +8,30 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 // Ensure this route uses the Node.js runtime (service role + supabase-js Node APIs)
 export const runtime = 'nodejs';
 
-// Fetch finished, not-cleared orders for history view
-export async function GET() {
+// Fetch finished orders for history view (include even if cleared), optionally filtered by date range
+export async function GET(request: NextRequest) {
+	const url = new URL(request.url);
+	const start = url.searchParams.get('start'); // YYYY-MM-DD
+	const end = url.searchParams.get('end');     // YYYY-MM-DD
+
 	const supabase = createClient(supabaseUrl, supabaseAnonKey);
-	const { data, error } = await supabase
+	let query = supabase
 		.from("order")
 		.select(
 			`order_id, date_ordered, time_ordered, isfinished, customer_id, cart:cart_id (table_number, cartitem (quantity, menuitem (name)))`
 		)
 		.eq("isfinished", true)
-			.or('iscleared.is.false,iscleared.is.null')
-		.eq("iscancelled", false)
+		.eq("iscancelled", false);
+
+	// Apply inclusive date range filter if provided
+	if (start) {
+		query = query.gte('date_ordered', start);
+	}
+	if (end) {
+		query = query.lte('date_ordered', end);
+	}
+
+	const { data, error } = await query
 		.order("date_ordered", { ascending: false })
 		.order("time_ordered", { ascending: false });
 

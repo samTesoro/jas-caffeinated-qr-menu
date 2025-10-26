@@ -14,7 +14,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 			.eq("order_id", orderId)
 			.eq("isfinished", true)
 			.eq("iscancelled", false)
-			.or('iscleared.is.false,iscleared.is.null')
 			.single();
 
 	if (error) {

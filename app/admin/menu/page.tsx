@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/client";
 import DashboardHeader from "@/components/ui/header";
 import Taskbar from "@/components/admin/taskbar-admin";
 import LoadingSpinner from "@/components/ui/loading-spinner";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function MenuPage() {
@@ -97,7 +96,15 @@ export default function MenuPage() {
   }, []);
 
   if (isLoading) {
-    return <LoadingSpinner />; // Prevent rendering the page until permissions are loaded
+    return (
+      <div className="min-h-screen bg-[#ebebeb] pb-10">
+        <DashboardHeader />
+        <div className="flex items-center justify-center py-16">
+          <LoadingSpinner />
+        </div>
+        <Taskbar permissions={permissions} />
+      </div>
+    );
   }
 
   if (!permissions.view_menu) {

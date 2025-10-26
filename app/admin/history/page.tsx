@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Taskbar from "@/components/admin/taskbar-admin";
 import DashboardHeader from "@/components/ui/header";
-import OrderHistory from "@/components/admin/order-history";
+import HistoryAndSales from "@/components/admin/history-and-sales";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 
 const Page = () => {
@@ -104,7 +104,15 @@ const Page = () => {
   }, [permissions, isLoading, router]);
 
   if (isLoading) {
-    return <LoadingSpinner message="Loading..." />;
+    return (
+      <div className="min-h-screen bg-[#ebebeb]">
+        <DashboardHeader />
+        <div className="flex items-center justify-center py-16">
+          <LoadingSpinner message="Loading..." />
+        </div>
+        <Taskbar permissions={permissions} />
+      </div>
+    );
   }
 
   if (!permissions.view_history) {
@@ -114,7 +122,7 @@ const Page = () => {
   return (
     <div className="min-h-screen bg-[#ebebeb]">
       <DashboardHeader />
-      <OrderHistory />
+      <HistoryAndSales />
       <Taskbar permissions={permissions} />
       {permissions.view_history ? (
         <div>

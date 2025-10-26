@@ -84,7 +84,15 @@ export default function ReviewsPage() {
   }, [permissions, isLoading, router]);
 
   if (isLoading) {
-    return <LoadingSpinner message="Loading..." />;
+    return (
+      <div className="min-h-screen bg-[#ebebeb]">
+        <DashboardHeader />
+        <Taskbar permissions={permissions} />
+        <div className="flex items-center justify-center py-16">
+          <LoadingSpinner message="Loading..." />
+        </div>
+      </div>
+    );
   }
   if (!permissions.view_reviews) {
     return null;
