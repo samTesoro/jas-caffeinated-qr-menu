@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import styles from "./taskbar-admin.module.css";
+import { LogoutButton } from "@/components/logout-button";
 import { useEffect } from "react";
 
 type Permissions = {
@@ -102,7 +103,7 @@ export default function Taskbar({
   ];
 
   return (
-    <footer className={`${styles.taskbar} flex justify-evenly items-center`}>
+    <footer className={`${styles.taskbar} flex items-center`}>
       <nav className={`${styles.nav} flex justify-evenly w-full`}>
         {links.map((link) =>
           link.perm ? (
@@ -125,6 +126,10 @@ export default function Taskbar({
             </span>
           )
         )}
+        {/* Logout aligned with other icons, always visible */}
+        <span className={`${styles.link} flex flex-col items-center justify-center text-center`}>
+          <LogoutButton className="flex items-center justify-center text-white hover:text-[#E59C53]" />
+        </span>
       </nav>
     </footer>
   );

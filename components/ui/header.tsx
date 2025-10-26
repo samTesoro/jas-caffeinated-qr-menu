@@ -1,5 +1,4 @@
 import Image from "next/image";
-import { LogoutButton } from "../logout-button";
 
 interface DashboardHeaderProps {
   mode?: "admin" | "customer";
@@ -32,13 +31,7 @@ export default function DashboardHeader({
               : "Customer"}
           </div>
 
-          {/* Logout Button */}
-          {mode === "admin" && (
-            <div className="absolute top-10 right-3 z-50">
-              {" "}
-              <LogoutButton />
-            </div>
-          )}
+          {/* Logout button removed from header (now shown in taskbar) */}
 
           {/* Centered Logo */}
           <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">

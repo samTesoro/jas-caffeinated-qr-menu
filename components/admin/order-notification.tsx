@@ -94,7 +94,8 @@ export default function OrderNotification() {
             };
             const dateA = to24HourDate(a.time);
             const dateB = to24HourDate(b.time);
-            return dateB.getTime() - dateA.getTime();
+            // earliest first
+            return dateA.getTime() - dateB.getTime();
           });
 
         setOrders(transformed);
