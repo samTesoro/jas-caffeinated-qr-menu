@@ -127,8 +127,8 @@ export default function Taskbar({
           )
         )}
         {/* Logout aligned with other icons, always visible */}
-        <span className={`${styles.link} flex flex-col items-center justify-center text-center`}>
-          <LogoutButton className="flex items-center justify-center text-white hover:text-[#E59C53]" />
+        <span className={`${styles.link} ${styles.noBounce} flex flex-col items-center justify-center text-center`}>
+          <LogoutButton className="flex items-center justify-center text-white hover:text-[#E59C53]" iconClassName="transition-colors duration-200" />
         </span>
       </nav>
     </footer>

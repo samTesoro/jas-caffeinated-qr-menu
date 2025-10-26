@@ -34,10 +34,12 @@
   flex: 1;
   text-align: center;
   transition: color 0.2s;
+  transform: none; /* Prevent bounce */
 }
 
 .link:hover {
   color: #e59c53;
+  transform: none; /* Prevent bounce */
 }
 
 .active {
@@ -60,6 +62,7 @@
   flex: 1;
   text-align: center;
   transition: color 0.2s ease, background-color 0.2s ease;
+  transform: none; /* Prevent bounce */
 }
 
 .starActive {
@@ -69,6 +72,21 @@
 
 .starButton:hover {
   color: #e59c53;
+  transform: none; /* Prevent bounce */
+}
+
+/* Safety: disable translate/scale on icons inside taskbar */
+.taskbar svg,
+.taskbar svg:hover,
+.link svg,
+.starButton svg {
+  transform: none !important;
+}
+
+/* Extra guard: ensure no child inside marked container can translate/scale */
+.noBounce,
+.noBounce * {
+  transform: none !important;
 }
 
 /* .backButton {
