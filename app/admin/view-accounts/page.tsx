@@ -104,7 +104,15 @@ export default function ViewAccountsPage() {
   }, [isLoading, permissions, router]);
 
   if (isLoading) {
-    return <LoadingSpinner message="Loading..." />;
+    return (
+      <div className="min-h-screen bg-[#ebebeb]">
+        <DashboardHeader />
+        <div className="flex items-center justify-center py-16">
+          <LoadingSpinner message="Loading..." />
+        </div>
+        <Taskbar permissions={permissions} />
+      </div>
+    );
   }
 
   if (!permissions.view_super) {

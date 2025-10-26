@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "../ui/button";
+// import { Button } from "../ui/button";
 
 interface Order {
   id: string;
@@ -15,11 +15,11 @@ interface OrderItem {
   quantity: number;
 }
 
-export default function OrderHistory() {
+export default function OrderHistory({ start, end }: { start: string; end: string }) {
   const [order, setOrder] = useState<Order[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [showClearModal, setShowClearModal] = useState(false);
+  // Clear action removed per new requirements
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -42,7 +42,8 @@ export default function OrderHistory() {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch("/api/history");
+        const params = new URLSearchParams({ start, end });
+        const response = await fetch(`/api/history?${params.toString()}`);
         if (!response.ok) throw new Error("Failed to fetch order history");
         const data = await response.json();
 
@@ -85,45 +86,13 @@ export default function OrderHistory() {
       }
     };
     fetchOrders();
-  }, []);
+  }, [start, end]);
 
-  const clearHistory = async () => {
-    try {
-      const res = await fetch('/api/history', { method: 'PATCH' });
-      const body = await res.json().catch(() => ({} as any));
-      if (!res.ok) {
-        const message = (body && (body.error || body.message)) || 'Failed to clear history';
-        console.error('Clear history error:', res.status, message);
-        alert(message);
-        return;
-      }
-      // After clearing, refetch to update UI
-      setOrder([]);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setShowClearModal(false);
-    }
-  };
+  // Clear action removed
 
   return (
     <div className="flex flex-col w-full min-h-screen py-3 pb-[150px] px-7 md:px-24 lg:px-[300px]">
-      <div className="flex justify-between items-center mb-2">
-        <h2 className="text-2xl md:text-3xl font-bold text-black">
-          Order History
-        </h2>
-        <button
-          onClick={() => setShowClearModal(true)}
-          disabled={order.length === 0}
-          className={`bg-[#d9d9d9] transition-colors px-3 border text-black text-md md:text-lg ${
-            order.length === 0
-              ? "opacity-50 cursor-not-allowed pointer-events-none"
-              : "hover:bg-red-500"
-          }`}
-        >
-          Clear
-        </button>
-      </div>
+      {/* Title is now provided by the parent container (HistoryAndSales) */}
 
       <hr className="border-black my-2" />
 
@@ -197,34 +166,7 @@ export default function OrderHistory() {
         ))
       )}
 
-      {/* Confirm Clear Modal */}
-      {showClearModal && (
-        <div className="fixed inset-0 bg-white/50 flex items-center justify-center transition-opacity duration-300 z-[9999]">
-          <div className="bg-white rounded-md p-6 w-[90vw] max-w-[250px] text-center space-y-4 shadow-lg">
-            <p className="text-md text-black font-bold mt-3">
-              Clear all order history?
-            </p>
-            <div className="flex justify-between font-bold">
-              <Button
-                variant="red"
-                type="button"
-                onClick={() => setShowClearModal(false)}
-                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
-              >
-                No
-              </Button>
-              <Button
-                variant="green"
-                type="button"
-                onClick={clearHistory}
-                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
-              >
-                Yes
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+  {/* Clear action removed as per new requirements */}
     </div>
   );
 }
