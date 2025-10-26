@@ -19,6 +19,12 @@ export function LogoutButton({
     try {
       const supabase = createClient();
       await supabase.auth.signOut(); // Logs the user out
+      try {
+        // Clear custom admin session cookie and localStorage identifiers
+        document.cookie = "admin_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        localStorage.removeItem("user_id");
+        localStorage.removeItem("username");
+      } catch {}
       router.push("/auth/login"); // Redirects to the login page
     } catch (error) {
       console.error("Error during logout:", error);
