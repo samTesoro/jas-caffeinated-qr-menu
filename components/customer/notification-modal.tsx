@@ -155,7 +155,7 @@ export default function NotificationModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-lg p-6 mx-5 w-[95%] max-w-lg shadow-lg relative max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg p-6 mx-5 w-[98%] max-w-lg shadow-lg relative max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
           className="absolute top-3 right-3 text-black hover:text-black"

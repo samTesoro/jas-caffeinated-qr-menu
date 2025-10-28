@@ -63,11 +63,13 @@ export default function ItemCard({
   return (
     <div
       key={item.menuitem_id}
-      className="bg-gray-100 rounded-lg shadow p-1.5 flex flex-col w-full max-w-[180px] sm:max-w-[220px] md:max-w-[500px] relative"
+      className={`bg-gray-100 rounded-lg shadow p-1.5 flex flex-col w-full max-w-[180px] sm:max-w-[220px] md:max-w-[500px] relative ${
+        mode === "customer" && item.status !== "Available" ? "opacity-60" : ""
+      }`}
     >
       {/* Thumbnail */}
       <div
-        className="w-full aspect-[4/3] overflow-hidden cursor-pointer"
+        className="w-full aspect-[4/3] overflow-hidden cursor-pointer relative"
         onClick={() => setModalItem(item)}
       >
         <Image
@@ -89,17 +91,17 @@ export default function ItemCard({
             <span className="text-[10px] sm:text-sm text-black whitespace-nowrap">
               ₱{displayPrice(item.price)}
             </span>
-                {mode === "admin" && (
-                  <span
-                    className={`px-1 sm:px-2 text-[10px] sm:text-xs rounded-sm whitespace-nowrap ${
-                      item.status === "Available"
-                        ? "bg-green-200 text-green-800"
-                        : "bg-red-200 text-red-800"
-                    }`}
-                  >
-                    {item.status}
-                  </span>
-                )}
+            {mode === "admin" && (
+              <span
+                className={`px-1 sm:px-2 text-[10px] sm:text-xs rounded-sm whitespace-nowrap ${
+                  item.status === "Available"
+                    ? "bg-green-200 text-green-800"
+                    : "bg-red-200 text-red-800"
+                }`}
+              >
+                {item.status}
+              </span>
+            )}
           </div>
         </div>
 
@@ -114,16 +116,21 @@ export default function ItemCard({
           </button>
         )}
 
-        {mode === "customer" && (
-          <button
-            className="rounded-full p-1.5 sm:p-2 flex-shrink-0 hover:bg-red-700 flex items-center justify-center shadow ml-2"
-            style={{ width: "32px", height: "32px", background: "#F96666" }}
-            onClick={() => onAdd?.(item)}
-            title="Add"
-          >
-            <AddIcon />
-          </button>
-        )}
+        {mode === "customer" &&
+          (item.status === "Available" ? (
+            <button
+              className="rounded-full p-1.5 sm:p-2 flex-shrink-0 hover:bg-red-700 flex items-center justify-center shadow ml-2"
+              style={{ width: "32px", height: "32px", background: "#F96666" }}
+              onClick={() => onAdd?.(item)}
+              title="Add"
+            >
+              <AddIcon />
+            </button>
+          ) : (
+            <span className="ml-2 px-2 py-1 text-[10px] sm:text-xs rounded bg-red-200 text-red-800 text-right select-none">
+              Unavailable
+            </span>
+          ))}
       </div>
     </div>
   );

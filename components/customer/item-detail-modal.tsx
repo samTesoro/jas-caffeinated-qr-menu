@@ -17,6 +17,7 @@ type MenuItem = {
   price: number;
   thumbnail?: string | null;
   description?: string | null;
+  status?: string | null;
 };
 
 export default function ItemDetailModal({
@@ -36,9 +37,7 @@ export default function ItemDetailModal({
 }) {
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
-  const [fetchedDescription] = useState<
-    string | null | undefined
-  >(undefined);
+  const [fetchedDescription] = useState<string | null | undefined>(undefined);
 
   const BackIcon = () => (
     <svg
@@ -58,6 +57,10 @@ export default function ItemDetailModal({
   );
 
   const addToCart = async () => {
+    if (item.status && item.status !== "Available") {
+      // Guard: don't allow adding unavailable items
+      return;
+    }
     const supabase = createClient();
     let session_id: string;
 
@@ -296,10 +299,18 @@ export default function ItemDetailModal({
           </div>
 
           <button
-            className="w-full bg-orange-400 text-white py-3 px-3 md:py-3 md:px-2 rounded-xl font-semibold text-lg mt-auto sm:mb-0"
+            className={`w-full py-3 px-3 md:py-3 md:px-2 rounded-xl font-semibold text-lg mt-auto sm:mb-0 ${
+              item.status && item.status !== "Available"
+                ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                : "bg-orange-400 text-white"
+            }`}
             onClick={addToCart}
+            disabled={!!(item.status && item.status !== "Available")}
+            aria-disabled={!!(item.status && item.status !== "Available")}
           >
-            Add to Cart - ₱{item.price * qty}.00
+            {item.status && item.status !== "Available"
+              ? "Unavailable"
+              : `Add to Cart - ₱${item.price * qty}.00`}
           </button>
         </div>
       </div>

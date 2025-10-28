@@ -15,7 +15,13 @@ interface OrderItem {
   quantity: number;
 }
 
-export default function OrderHistory({ start, end }: { start: string; end: string }) {
+export default function OrderHistory({
+  start,
+  end,
+}: {
+  start: string;
+  end: string;
+}) {
   const [order, setOrder] = useState<Order[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -91,10 +97,8 @@ export default function OrderHistory({ start, end }: { start: string; end: strin
   // Clear action removed
 
   return (
-    <div className="flex flex-col w-full min-h-screen py-3 pb-[150px] px-7 md:px-24 lg:px-[300px]">
+    <div className="flex flex-col w-full min-h-screen py-3 pb-1">
       {/* Title is now provided by the parent container (HistoryAndSales) */}
-
-      <hr className="border-black my-2" />
 
       {/* Table header */}
       <div className="grid grid-cols-[65px_90px_100px_60px] md:grid-cols-[1fr_2fr_3fr_1fr] gap-2 font-semibold text-black text-sm md:text-lg">
@@ -166,7 +170,7 @@ export default function OrderHistory({ start, end }: { start: string; end: strin
         ))
       )}
 
-  {/* Clear action removed as per new requirements */}
+      {/* Clear action removed as per new requirements */}
     </div>
   );
 }

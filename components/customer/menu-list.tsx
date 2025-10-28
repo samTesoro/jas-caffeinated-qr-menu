@@ -250,15 +250,16 @@ export default function MenuList({
         .from("menuitem")
         .select(
           "menuitem_id, name, price, thumbnail, category, status, description, is_favorites"
-        )
-        .eq("status", "Available");
+        );
       if (activeTab === "Favorites") {
         query = query.eq("is_favorites", true);
       } else if (activeTab !== "All") {
         query = query.eq("category", activeTab);
       } else {
         // Favorites-first when showing All
-        query = query.order("is_favorites", { ascending: false }).order("name", { ascending: true });
+        query = query
+          .order("is_favorites", { ascending: false })
+          .order("name", { ascending: true });
       }
       query.limit(50).then(({ data }) => {
         setMenuItems(data || []);
@@ -293,7 +294,6 @@ export default function MenuList({
           .select(
             "menuitem_id, name, price, thumbnail, category, status, description, is_favorites"
           )
-          .eq("status", "Available")
           .or(`name.ilike.${ilikeTerm},description.ilike.${ilikeTerm}`)
           .limit(50);
         if (error) {
