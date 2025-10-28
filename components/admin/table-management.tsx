@@ -23,6 +23,7 @@ export default function TableManagement() {
   const [qrMode, setQrMode] = useState(false);
   const [qrForTable, setQrForTable] = useState<number | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [baseUrl, setBaseUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const run = async () => {
@@ -172,7 +173,27 @@ export default function TableManagement() {
   const handleTableClick = async (table_num: number, isActive: boolean) => {
     if (qrMode) {
       if (!isActive) return; // only currently available (active) tables
-      const url = `http://192.168.0.221:3000/customer/${table_num}`;
+      // Resolve a base URL customers can reach. Prefer current origin unless it's localhost.
+      const resolveBaseUrl = async (): Promise<string> => {
+        try {
+          if (typeof window !== "undefined") {
+            const origin = window.location.origin;
+            if (!/localhost|127\.0\.0\.1/.test(origin)) return origin;
+          }
+          // Fallback to server-assisted detection
+          const res = await fetch("/api/base-url", { cache: "no-store" });
+          if (res.ok) {
+            const data = (await res.json()) as { baseUrl?: string };
+            if (data?.baseUrl) return data.baseUrl;
+          }
+        } catch {}
+        // Final fallback
+        return "http://localhost:3000";
+      };
+
+      const b = baseUrl || (await resolveBaseUrl());
+      if (!baseUrl) setBaseUrl(b);
+      const url = `${b.replace(/\/$/, "")}/customer/${table_num}`;
       try {
         const dataUrl = await QRCode.toDataURL(url, { width: 512, margin: 1 });
         setQrDataUrl(dataUrl);
