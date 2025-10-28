@@ -191,7 +191,7 @@ export async function GET(request: NextRequest) {
             )
           `)
           .eq("customer_id", customer.customer_id)
-          .eq("iscancelled", false)
+            .eq("iscleared", false)
           .order("time_ordered", { ascending: true })
           .limit(20);
         orders = data || [];
@@ -229,7 +229,7 @@ export async function GET(request: NextRequest) {
             )
           `)
           .in("cart_id", cartIds)
-          .eq("iscancelled", false)
+          .eq("iscleared", false)
           .order("time_ordered", { ascending: true })
           .limit(20);
         if (cartOrderError) error = cartOrderError;
@@ -269,7 +269,7 @@ export async function GET(request: NextRequest) {
             )
           )
     `)
-  .eq("iscancelled", false)
+  .eq("iscleared", false)
   .eq("isfinished", false)
   .order("time_ordered", { ascending: true })
   .limit(20);
@@ -297,6 +297,7 @@ export async function GET(request: NextRequest) {
     const transformedOrders = ((orders as unknown as OrderRow[]) || []).map((order) => ({
       order_id: order.order_id.toString(),
       status: order.iscancelled ? "cancelled" : order.isfinished ? "finished" : "preparing",
+      iscancelled: !!order.iscancelled,
       customer_id: order.customer_id,
       time_ordered: order.time_ordered,
       payment_type: order.payment_type,

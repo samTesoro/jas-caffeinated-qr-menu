@@ -5,11 +5,12 @@ import { X } from "lucide-react";
 import { Button } from "../ui/button";
 interface Order {
   order_id: string;
-  status: "Pending" | "Preparing" | "Finished";
+  status: "Pending" | "Preparing" | "Finished" | "Cancelled";
   tableNo: string;
   time: string;
   items: OrderItem[];
   paymentMethod: string;
+  iscancelled?: boolean;
 }
 interface OrderItem {
   name: string;
@@ -47,6 +48,7 @@ export default function OrderNotification() {
         interface Order {
           order_id: string;
           isfinished: boolean;
+          iscancelled?: boolean;
           customer_id: string | number | null;
           time_ordered: string;
           items?: Item[];
@@ -66,9 +68,12 @@ export default function OrderNotification() {
         const transformed = (data as Order[])
           .map((order) => ({
             order_id: order.order_id?.toString() ?? "",
-            status: order.isfinished
+            status: order.iscancelled
+              ? "Cancelled"
+              : order.isfinished
               ? "Finished"
-              : ("Preparing" as "Preparing" | "Finished"),
+              : ("Preparing" as "Preparing" | "Finished" | "Cancelled"),
+            iscancelled: !!order.iscancelled,
             tableNo: String(order.customer_id ?? "N/A"),
             time: convertTo12Hour(order.time_ordered ?? ""),
             items:
@@ -151,10 +156,11 @@ export default function OrderNotification() {
 
   const deleteOrder = async (id: string) => {
     try {
+      // Admin "delete" should mark the order as cleared so it forever disappears from lists
       const res = await fetch(`/api/orders/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ iscancelled: true }),
+        body: JSON.stringify({ iscleared: true }),
       });
       if (!res.ok) throw new Error('Failed to cancel order');
       setOrders((prev) => prev.filter((order) => order.order_id !== id));
@@ -196,15 +202,21 @@ export default function OrderNotification() {
               <span className="text-2xl font-bold text-black p-1">
                 {index + 1}
               </span>
-              <button
-                onClick={() => {
-                  setFinishedOrderId(order.order_id);
-                  setShowFinishedModal(true);
-                }}
-                className="bg-[#A7F586] hover:bg-gray-400 transition-colors px-1 border text-black text-sm md:text-lg"
-              >
-                Mark as finished
-              </button>
+              {order.iscancelled ? (
+                <div className="bg-red-400 text-black font-normal px-1 border text-sm md:text-lg rounded">
+                  Canceled
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    setFinishedOrderId(order.order_id);
+                    setShowFinishedModal(true);
+                  }}
+                  className="bg-[#A7F586] hover:bg-gray-400 transition-colors px-1 border text-black text-sm md:text-lg"
+                >
+                  Mark as finished
+                </button>
+              )}
             </div>
             <button
               onClick={() => {
