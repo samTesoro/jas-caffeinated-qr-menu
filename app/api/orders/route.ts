@@ -270,6 +270,7 @@ export async function GET(request: NextRequest) {
           )
     `)
   .eq("iscancelled", false)
+  .eq("isfinished", false)
   .order("time_ordered", { ascending: true })
   .limit(20);
       orders = data || [];
