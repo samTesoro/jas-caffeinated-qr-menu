@@ -12,8 +12,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { isfinished, iscancelled } = await request.json();
-    const { id: orderId } = await params;
+  const { isfinished, iscancelled } = await request.json();
+  const { id: orderIdRaw } = await params;
+  const orderId = String(orderIdRaw);
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -22,10 +23,12 @@ export async function PATCH(
     if (isfinished !== undefined) updateFields.isfinished = isfinished;
     if (iscancelled !== undefined) updateFields.iscancelled = iscancelled;
 
+    // Try to coerce numeric ids into numbers to avoid type-mismatch
+    const idToMatch = /^[0-9]+$/.test(orderId) ? parseInt(orderId, 10) : orderId;
     const { data, error } = await supabase
       .from("order")
       .update(updateFields)
-      .eq("order_id", orderId)
+      .eq("order_id", idToMatch)
       .select()
       .single();
 

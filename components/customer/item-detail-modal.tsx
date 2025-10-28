@@ -36,7 +36,7 @@ export default function ItemDetailModal({
 }) {
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
-  const [fetchedDescription, setFetchedDescription] = useState<
+  const [fetchedDescription] = useState<
     string | null | undefined
   >(undefined);
 

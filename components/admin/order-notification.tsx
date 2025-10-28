@@ -17,6 +17,7 @@ interface OrderItem {
   note?: string | null;
 }
 import NotesModal from "./note-modal";
+import { createClient } from "@/lib/supabase/client";
 export default function OrderNotification() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [noteOpen, setNoteOpen] = useState(false);
@@ -30,13 +31,13 @@ export default function OrderNotification() {
   const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const response = await fetch("/api/orders");
-        if (!response.ok) {
-          throw new Error("Failed to fetch orders");
-        }
-        const data = await response.json();
+      const fetchOrders = async () => {
+        try {
+          const response = await fetch("/api/orders");
+          if (!response.ok) {
+            throw new Error("Failed to fetch orders");
+          }
+          const data = await response.json();
         // Transform API data to match UI structure
         interface Item {
           item_name: string;
@@ -104,8 +105,48 @@ export default function OrderNotification() {
       }
     };
     fetchOrders();
+
+    // Start polling as a fallback (every 30s)
     const interval = setInterval(fetchOrders, 30000);
-    return () => clearInterval(interval);
+
+    // Set up Supabase realtime subscription so the list refreshes immediately
+    // when orders are inserted or updated.
+    try {
+      const supabase = createClient();
+
+      const channel = supabase
+        .channel("public:order")
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "order" },
+          () => {
+            fetchOrders();
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "order" },
+          () => {
+            // If an order was marked finished or cancelled, refresh
+            fetchOrders();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        clearInterval(interval);
+        try {
+          if (channel && typeof (channel as any).unsubscribe === "function") {
+            (channel as any).unsubscribe();
+          }
+        } catch {
+          // ignore
+        }
+      };
+    } catch {
+      // If realtime setup fails, just rely on polling
+      return () => clearInterval(interval);
+    }
   }, []);
 
   const deleteOrder = async (id: string) => {
@@ -141,7 +182,7 @@ export default function OrderNotification() {
   };
 
   return (
-    <div className="flex flex-col w-full min-h-screen py-3 pb-20 px-7 md:px-24 lg:px-[300px]">
+    <div className="flex flex-col w-full min-h-screen py-3 pb-20 px-7 md:px-24 lg:px-[300px] overflow-x-hidden">
       <div className="mb-4">
         <h2 className="text-2xl font-bold text-black md:text-3xl">Orders</h2>
       </div>
@@ -178,7 +219,7 @@ export default function OrderNotification() {
 
           <hr className="border-black my-2" />
 
-          <div className="grid grid-cols-[65px_90px_100px_60px] md:grid-cols-[1fr_2fr_3fr_1fr] lg:grid-cols-[1fr_2fr_3fr_1fr] gap-2 mb-2 font-semibold text-black text-sm md:text-lg">
+          <div className="grid grid-cols-[50px_1fr_2fr_auto] md:grid-cols-[1fr_2fr_3fr_1fr] lg:grid-cols-[1fr_2fr_3fr_1fr] gap-2 mb-2 font-semibold text-black text-sm md:text-lg">
             <div className="text-center">Table No.</div>
             <div className="text-center">Time</div>
             <div className="text-center">Order</div>
@@ -187,7 +228,7 @@ export default function OrderNotification() {
 
           <hr className="border-black my-2" />
 
-          <div className="grid grid-cols-[65px_90px_100px_60px] md:grid-cols-[1fr_2fr_3fr_1fr] lg:grid-cols-[1fr_2fr_3fr_1fr] gap-2 mb-2 text-black text-sm md:text-lg">
+          <div className="grid grid-cols-[50px_1fr_2fr_auto] md:grid-cols-[1fr_2fr_3fr_1fr] lg:grid-cols-[1fr_2fr_3fr_1fr] gap-2 mb-2 text-black text-sm md:text-lg">
             <div className="flex justify-center items-center row-span-full text-center">
               {order.tableNo}
             </div>

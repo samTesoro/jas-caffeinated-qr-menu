@@ -147,13 +147,13 @@
   }
 
   .icon {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
   }
 
   /* slightly smaller label on small screens to help fit */
   .label {
-    font-size: 17px;
+    font-size: 18px;
   }
 
   /* ensure logout/noBounce has same sizing as other links */
@@ -161,6 +161,30 @@
     flex: 0 0 auto;
     min-width: 0;
     padding: 6px 4px;
+  }
+}
+
+/* Specific adjustments for very narrow devices (e.g. Samsung Galaxy S8+ 360x740) */
+@media (max-width: 360px) and (max-height: 740px) {
+  .nav {
+    gap: 8px;
+    padding: 0 4px;
+  }
+
+  .link,
+  .starButton,
+  .noBounce {
+    padding: 4px 3.5px; /* tighter padding */
+  }
+
+  .icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Reduce label size; if still overflows we can hide labels entirely */
+  .label {
+    font-size: 16px;
   }
 }
 

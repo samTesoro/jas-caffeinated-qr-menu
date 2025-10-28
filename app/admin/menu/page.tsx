@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/client";
 import DashboardHeader from "@/components/ui/header";
 import Taskbar from "@/components/admin/taskbar-admin";
 import LoadingSpinner from "@/components/ui/loading-spinner";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function MenuPage() {
