@@ -10,13 +10,13 @@ import DashboardHeader from "../ui/header";
 type CustomerMenuProps = {
   tableId: string;
   sessionId: string;
-  initialTab?: "Meals" | "Coffee" | "Drinks" | "Favorites";
+  initialTab?: "All" | "Meals" | "Coffee" | "Drinks" | "Favorites";
 };
 
 export default function CustomerMenu({
   tableId,
   sessionId,
-  initialTab = "Meals",
+  initialTab = "All",
 }: CustomerMenuProps) {
   type MenuCartItem = {
     cartitem_id?: number;
@@ -26,7 +26,7 @@ export default function CustomerMenu({
     menuitem?: { name: string; price: number; thumbnail?: string } | null;
   };
   const [activeTab, setActiveTab] = useState<
-    "Meals" | "Coffee" | "Drinks" | "Favorites"
+    "All" | "Meals" | "Coffee" | "Drinks" | "Favorites"
   >(initialTab);
   const [cart, setCart] = useState<MenuCartItem[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -36,6 +36,7 @@ export default function CustomerMenu({
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const tab = params.get("tab") as
+        | "All"
         | "Meals"
         | "Coffee"
         | "Drinks"

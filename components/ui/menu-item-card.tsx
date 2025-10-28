@@ -89,15 +89,17 @@ export default function ItemCard({
             <span className="text-[10px] sm:text-sm text-black whitespace-nowrap">
               ₱{displayPrice(item.price)}
             </span>
-            <span
-              className={`px-1 sm:px-2 text-[10px] sm:text-xs rounded-sm whitespace-nowrap ${
-                item.status === "Available"
-                  ? "bg-green-200 text-green-800"
-                  : "bg-red-200 text-red-800"
-              }`}
-            >
-              {item.status}
-            </span>
+                {mode === "admin" && (
+                  <span
+                    className={`px-1 sm:px-2 text-[10px] sm:text-xs rounded-sm whitespace-nowrap ${
+                      item.status === "Available"
+                        ? "bg-green-200 text-green-800"
+                        : "bg-red-200 text-red-800"
+                    }`}
+                  >
+                    {item.status}
+                  </span>
+                )}
           </div>
         </div>
 

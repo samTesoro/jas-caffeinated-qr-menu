@@ -498,6 +498,12 @@ export default function CartPage({
                     const result = await response.json();
                     console.log("Order creation result:", result);
 
+                    // Clear local cart immediately for badge sync
+                    try {
+                      localStorage.setItem("cartItems", JSON.stringify([]));
+                      window.dispatchEvent(new CustomEvent("cart-updated"));
+                    } catch {}
+
                     // Navigate to confirmation page
                     const gcashPath = sessionId
                       ? `/customer/${tableId}/session/${sessionId}/gcash-order-confirmation`
@@ -576,6 +582,12 @@ export default function CartPage({
 
                     const result = await response.json();
                     console.log("Order creation result:", result);
+
+                    // Clear local cart immediately for badge sync
+                    try {
+                      localStorage.setItem("cartItems", JSON.stringify([]));
+                      window.dispatchEvent(new CustomEvent("cart-updated"));
+                    } catch {}
 
                     // Navigate to confirmation page
                     const cashCardPath = sessionId

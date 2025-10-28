@@ -180,7 +180,7 @@ type CartItem = {
   menuitem_id: number;
 };
 interface MenuListProps {
-  activeTab: string;
+  activeTab: "All" | "Meals" | "Coffee" | "Drinks" | "Favorites" | string;
   cart: CartItem[];
   setCart: (cart: CartItem[]) => void;
   sessionId?: string;
@@ -202,6 +202,7 @@ export default function MenuList({
     category: string;
     status: string;
     description?: string | null;
+    is_favorites?: boolean;
   };
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -248,13 +249,16 @@ export default function MenuList({
       let query = supabase
         .from("menuitem")
         .select(
-          "menuitem_id, name, price, thumbnail, category, status, description"
+          "menuitem_id, name, price, thumbnail, category, status, description, is_favorites"
         )
         .eq("status", "Available");
       if (activeTab === "Favorites") {
         query = query.eq("is_favorites", true);
-      } else {
+      } else if (activeTab !== "All") {
         query = query.eq("category", activeTab);
+      } else {
+        // Favorites-first when showing All
+        query = query.order("is_favorites", { ascending: false }).order("name", { ascending: true });
       }
       query.limit(50).then(({ data }) => {
         setMenuItems(data || []);
@@ -287,7 +291,7 @@ export default function MenuList({
         const { data, error } = await supabase
           .from("menuitem")
           .select(
-            "menuitem_id, name, price, thumbnail, category, status, description"
+            "menuitem_id, name, price, thumbnail, category, status, description, is_favorites"
           )
           .eq("status", "Available")
           .or(`name.ilike.${ilikeTerm},description.ilike.${ilikeTerm}`)
@@ -354,8 +358,8 @@ export default function MenuList({
 
   return (
     <div>
-      {/* Search + Category */}
-      <div className="mb-6 flex flex-col sm:flex-row gap-2 justify-center items-center">
+      {/* Search + Actions: make sticky below header */}
+      <div className="mb-6 flex flex-col sm:flex-row gap-2 justify-center items-center sticky top-[170px] z-40 bg-[#ebebeb] py-2">
         <div className="flex items-center gap-3 w-full">
           {/* Notification bell (left) */}
           <div
