@@ -80,7 +80,7 @@ export default function Taskbar({
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className={`transition-colors duration-200 ${
+          className={`${styles.icon} transition-colors duration-200 ${
             !(permissions.view_super === true) &&
             !(permissions.create_account === true)
               ? "stroke-[#808080]" // Disabled
@@ -110,7 +110,7 @@ export default function Taskbar({
                 pathname === link.href ? styles.active : ""
               } group flex flex-col items-center justify-center text-center`}
             >
-              {link.icon || link.label}
+              {link.icon || <span className={styles.label}>{link.label}</span>}
             </Link>
           ) : (
             <span
@@ -118,7 +118,7 @@ export default function Taskbar({
               className={`${styles.link} ${styles.disabled} flex flex-col items-center justify-center text-center`}
               aria-disabled="true"
             >
-              {link.icon || link.label}
+              {link.icon || <span className={styles.label}>{link.label}</span>}
             </span>
           )
         )}
@@ -128,7 +128,7 @@ export default function Taskbar({
         >
           <LogoutButton
             className="flex items-center justify-center text-white hover:text-[#E59C53]"
-            iconClassName="transition-colors duration-200"
+            iconClassName={`${styles.icon} transition-colors duration-200`}
           />
         </span>
       </nav>

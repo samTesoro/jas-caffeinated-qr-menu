@@ -2,7 +2,8 @@
   position: fixed;
   bottom: 0;
   left: 0;
-  width: 100%;
+  right: 0; /* prefer left/right inset to avoid subpixel overflow from width:100% */
+  width: auto;
   background: #333;
   display: flex;
   align-items: center;
@@ -11,6 +12,9 @@
   z-index: 100;
   border-top: 2px solid #222;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.12);
+  box-sizing: border-box;
+  max-width: 100vw; /* ensure taskbar can't overflow viewport width */
+  overflow-x: hidden; /* clip any stray pixels from shadows/borders */
 }
 
 @media (max-width: 430px) {
@@ -47,11 +51,7 @@
   font-weight: bold;
 }
 
-/* Hover: highlight link when not disabled */
-.link:hover {
-  color: #e59c53;
-}
-
+/* Star button (reviews) */
 .starButton {
   background: none;
   border: none;
@@ -89,17 +89,20 @@
   transform: none !important;
 }
 
-/* .backButton {
-  position: absolute;
-  top: -1.8px;
-  right: 0px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  z-index: 101;
-  display: flex;
-  align-items: center;
-} */
+/* Common icon sizing so SVG icons and logout icon are consistent */
+.icon {
+  width: 24px;
+  height: 24px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Label text for links so text can be styled independently of icons */
+.label {
+  display: block;
+  font-size: 18px;
+  line-height: 1;
+}
 
 @media (min-width: 1024px) {
   .link {
@@ -109,12 +112,57 @@
   .starButton {
     font-size: 22px; /* Larger font size for desktop */
   }
+
+  .label {
+    font-size: 16px;
+  }
 }
 
-/* .backIcon {
-  width: 25px;
-  height: 25px;
-} */
+/* Small-screen tweaks */
+@media (max-width: 640px) {
+  .nav {
+    /* Center items and use a consistent gap so spacing is uniform between items */
+    justify-content: center;
+    gap: 12px; /* space between items */
+    padding: 0 6px; /* slight horizontal inset */
+    box-sizing: border-box;
+    /* allow horizontal scrolling when items can't fit to avoid overflow */
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .link,
+  .starButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* natural width but allow shrinking; avoid forcing equal widths */
+    flex: 0 0 auto;
+    min-width: 0; /* allow shrinking to avoid overflow */
+    padding: 6px 4px; /* slightly tighter horizontal padding */
+  }
+
+  .icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* slightly smaller label on small screens to help fit */
+  .label {
+    font-size: 17px;
+  }
+
+  /* ensure logout/noBounce has same sizing as other links */
+  .noBounce {
+    flex: 0 0 auto;
+    min-width: 0;
+    padding: 6px 4px;
+  }
+}
 
 .disabled {
   color: #808080;
