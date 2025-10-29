@@ -3,6 +3,7 @@ import React from "react";
 import { X } from "lucide-react";
 import { Button } from "../ui/button";
 import EstimatedTimeDisplay from "./estimated-time";
+import NotesModal from "../admin/note-modal";
 
 interface OrderItem {
   item_name: string;
@@ -39,6 +40,9 @@ export default function NotificationModal({
     null
   );
   const [now, setNow] = React.useState<number>(Date.now());
+  const [noteOpen, setNoteOpen] = React.useState(false);
+  const [noteText, setNoteText] = React.useState<string | undefined>(undefined);
+  const [noteItemName, setNoteItemName] = React.useState<string | undefined>(undefined);
 
   // Utility to get or set the cancel window start time in localStorage
   const getCancelStart = React.useCallback((orderId: string) => {
@@ -181,13 +185,23 @@ export default function NotificationModal({
                 <div className="grid grid-cols-[2fr_1fr_2fr] gap-0 text-black text-sm items-start">
                   <div className="flex flex-col gap-1">
                     {order.items.map((item, idx) => (
-                      <span
-                        key={idx}
-                        className="truncate w-full max-w-[150px]"
-                        title={item.item_name}
-                      >
-                        {item.item_name}
-                      </span>
+                      <div key={idx} className="truncate w-full max-w-[150px]">
+                        <div
+                          className={`${
+                            item.note ? "text-blue-600 cursor-pointer underline" : "text-black"
+                          }`}
+                          title={item.note ? "View note" : item.item_name}
+                          onClick={() => {
+                            if (item.note) {
+                              setNoteText(item.note || undefined);
+                              setNoteItemName(item.item_name);
+                              setNoteOpen(true);
+                            }
+                          }}
+                        >
+                          {item.item_name}
+                        </div>
+                      </div>
                     ))}
                   </div>
 
@@ -314,6 +328,12 @@ export default function NotificationModal({
             </div>
           </div>
         )}
+        <NotesModal
+          open={noteOpen}
+          note={noteText}
+          itemName={noteItemName}
+          onClose={() => setNoteOpen(false)}
+        />
       </div>
     </div>
   );

@@ -255,7 +255,7 @@ export default function OrderNotification() {
                     className={`truncate px-2 py-1 ${
                       item.note ? "text-blue-600 cursor-pointer underline" : ""
                     }`}
-                    title={item.name}
+                    title={item.note ? "View note" : item.name}
                     onClick={() => {
                       if (item.note) {
                         setNoteText(item.note || undefined);
