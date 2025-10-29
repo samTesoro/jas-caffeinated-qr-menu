@@ -76,22 +76,12 @@ export default function ItemDetailModal({
     }
 
     try {
+      // Get or create the active cart for this session
       const { data: cartData } = await supabase
         .from("cart")
-        .select(
-          `
-          cart_id,
-          cartitem!inner (
-            cartitem_id,
-            quantity,
-            subtotal_price,
-            menuitem_id
-          )
-        `
-        )
+        .select(`cart_id`)
         .eq("session_id", session_id)
         .eq("checked_out", false)
-        .eq("cartitem.menuitem_id", item.menuitem_id)
         .order("time_created", { ascending: false })
         .maybeSingle();
 
@@ -100,7 +90,36 @@ export default function ItemDetailModal({
 
       if (cartData) {
         cart_id = cartData.cart_id;
-        existingItem = cartData.cartitem?.[0];
+        // Try to find an exact cartitem match (same menuitem_id + same note)
+        const normalizedNote = note === "" ? null : String(note);
+        try {
+          if (normalizedNote === null) {
+            const { data: foundNull, error: foundNullErr } = await supabase
+              .from("cartitem")
+              .select("cartitem_id, quantity, subtotal_price, menuitem_id, note")
+              .eq("cart_id", cart_id)
+              .eq("menuitem_id", item.menuitem_id)
+              .is("note", null)
+              .limit(1)
+              .maybeSingle();
+            if (foundNullErr) console.debug("[addToCart] find null-note error:", foundNullErr);
+            existingItem = foundNull || null;
+          } else {
+            const { data: foundWithNote, error: foundWithNoteErr } = await supabase
+              .from("cartitem")
+              .select("cartitem_id, quantity, subtotal_price, menuitem_id, note")
+              .eq("cart_id", cart_id)
+              .eq("menuitem_id", item.menuitem_id)
+              .eq("note", normalizedNote)
+              .limit(1)
+              .maybeSingle();
+            if (foundWithNoteErr) console.debug("[addToCart] find note error:", foundWithNoteErr);
+            existingItem = foundWithNote || null;
+          }
+        } catch (e) {
+          console.error("[addToCart] error finding existing cartitem:", e);
+          existingItem = null;
+        }
       } else {
         const { data: emptyCartData } = await supabase
           .from("cart")
@@ -147,12 +166,15 @@ export default function ItemDetailModal({
       }
 
       if (existingItem) {
+        // Update the matched cartitem (same menuitem_id + same note)
         const newQty = existingItem.quantity + qty;
         const newSubtotal = item.price * newQty;
         const { error: updateError } = await supabase
           .from("cartitem")
           .update({ quantity: newQty, subtotal_price: newSubtotal })
-          .eq("cartitem_id", existingItem.cartitem_id);
+          .eq("cartitem_id", existingItem.cartitem_id)
+          .select()
+          .maybeSingle();
 
         if (updateError) {
           alert("Failed to update cart item");
@@ -161,7 +183,7 @@ export default function ItemDetailModal({
 
         setCart(
           cart.map((i) =>
-            i.menuitem_id === item.menuitem_id
+            i.cartitem_id && existingItem.cartitem_id && i.cartitem_id === existingItem.cartitem_id
               ? { ...i, quantity: newQty, subtotal_price: newSubtotal }
               : i
           )
@@ -175,16 +197,26 @@ export default function ItemDetailModal({
           note: note || null,
         } as const;
 
-        const { error: itemError } = await supabase
+        const { data: inserted, error: itemError } = await supabase
           .from("cartitem")
-          .insert([cartItem]);
+          .insert([cartItem])
+          .select()
+          .single();
 
         if (itemError) {
           alert("Failed to add item to cart");
           return;
         }
 
-        setCart([...cart, { ...cartItem }]);
+        // Use the inserted row returned by Supabase (has cartitem_id, note, etc.)
+        setCart([...cart, {
+          cartitem_id: inserted.cartitem_id,
+          quantity: inserted.quantity,
+          subtotal_price: inserted.subtotal_price,
+          menuitem_id: inserted.menuitem_id,
+          // keep note field if present
+          ...(inserted.note !== undefined ? { note: inserted.note } : {}),
+        }]);
       }
 
       // 🔸 Dreame fix — Sync cart to localStorage for badge updates

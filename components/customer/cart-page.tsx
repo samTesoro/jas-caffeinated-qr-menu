@@ -20,6 +20,7 @@ export default function CartPage({
     quantity: number;
     subtotal_price: number;
     menuitem_id: number;
+    note?: string | null;
     menuitem?: {
       name: string;
       price: number;
@@ -163,7 +164,7 @@ export default function CartPage({
       const { data, error } = await supabase
         .from("cartitem")
         .select(
-          "cartitem_id, quantity, subtotal_price, menuitem_id, menuitem:menuitem_id (name, price, thumbnail)"
+          "cartitem_id, quantity, subtotal_price, menuitem_id, note, menuitem:menuitem_id (name, price, thumbnail)"
         )
         .eq("cart_id", cart_id);
 
@@ -241,7 +242,7 @@ export default function CartPage({
     const { data: newCartItems } = await supabase
       .from("cartitem")
       .select(
-        "cartitem_id, quantity, subtotal_price, menuitem_id, menuitem:menuitem_id (name, price, thumbnail)"
+        "cartitem_id, quantity, subtotal_price, menuitem_id, note, menuitem:menuitem_id (name, price, thumbnail)"
       )
       .eq("cart_id", cart_id);
 
@@ -298,7 +299,7 @@ export default function CartPage({
     const { data: newCartItems } = await supabase
       .from("cartitem")
       .select(
-        "cartitem_id, quantity, subtotal_price, menuitem_id, menuitem:menuitem_id (name, price, thumbnail)"
+          "cartitem_id, quantity, subtotal_price, menuitem_id, note, menuitem:menuitem_id (name, price, thumbnail)"
       )
       .eq("cart_id", cart_id);
 
@@ -498,12 +499,6 @@ export default function CartPage({
                     const result = await response.json();
                     console.log("Order creation result:", result);
 
-                    // Clear local cart immediately for badge sync
-                    try {
-                      localStorage.setItem("cartItems", JSON.stringify([]));
-                      window.dispatchEvent(new CustomEvent("cart-updated"));
-                    } catch {}
-
                     // Navigate to confirmation page
                     const gcashPath = sessionId
                       ? `/customer/${tableId}/session/${sessionId}/gcash-order-confirmation`
@@ -582,12 +577,6 @@ export default function CartPage({
 
                     const result = await response.json();
                     console.log("Order creation result:", result);
-
-                    // Clear local cart immediately for badge sync
-                    try {
-                      localStorage.setItem("cartItems", JSON.stringify([]));
-                      window.dispatchEvent(new CustomEvent("cart-updated"));
-                    } catch {}
 
                     // Navigate to confirmation page
                     const cashCardPath = sessionId
