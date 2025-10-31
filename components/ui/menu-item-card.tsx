@@ -10,6 +10,7 @@ export interface MenuItem {
   status: string;
   thumbnail?: string;
   description?: string | null;
+  is_favorites?: boolean;
 }
 
 interface MenuItemCardProps {
@@ -67,6 +68,28 @@ export default function ItemCard({
         mode === "customer" && item.status !== "Available" ? "opacity-60" : ""
       }`}
     >
+      {/* Favorite badge top-left */}
+      {item.is_favorites && (
+        <div
+          className="absolute -top-2 -left-3 z-20 w-12 h-12 rounded-full bg-[#E59C53] flex items-center justify-center shadow-lg"
+          aria-hidden={false}
+          role="img"
+          aria-label="Favorite"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            className="w-10 h-10"
+            focusable="false"
+          >
+            <path
+              d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"
+              fill="#fff"
+            />
+          </svg>
+        </div>
+      )}
       {/* Thumbnail */}
       <div
         className="w-full aspect-[4/3] overflow-hidden cursor-pointer relative"

@@ -10,7 +10,7 @@ import DashboardHeader from "../ui/header";
 type CustomerMenuProps = {
   tableId: string;
   sessionId: string;
-  initialTab?: "All" | "Meals" | "Coffee" | "Drinks" | "Favorites";
+  initialTab?: "All" | "Meals" | "Coffee" | "Drinks" | "Favorites" | "Desserts";
 };
 
 export default function CustomerMenu({
@@ -26,7 +26,7 @@ export default function CustomerMenu({
     menuitem?: { name: string; price: number; thumbnail?: string } | null;
   };
   const [activeTab, setActiveTab] = useState<
-    "All" | "Meals" | "Coffee" | "Drinks" | "Favorites"
+    "All" | "Meals" | "Coffee" | "Drinks" | "Favorites" | "Desserts"
   >(initialTab);
   const [cart, setCart] = useState<MenuCartItem[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -40,7 +40,8 @@ export default function CustomerMenu({
         | "Meals"
         | "Coffee"
         | "Drinks"
-        | "Favorites";
+        | "Favorites"
+        | "Desserts";
       if (tab && tab !== activeTab) setActiveTab(tab);
     }
   }, [activeTab]);

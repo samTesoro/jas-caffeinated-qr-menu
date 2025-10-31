@@ -20,7 +20,7 @@ interface MenuItem {
 }
 
 // removed broken line
-const categories = ["Meals", "Coffee", "Drinks"];
+const categories = ["Meals", "Coffee", "Drinks", "Desserts"];
 const statuses = ["Available", "Unavailable"];
 const favoritesOptions = ["Yes", "No"];
 

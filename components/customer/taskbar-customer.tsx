@@ -254,7 +254,7 @@ export default function MenuTaskbar({
           </Link>
         </div>
 
-        {/* Favorites */}
+        {/* Desserts (replaces previous Favorites) */}
         <div className="flex flex-col items-center">
           <Link
             href={
@@ -272,7 +272,7 @@ export default function MenuTaskbar({
                   ? "/favorites-icon-selected.png"
                   : "/favorites-icon.png"
               }
-              alt="Favorites"
+              alt="Desserts"
               width={40}
               height={40}
               className={styles.icon}
@@ -283,7 +283,7 @@ export default function MenuTaskbar({
                 isPathActive("favorites") ? styles.active : styles.label
               }
             >
-              Favorites
+              Desserts
             </span>
           </Link>
         </div>

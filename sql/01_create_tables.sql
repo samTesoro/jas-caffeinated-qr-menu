@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS customer (
 CREATE TABLE IF NOT EXISTS menuitem (
     menuitem_id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    category VARCHAR(50) NOT NULL CHECK (category IN ('Meals', 'Coffee', 'Drinks')),
+    category VARCHAR(50) NOT NULL CHECK (category IN ('Meals', 'Coffee', 'Drinks', 'Desserts')),
     price DECIMAL(10,2) NOT NULL,
     status VARCHAR(20) DEFAULT 'Available' CHECK (status IN ('Available', 'Unavailable')),
     thumbnail TEXT,
