@@ -70,6 +70,13 @@ type User = {
 };
 
 export default function ViewAccounts() {
+  type PermKey =
+    | "view_orders"
+    | "view_history"
+    | "view_menu"
+    | "view_reviews"
+    | "view_tables";
+
   // Block a user by setting is_blocked to true in Supabase
   const handleBlock = async (user_id: string) => {
     const supabase = createClient();
@@ -111,6 +118,7 @@ export default function ViewAccounts() {
 
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState<Record<string, boolean>>({});
 
   const [deleteUser, setDeleteUser] = useState<null | {
     user_id: string;
@@ -163,6 +171,59 @@ export default function ViewAccounts() {
     }
     return matchesSearch && matchesCategory;
   });
+
+  const togglePermission = async (
+    user: User,
+    field: PermKey,
+  ) => {
+    const supabase = createClient();
+    const current = Boolean((user as any)[field]);
+    const key = `${user.user_id}:${field}`;
+    setSaving((s) => ({ ...s, [key]: true }));
+    const { error } = await supabase
+      .from("adminusers")
+      .update({ [field]: !current })
+      .eq("user_id", user.user_id);
+    if (!error) {
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.user_id === user.user_id ? ({ ...u, [field]: !current } as User) : u,
+        ),
+      );
+    } else {
+      console.error("Toggle permission error:", error.message);
+    }
+    setSaving((s) => ({ ...s, [key]: false }));
+  };
+
+  const Toggle = ({
+    enabled,
+    onClick,
+    disabled,
+    label,
+  }: {
+    enabled: boolean;
+    onClick: () => void;
+    disabled?: boolean;
+    label: string;
+  }) => (
+    <button
+      type="button"
+      aria-label={`Toggle ${label}`}
+      aria-pressed={enabled}
+      onClick={onClick}
+      disabled={disabled}
+      className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#E59C53] ${
+        enabled ? "bg-green-500" : "bg-gray-300"
+      } ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}
+    >
+      <span
+        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+          enabled ? "translate-x-5" : "translate-x-1"
+        }`}
+      />
+    </button>
+  );
 
   const handleDelete = async (user_id: string) => {
     const supabase = createClient();
@@ -243,37 +304,89 @@ export default function ViewAccounts() {
                   </div>
 
                   <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <p className="text-black">
-                        Allow “View Orders”?:{" "}
-                        <span className="text-black font-bold">
-                          {user.view_orders ? "Yes" : "No"}
-                        </span>
-                      </p>
-                      <p className="text-black">
-                        Allow “View Order History”?:{" "}
-                        <span className="text-black font-bold">
-                          {user.view_history ? "Yes" : "No"}
-                        </span>
-                      </p>
-                      <p className="text-black">
-                        Allow “View and Edit Menu”?:{" "}
-                        <span className="text-black font-bold">
-                          {user.view_menu ? "Yes" : "No"}
-                        </span>
-                      </p>
-                      <p className="text-black">
-                        Allow “View Reviews”?:{" "}
-                        <span className="text-black font-bold">
-                          {user.view_reviews ? "Yes" : "No"}
-                        </span>
-                      </p>
-                      <p className="text-black">
-                        Allow “View Tables”?:{" "}
-                        <span className="text-black font-bold">
-                          {user.view_tables ? "Yes" : "No"}
-                        </span>
-                      </p>
+                    <div className="space-y-2 w-full max-w-[520px]">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-black">
+                          Allow “View Orders”?:{" "}
+                          <span className="text-black font-bold">
+                            {user.view_orders ? "Yes" : "No"}
+                          </span>
+                        </p>
+                        <Toggle
+                          label="View Orders"
+                          enabled={!!user.view_orders}
+                          onClick={() =>
+                            togglePermission(user, "view_orders")
+                          }
+                          disabled={saving[`${user.user_id}:view_orders`]}
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-black">
+                          Allow “View Order History”?:{" "}
+                          <span className="text-black font-bold">
+                            {user.view_history ? "Yes" : "No"}
+                          </span>
+                        </p>
+                        <Toggle
+                          label="View Order History"
+                          enabled={!!user.view_history}
+                          onClick={() =>
+                            togglePermission(user, "view_history")
+                          }
+                          disabled={saving[`${user.user_id}:view_history`]}
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-black">
+                          Allow “View and Edit Menu”?:{" "}
+                          <span className="text-black font-bold">
+                            {user.view_menu ? "Yes" : "No"}
+                          </span>
+                        </p>
+                        <Toggle
+                          label="View and Edit Menu"
+                          enabled={!!user.view_menu}
+                          onClick={() => togglePermission(user, "view_menu")}
+                          disabled={saving[`${user.user_id}:view_menu`]}
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-black">
+                          Allow “View Reviews”?:{" "}
+                          <span className="text-black font-bold">
+                            {user.view_reviews ? "Yes" : "No"}
+                          </span>
+                        </p>
+                        <Toggle
+                          label="View Reviews"
+                          enabled={!!user.view_reviews}
+                          onClick={() =>
+                            togglePermission(user, "view_reviews")
+                          }
+                          disabled={saving[`${user.user_id}:view_reviews`]}
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-black">
+                          Allow “View Tables”?:{" "}
+                          <span className="text-black font-bold">
+                            {user.view_tables ? "Yes" : "No"}
+                          </span>
+                        </p>
+                        <Toggle
+                          label="View Tables"
+                          enabled={!!user.view_tables}
+                          onClick={() =>
+                            togglePermission(user, "view_tables")
+                          }
+                          disabled={saving[`${user.user_id}:view_tables`]}
+                        />
+                      </div>
                     </div>
 
                     {/* Right side - action buttons */}

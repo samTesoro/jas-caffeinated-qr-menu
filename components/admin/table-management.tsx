@@ -233,28 +233,35 @@ export default function TableManagement() {
           Change Table Status
         </h2>
 
-        <div className="flex justify-between items-center mb-5 gap-2">
+        <div className="flex justify-between items-center mb-5 gap-2 px-4">
           <Button
             variant="orange"
+            size="lg"
             onClick={() => setShowAddConfirm(true)}
-            className="text-black px-2 rounded-lg border-transparent font-semibold"
+            className="w-auto"
             disabled={addDisabled}
+            aria-label="Add table"
           >
             Add
           </Button>
           <Button
             variant={qrMode ? "green" : "orange"}
+            size="lg"
             onClick={() => setQrMode((s) => !s)}
-            className="text-black px-2 rounded-lg border-transparent font-semibold"
+            className="w-auto"
+            aria-pressed={qrMode}
+            aria-label={qrMode ? "Disable QR mode" : "Enable QR mode"}
           >
             {qrMode ? "QR Mode: On" : "Generate QR"}
           </Button>
           {tables.length > 0 && (
             <Button
               variant="red"
+              size="lg"
               onClick={() => setShowDeleteConfirm(true)}
-              className="text-black px-2 rounded-lg border-transparent font-semibold"
+              className="w-auto"
               disabled={deleteDisabled}
+              aria-label="Delete last table"
             >
               Delete
             </Button>
@@ -285,7 +292,7 @@ export default function TableManagement() {
             <span className="inline-block w-4 h-4 bg-red-500 border border-black align-middle" />
             <span className="align-middle">Active</span>
           </div>
-          <div className="text-xs text-gray-600 pt-2">Note: Minimum 1 table, maximum 15 tables. {qrMode && <span className="ml-2 text-gray-800 font-semibold">QR mode is active — click an active table to preview/download its QR.</span>}</div>
+          <div className="text-xs text-gray-600 pt-2">Note: Minimum 1 table, maximum 15 tables.<br/>{qrMode && <span className=" text-gray-800 font-semibold">QR mode is active — click an active table to preview/download its QR.</span>}</div>
         </div>
       </div>
 

@@ -33,6 +33,8 @@ export default function SalesReport({
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
+  const [categoryFilter, setCategoryFilter] = useState<string>("All");
+  const [search, setSearch] = useState<string>("");
 
   useEffect(() => {
     // Reset to first page when date filters change
@@ -79,6 +81,36 @@ export default function SalesReport({
     return items;
   }, [data]);
 
+  // Unique categories from current page of items (plus known defaults)
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    (data?.items || []).forEach((i) => set.add(i.category));
+    // Ensure common ones appear predictably if present in summary
+    const ordered: string[] = [];
+    ["Meals", "Drinks", "Coffee", "Other"].forEach((c) => {
+      if (set.has(c)) ordered.push(c);
+    });
+    // Add any remaining categories (sorted alpha for stability)
+    const remaining = Array.from(set).filter(
+      (c) => !ordered.includes(c)
+    );
+    remaining.sort((a, b) => a.localeCompare(b));
+    return ["All", ...ordered, ...remaining];
+  }, [data]);
+
+  // Apply in-list filters only to the current page of items
+  const itemsFiltered = useMemo(() => {
+    let list = itemsSorted;
+    if (categoryFilter && categoryFilter !== "All") {
+      list = list.filter((i) => i.category === categoryFilter);
+    }
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      list = list.filter((i) => i.name.toLowerCase().includes(q));
+    }
+    return list;
+  }, [itemsSorted, categoryFilter, search]);
+
   // Reserved for potential future use (percentages breakdown in header)
   useMemo(() => {
     const meals = data?.summary?.Meals || 0;
@@ -96,7 +128,7 @@ export default function SalesReport({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-6 items-start">
       {/* Summary column: mobile/tablet first, desktop right */}
-      <div className="order-1 lg:order-none lg:col-start-2 w-full lg:w-auto lg:min-w-[360px] flex flex-col gap-3">
+  <div className="order-1 lg:order-none lg:col-start-2 lg:row-start-1 w-full lg:w-auto lg:min-w-[360px] flex flex-col gap-3">
         <div className="bg-white md:h-[150px] rounded-md border border-gray-200 shadow-sm p-7 flex flex-col items-center justify-center text-center">
           <div className="text-gray-600 text-xs md:text-sm">Total Sales</div>
           <div className="text-3xl md:text-4xl font-bold text-black mt-1">
@@ -128,13 +160,46 @@ export default function SalesReport({
         </div>
       </div>
       {/* Sales per item list: mobile below, desktop left */}
-      <div className="order-2 lg:order-none lg:col-start-1 flex-1 bg-white/60 rounded-md border border-gray-200 shadow-sm p-4 md:p-6">
-        <h3 className="text-xl md:text-2xl font-bold text-black mb-4">
-          Sales per item
-        </h3>
+  <div className="order-2 lg:order-none lg:col-start-1 lg:row-start-1 flex-1 bg-white/60 rounded-md border border-gray-200 shadow-sm p-4 md:p-6">
+        {/* Title + Filters in a single header row */}
+        <div className="mb-3 md:mb-4 border-b border-gray-200 pb-3">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <h3 className="text-xl md:text-2xl font-bold text-black">Sales per item</h3>
+            <div className="flex w-full md:w-auto items-center gap-2 md:gap-3">
+              {/* Search pill with icon on the right */}
+              <div className="relative w-full md:w-[360px]">
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search"
+                  className="w-full border border-gray-300 rounded-full text-sm pl-4 pr-10 py-2 bg-white text-black placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#E59C53]/40 focus:border-[#E59C53]"
+                />
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                </span>
+              </div>
+              {/* Category select pill */}
+              <select
+                className="w-full md:w-[220px] text-center py-1 px-2 border-2 border-black bg-white text-black text-xs h-7 rounded-lg"
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+              >
+                {categories.map((c) => (
+                  <option key={c} value={c}>
+                    {c === "All" ? "Select category" : c}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
 
         {/* Header row (desktop only) */}
-        <div className="hidden md:grid md:grid-cols-[3.5fr_2fr_2.5fr_300px] gap-3 text-black font-semibold text-sm md:text-base">
+  <div className="hidden md:grid md:grid-cols-[3.5fr_1.5fr_2fr_300px] gap-3 text-black font-semibold text-sm md:text-base">
           <div>Product Description</div>
           <div className="text-left pl-4">Qty sold</div>
           <div className="text-left">Subtotal</div>
@@ -150,9 +215,11 @@ export default function SalesReport({
           <p className="text-sm text-gray-600">
             No sales for the selected range.
           </p>
+        ) : itemsFiltered.length === 0 ? (
+          <p className="text-sm text-gray-600">No items matched your filters.</p>
         ) : (
           <div className="max-h-[60vh] overflow-y-auto pr-1 space-y-3">
-            {itemsSorted.map((it) => (
+            {itemsFiltered.map((it) => (
               <div
                 key={it.menuitem_id}
                 className="grid grid-cols-1 md:grid-cols-[3.5fr_1.5fr_2fr_300px] gap-1 items-center text-black min-w-0"
