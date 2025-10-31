@@ -60,6 +60,7 @@ function ReviewModal({
           comment: comment.trim() === "" ? null : comment,
           table_id: tableId || null,
           session_id: sessionId || null,
+          iscleared: false,
         },
       ]);
       if (error) {

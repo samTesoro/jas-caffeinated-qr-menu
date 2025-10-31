@@ -140,13 +140,13 @@ export default function MenuTaskbar({
                   : "/meals-icon.png"
               }
               alt="Meals"
-              width={70}
-              height={70}
+              width={40}
+              height={40}
               className={styles.icon}
               unoptimized
             />
             <span
-              className={isPathActive("meals") ? styles.active : styles.link}
+              className={isPathActive("meals") ? styles.active : styles.label}
             >
               Meals
             </span>
@@ -178,7 +178,7 @@ export default function MenuTaskbar({
               unoptimized
             />
             <span
-              className={isPathActive("coffee") ? styles.active : styles.link}
+              className={isPathActive("coffee") ? styles.active : styles.label}
             >
               Coffee
             </span>
@@ -186,10 +186,7 @@ export default function MenuTaskbar({
         </div>
 
         {/* Cart */}
-        <div
-          className="relative flex flex-col items-center"
-          style={{ margin: "0 16px" }}
-        >
+        <div className="relative flex flex-col items-center">
           <Link
             href={
               tableId && sessionId
@@ -201,13 +198,7 @@ export default function MenuTaskbar({
           >
             <button
               className="rounded-full shadow-lg flex items-center justify-center relative hover:bg-orange-900"
-              style={{
-                width: "64px",
-                height: "64px",
-                background: "#E59C53",
-                position: "relative",
-                top: "-30px",
-              }}
+              style={{ width: "64px", height: "64px", background: "#E59C53", position: "relative", top: "-30px" }}
             >
               <Image
                 src="/shopping-cart-icon.png"
@@ -256,7 +247,7 @@ export default function MenuTaskbar({
               unoptimized
             />
             <span
-              className={isPathActive("drinks") ? styles.active : styles.link}
+              className={isPathActive("drinks") ? styles.active : styles.label}
             >
               Drinks
             </span>
@@ -289,7 +280,7 @@ export default function MenuTaskbar({
             />
             <span
               className={
-                isPathActive("favorites") ? styles.active : styles.link
+                isPathActive("favorites") ? styles.active : styles.label
               }
             >
               Favorites

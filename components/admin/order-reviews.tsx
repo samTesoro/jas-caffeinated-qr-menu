@@ -24,13 +24,7 @@ export default function ReviewList({ permissions }: ReviewListProps) {
     }>
   >([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
-  const [clearedIds, setClearedIds] = useState<number[]>(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("clearedReviewIds");
-      return stored ? JSON.parse(stored) : [];
-    }
-    return [];
-  });
+  // Local clear state removed in favor of DB-backed clear
 
   const [showClearModal, setShowClearModal] = useState(false);
   const [page, setPage] = useState(1);
@@ -38,11 +32,24 @@ export default function ReviewList({ permissions }: ReviewListProps) {
   const [total, setTotal] = useState(0);
 
   // Clear reviews (local only NOT IN DATABASE, remain in localStorage)
-  const clearReviews = () => {
-    const ids = reviews.map((r) => r.id);
-    setClearedIds(ids);
-    localStorage.setItem("clearedReviewIds", JSON.stringify(ids));
-    setShowClearModal(false);
+  const clearReviews = async () => {
+    try {
+      const supabase = createClient();
+      // Mark ALL non-cleared reviews as cleared
+      const { error } = await supabase
+        .from("reviews")
+        .update({ iscleared: true })
+        .eq("iscleared", false);
+      if (error) throw error;
+      // Refresh UI to reflect no reviews remaining
+      setPage(1);
+      setReviews([]);
+      setTotal(0);
+    } catch (e) {
+      console.error("Failed to clear reviews:", e);
+    } finally {
+      setShowClearModal(false);
+    }
   };
 
   useEffect(() => {
@@ -54,6 +61,7 @@ export default function ReviewList({ permissions }: ReviewListProps) {
       const { data, error, count } = await supabase
         .from("reviews")
         .select("id, rating, comment, created_at, table_id, session_id", { count: 'exact' })
+        .eq("iscleared", false)
         .order("created_at", { ascending: false })
         .range(from, to);
       if (!error && data) {
@@ -68,8 +76,8 @@ export default function ReviewList({ permissions }: ReviewListProps) {
     if (permissions.view_reviews) fetchReviews();
   }, [permissions.view_reviews, page, pageSize]);
 
-  // When reviews update, keep only new reviews if cleared
-  const filteredReviews = reviews.filter((r) => !clearedIds.includes(r.id));
+  // DB-filtered: reviews already exclude cleared ones
+  const filteredReviews = reviews;
 
   if (!permissions.view_reviews) {
     return null;
@@ -96,9 +104,9 @@ export default function ReviewList({ permissions }: ReviewListProps) {
         </h2>
         <button
           onClick={() => setShowClearModal(true)}
-          disabled={filteredReviews.length === 0}
+          disabled={Math.max(0, total) === 0}
           className={`bg-[#d9d9d9] hover:bg-red-500 transition-colors px-3 border text-black text-md md:text-lg ${
-            filteredReviews.length === 0
+            Math.max(0, total) === 0
               ? "opacity-50 cursor-not-allowed pointer-events-none"
               : ""
           }`}
