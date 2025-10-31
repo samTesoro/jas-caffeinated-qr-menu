@@ -15,6 +15,9 @@ type SalesItem = {
 type SalesResponse = {
   totalSales: number;
   items: SalesItem[];
+  totalItems?: number;
+  page?: number;
+  pageSize?: number;
   summary: { Meals: number; Drinks: number; Coffee: number; Other?: number };
 };
 
@@ -28,6 +31,13 @@ export default function SalesReport({
   const [data, setData] = useState<SalesResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(20);
+
+  useEffect(() => {
+    // Reset to first page when date filters change
+    setPage(1);
+  }, [start, end]);
 
   useEffect(() => {
     let ignore = false;
@@ -38,6 +48,8 @@ export default function SalesReport({
         const params = new URLSearchParams();
         if (start) params.set("start", start);
         if (end) params.set("end", end);
+        params.set("page", String(page));
+        params.set("pageSize", String(pageSize));
         const url = `/api/sales${
           params.toString() ? `?${params.toString()}` : ""
         }`;
@@ -56,14 +68,15 @@ export default function SalesReport({
     return () => {
       ignore = true;
     };
-  }, [start, end]);
+  }, [start, end, page, pageSize]);
 
   const total = data?.totalSales || 0;
 
   // Sort items by highest percentage first
   const itemsSorted = useMemo(() => {
     const items = data?.items || [];
-    return [...items].sort((a, b) => (b.percent || 0) - (a.percent || 0));
+    // API already slices and percent is computed; keep stable ordering
+    return items;
   }, [data]);
 
   // Reserved for potential future use (percentages breakdown in header)
@@ -183,6 +196,38 @@ export default function SalesReport({
             ))}
           </div>
         )}
+
+        {/* Pagination for items list: numeric pages + Next */}
+        <div className="flex items-center justify-center gap-2 mt-4 select-none">
+          {(() => {
+            const totalItems = data?.totalItems || 0;
+            const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+            const startPage = Math.max(1, Math.min(page - 4, Math.max(1, totalPages - 9)));
+            const endPage = Math.min(totalPages, startPage + 9);
+            const count = endPage - startPage + 1;
+            return Array.from({ length: count }).map((_, idx) => {
+              const current = startPage + idx;
+              const isActive = current === page;
+              return (
+                <button
+                  key={current}
+                  onClick={() => setPage(current)}
+                  disabled={isActive || loading}
+                  className={isActive ? "text-black font-semibold px-1" : "text-blue-600 hover:underline px-1"}
+                >
+                  {current}
+                </button>
+              );
+            });
+          })()}
+          <button
+            className="text-blue-600 hover:underline disabled:opacity-50 ml-2"
+            onClick={() => setPage((p) => p + 1)}
+            disabled={loading || page >= Math.max(1, Math.ceil((data?.totalItems || 0) / pageSize))}
+          >
+            Next
+          </button>
+        </div>
       </div>
     </div>
   );

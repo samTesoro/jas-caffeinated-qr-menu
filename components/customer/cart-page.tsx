@@ -33,6 +33,23 @@ export default function CartPage({
   const [selectedCartItem, setSelectedCartItem] = useState<number | null>(null);
   const router = useRouter();
 
+  const clearLocalCart = () => {
+    try {
+      const sid =
+        sessionId ||
+        (typeof window !== "undefined"
+          ? sessionStorage.getItem("sessionId") ||
+            sessionStorage.getItem("session_id") ||
+            undefined
+          : undefined);
+      if (sid) localStorage.removeItem(`cartItems:${sid}`);
+      // Legacy fallback just in case
+      localStorage.removeItem("cartItems");
+      window.dispatchEvent(new CustomEvent("cart-updated"));
+    } catch {}
+    setCart([]);
+  };
+
   const BackIcon = () => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -82,13 +99,19 @@ export default function CartPage({
   useEffect(() => {
     const fetchCart = async () => {
       const supabase = createClient();
+      // Resolve a session-scoped key
+      const sid =
+        sessionId ||
+        (typeof window !== "undefined"
+          ? sessionStorage.getItem("sessionId") ||
+            sessionStorage.getItem("session_id") ||
+            undefined
+          : undefined);
+      // Prefer DB cart for accurate cartitem IDs (add/remove are DB-backed)
       let session_id: string;
-
-      if (sessionId) {
-        // Use sessionId from URL params (preferred for session-based routing)
-        session_id = sessionId;
+      if (sid) {
+        session_id = sid;
       } else {
-        // Fallback to sessionStorage for backward compatibility
         let storedSessionId = sessionStorage.getItem("session_id");
         if (!storedSessionId) {
           storedSessionId = uuidv4();
@@ -98,67 +121,53 @@ export default function CartPage({
       }
 
       let cart_id = null;
-      // Try to find an open cart for this session
-      const { data: cartData, error: cartError } = await supabase
+      const { data: cartData } = await supabase
         .from("cart")
         .select("cart_id")
         .eq("session_id", session_id)
         .eq("checked_out", false)
         .order("time_created", { ascending: false })
         .maybeSingle();
-
-      if (cartError) {
-        console.error("Error fetching cart:", cartError);
-        setCart([]);
-        return;
-      }
-
-      if (cartData && cartData.cart_id) {
-        cart_id = cartData.cart_id;
-      } else {
-        // No existing cart found, try to create one
+      cart_id = cartData?.cart_id ?? null;
+      if (!cart_id) {
+        // Fallback to local storage if no DB cart
         try {
-          const { data: newCart, error: newCartError } = await supabase
-            .from("cart")
-            .insert({ session_id, total_price: 0, checked_out: false })
-            .select("cart_id")
-            .single();
-
-          if (newCartError) {
-            // If error is duplicate key (23505), another process created the cart
-            if (newCartError.code === "23505") {
-              // Retry fetching the cart that was created by another process
-              const { data: retryCart, error: retryError } = await supabase
-                .from("cart")
-                .select("cart_id")
-                .eq("session_id", session_id)
-                .eq("checked_out", false)
-                .order("time_created", { ascending: false })
-                .maybeSingle();
-
-              if (retryError || !retryCart?.cart_id) {
-                console.error("Error retrieving cart after retry:", retryError);
-                setCart([]);
-                return;
-              }
-              cart_id = retryCart.cart_id;
-            } else {
-              console.error("Error creating cart:", newCartError);
-              setCart([]);
+          const localRaw = sid
+            ? localStorage.getItem(`cartItems:${sid}`)
+            : localStorage.getItem("cartItems");
+          const local = JSON.parse(localRaw || "[]");
+          if (Array.isArray(local) && local.length > 0) {
+            const ids = Array.from(new Set(local.map((x: any) => x.menuitem_id))).filter(Boolean);
+            if (ids.length > 0) {
+              const { data: itemsData } = await supabase
+                .from("menuitem")
+                .select("menuitem_id, name, price, thumbnail")
+                .in("menuitem_id", ids);
+              const index = new Map((itemsData || []).map((m: any) => [m.menuitem_id, m]));
+              const normalized = local.map((li: any, idx: number) => {
+                const mi = index.get(li.menuitem_id) || {};
+                const quantity = Math.max(1, Number(li.quantity || 0));
+                const price = Number(mi.price || 0);
+                return {
+                  cartitem_id: Date.now() + idx,
+                  quantity,
+                  subtotal_price: price * quantity,
+                  menuitem_id: li.menuitem_id,
+                  note: li.note ?? null,
+                  menuitem: {
+                    name: mi.name || "Unknown Item",
+                    price,
+                    thumbnail: mi.thumbnail || null,
+                  },
+                } as CartItem;
+              });
+              setCart(normalized);
               return;
             }
-          } else if (newCart && newCart.cart_id) {
-            cart_id = newCart.cart_id;
-          } else {
-            console.error("No cart created and no error returned");
-            setCart([]);
-            return;
           }
-        } catch (error) {
-          console.error("Unexpected error during cart creation:", error);
-          setCart([]);
-          return;
-        }
+        } catch {}
+        setCart([]);
+        return;
       }
 
       const { data, error } = await supabase
@@ -181,142 +190,76 @@ export default function CartPage({
       }));
 
       setCart(normalized);
-      // 🔸 Dreame fix — Keep localStorage in sync for badge updates
       try {
         const simplified = normalized.map((i) => ({
           menuitem_id: i.menuitem_id,
           quantity: i.quantity || 0,
+          ...(i.note ? { note: i.note } : {}),
         }));
-        localStorage.setItem("cartItems", JSON.stringify(simplified));
+        if (sid) {
+          localStorage.setItem(`cartItems:${sid}`, JSON.stringify(simplified));
+        } else {
+          localStorage.setItem("cartItems", JSON.stringify(simplified));
+        }
         window.dispatchEvent(new CustomEvent("cart-updated"));
-      } catch (e) {
-        console.warn("Failed to sync local cart from DB:", e);
-      }
+      } catch {}
     };
     fetchCart();
     // End fetchCart and useEffect
   }, [sessionId]);
 
   const updateQty = async (cartitem_id: number, delta: number) => {
-    const supabase = createClient();
-    const item = cart.find((i) => i.cartitem_id === cartitem_id);
-    if (!item) return;
-
+    // Local-only update; server sync at checkout
+    const idx = cart.findIndex((i) => i.cartitem_id === cartitem_id);
+    if (idx === -1) return;
+    const item = cart[idx];
     const newQty = Math.max(1, item.quantity + delta);
-    const newSubtotal = item.menuitem?.price ? item.menuitem.price * newQty : 0;
-
-    await supabase
-      .from("cartitem")
-      .update({ quantity: newQty, subtotal_price: newSubtotal })
-      .eq("cartitem_id", cartitem_id);
-
-    const session_id_to_use = sessionId || sessionStorage.getItem("session_id");
-    if (!session_id_to_use) return;
-
-    const { data: cartData } = await supabase
-      .from("cart")
-      .select("cart_id")
-      .eq("session_id", session_id_to_use)
-      .eq("checked_out", false)
-      .order("time_created", { ascending: false })
-      .maybeSingle();
-
-    if (!cartData) return;
-    const cart_id = cartData.cart_id;
-
-    const { data: items } = await supabase
-      .from("cartitem")
-      .select("subtotal_price")
-      .eq("cart_id", cart_id);
-
-    const newTotal = (items || []).reduce(
-      (sum, i) => sum + (i.subtotal_price || 0),
-      0
-    );
-
-    await supabase
-      .from("cart")
-      .update({ total_price: newTotal })
-      .eq("cart_id", cart_id);
-
-    const { data: newCartItems } = await supabase
-      .from("cartitem")
-      .select(
-        "cartitem_id, quantity, subtotal_price, menuitem_id, note, menuitem:menuitem_id (name, price, thumbnail)"
-      )
-      .eq("cart_id", cart_id);
-
-    const normalized = (newCartItems || []).map((item) => ({
-      ...item,
-      menuitem: Array.isArray(item.menuitem) ? item.menuitem[0] : item.menuitem,
-    }));
-    setCart(normalized);
-
-    // 🔸 Dreame fix — Update localStorage and badge
+    const price = item.menuitem?.price || 0;
+    const updated: CartItem = { ...item, quantity: newQty, subtotal_price: price * newQty } as CartItem;
+    const next = [...cart];
+    next[idx] = updated;
+    setCart(next);
     try {
-      const simplified = normalized.map((i) => ({
-        menuitem_id: i.menuitem_id,
-        quantity: i.quantity || 0,
-      }));
-      localStorage.setItem("cartItems", JSON.stringify(simplified));
+      const sid =
+        sessionId ||
+        (typeof window !== "undefined"
+          ? sessionStorage.getItem("sessionId") ||
+            sessionStorage.getItem("session_id") ||
+            undefined
+          : undefined);
+      const simplified = next.map((i) => ({ menuitem_id: i.menuitem_id, quantity: i.quantity, ...(i.note ? { note: i.note } : {}) }));
+      if (sid) {
+        localStorage.setItem(`cartItems:${sid}`, JSON.stringify(simplified));
+      } else {
+        localStorage.setItem("cartItems", JSON.stringify(simplified));
+      }
       window.dispatchEvent(new CustomEvent("cart-updated"));
     } catch {}
   };
 
   const removeItem = async (cartitem_id: number) => {
-    const supabase = createClient();
-    await supabase.from("cartitem").delete().eq("cartitem_id", cartitem_id);
-
-    const session_id_to_use = sessionId || sessionStorage.getItem("session_id");
-    if (!session_id_to_use) return;
-
-    const { data: cartData } = await supabase
-      .from("cart")
-      .select("cart_id")
-      .eq("session_id", session_id_to_use)
-      .eq("checked_out", false)
-      .order("time_created", { ascending: false })
-      .maybeSingle();
-
-    if (!cartData) return;
-    const cart_id = cartData.cart_id;
-
-    const { data: items } = await supabase
-      .from("cartitem")
-      .select("subtotal_price")
-      .eq("cart_id", cart_id);
-
-    const newTotal = (items || []).reduce(
-      (sum, i) => sum + (i.subtotal_price || 0),
-      0
-    );
-
-    await supabase
-      .from("cart")
-      .update({ total_price: newTotal })
-      .eq("cart_id", cart_id);
-
-    const { data: newCartItems } = await supabase
-      .from("cartitem")
-      .select(
-          "cartitem_id, quantity, subtotal_price, menuitem_id, note, menuitem:menuitem_id (name, price, thumbnail)"
-      )
-      .eq("cart_id", cart_id);
-
-    const normalized = (newCartItems || []).map((item) => ({
-      ...item,
-      menuitem: Array.isArray(item.menuitem) ? item.menuitem[0] : item.menuitem,
-    }));
-    setCart(normalized);
-
-    // 🔸 Dreame fix — Update localStorage and badge
+    // Delete from DB first, then sync local state
     try {
-      const simplified = normalized.map((i) => ({
-        menuitem_id: i.menuitem_id,
-        quantity: i.quantity || 0,
-      }));
-      localStorage.setItem("cartItems", JSON.stringify(simplified));
-      window.dispatchEvent(new CustomEvent("cart-updated"));
+      const supabase = createClient();
+      await supabase.from("cartitem").delete().eq("cartitem_id", cartitem_id);
+      const next = cart.filter((i) => i.cartitem_id !== cartitem_id);
+      setCart(next);
+      try {
+        const sid =
+          sessionId ||
+          (typeof window !== "undefined"
+            ? sessionStorage.getItem("sessionId") ||
+              sessionStorage.getItem("session_id") ||
+              undefined
+            : undefined);
+        const simplified = next.map((i) => ({ menuitem_id: i.menuitem_id, quantity: i.quantity, ...(i.note ? { note: i.note } : {}) }));
+        if (sid) {
+          localStorage.setItem(`cartItems:${sid}`, JSON.stringify(simplified));
+        } else {
+          localStorage.setItem("cartItems", JSON.stringify(simplified));
+        }
+        window.dispatchEvent(new CustomEvent("cart-updated"));
+      } catch {}
     } catch {}
   };
 
@@ -459,10 +402,11 @@ export default function CartPage({
 
                     // Transform cart items to use menu_item_id for backend
                     const menu_items = cart.map(
-                      ({ menuitem_id, quantity, subtotal_price }) => ({
+                      ({ menuitem_id, quantity, subtotal_price, note }) => ({
                         menu_item_id: menuitem_id,
                         quantity,
                         subtotal_price,
+                        note: note ?? null,
                       })
                     );
 
@@ -499,7 +443,8 @@ export default function CartPage({
                     const result = await response.json();
                     console.log("Order creation result:", result);
 
-                    // Navigate to confirmation page
+                    // Clear local cart then navigate to confirmation page
+                    clearLocalCart();
                     const gcashPath = sessionId
                       ? `/customer/${tableId}/session/${sessionId}/gcash-order-confirmation`
                       : `/customer/${tableId}/gcash-order-confirmation`;
@@ -538,10 +483,11 @@ export default function CartPage({
 
                     // Transform cart items to use menu_item_id for backend
                     const menu_items = cart.map(
-                      ({ menuitem_id, quantity, subtotal_price }) => ({
+                      ({ menuitem_id, quantity, subtotal_price, note }) => ({
                         menu_item_id: menuitem_id,
                         quantity,
                         subtotal_price,
+                        note: note ?? null,
                       })
                     );
 
@@ -578,7 +524,8 @@ export default function CartPage({
                     const result = await response.json();
                     console.log("Order creation result:", result);
 
-                    // Navigate to confirmation page
+                    // Clear local cart then navigate to confirmation page
+                    clearLocalCart();
                     const cashCardPath = sessionId
                       ? `/customer/${tableId}/session/${sessionId}/cash-card-order-confirmation`
                       : `/customer/${tableId}/cash-card-order-confirmation`;

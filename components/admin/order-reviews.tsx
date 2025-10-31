@@ -33,6 +33,9 @@ export default function ReviewList({ permissions }: ReviewListProps) {
   });
 
   const [showClearModal, setShowClearModal] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(20);
+  const [total, setTotal] = useState(0);
 
   // Clear reviews (local only NOT IN DATABASE, remain in localStorage)
   const clearReviews = () => {
@@ -46,15 +49,24 @@ export default function ReviewList({ permissions }: ReviewListProps) {
     const fetchReviews = async () => {
       setReviewsLoading(true);
       const supabase = createClient();
-      const { data, error } = await supabase
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+      const { data, error, count } = await supabase
         .from("reviews")
-        .select("id, rating, comment, created_at, table_id, session_id")
-        .order("created_at", { ascending: false });
-      if (!error && data) setReviews(data);
+        .select("id, rating, comment, created_at, table_id, session_id", { count: 'exact' })
+        .order("created_at", { ascending: false })
+        .range(from, to);
+      if (!error && data) {
+        setReviews(data);
+        setTotal(count || 0);
+      } else {
+        setReviews([]);
+        setTotal(0);
+      }
       setReviewsLoading(false);
     };
     if (permissions.view_reviews) fetchReviews();
-  }, [permissions.view_reviews]);
+  }, [permissions.view_reviews, page, pageSize]);
 
   // When reviews update, keep only new reviews if cleared
   const filteredReviews = reviews.filter((r) => !clearedIds.includes(r.id));
@@ -62,6 +74,19 @@ export default function ReviewList({ permissions }: ReviewListProps) {
   if (!permissions.view_reviews) {
     return null;
   }
+
+  const Star = ({ filled }: { filled: boolean }) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill={filled ? "#E5D453" : "none"}
+      stroke="#000"
+      strokeWidth="1"
+      className="w-5 h-5 md:w-6 md:h-6"
+    >
+      <polygon points="12,2 15,9 22,9.5 17,14.5 18.5,22 12,18 5.5,22 7,14.5 2,9.5 9,9" />
+    </svg>
+  );
 
   return (
     <div className="flex flex-col w-full min-h-screen py-3 pb-20 px-7 md:px-24 lg:px-[300px]">
@@ -125,12 +150,48 @@ export default function ReviewList({ permissions }: ReviewListProps) {
               </div>
               {/* Rating */}
               <div className="flex flex-col items-center">
-                <span className="font-bold">{review.rating}/5</span>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: 5 }).map((_, idx) => (
+                    <Star key={idx} filled={idx < Math.round(review.rating)} />
+                  ))}
+                </div>
+                <span className="text-[10px] md:text-xs text-gray-500 mt-1">{review.rating}/5</span>
               </div>
             </div>
           );
         })
       )}
+
+      {/* Pagination: numeric pages + Next */}
+      <div className="flex items-center justify-center gap-2 mt-4 select-none">
+        {(() => {
+          const totalPages = Math.max(1, Math.ceil(total / pageSize));
+          const startPage = Math.max(1, Math.min(page - 4, Math.max(1, totalPages - 9)));
+          const endPage = Math.min(totalPages, startPage + 9);
+          const count = endPage - startPage + 1;
+          return Array.from({ length: count }).map((_, idx) => {
+            const current = startPage + idx;
+            const isActive = current === page;
+            return (
+              <button
+                key={current}
+                onClick={() => setPage(current)}
+                disabled={isActive || reviewsLoading}
+                className={isActive ? "text-black font-semibold px-1" : "text-blue-600 hover:underline px-1"}
+              >
+                {current}
+              </button>
+            );
+          });
+        })()}
+        <button
+          className="text-blue-600 hover:underline disabled:opacity-50 ml-2"
+          onClick={() => setPage((p) => p + 1)}
+          disabled={reviewsLoading || page >= Math.max(1, Math.ceil(total / pageSize))}
+        >
+          Next
+        </button>
+      </div>
       {/* Confirm Clear Modal */}
       {showClearModal && (
         <div className="fixed inset-0 bg-white/50 flex items-center justify-center transition-opacity duration-300 z-[9999]">

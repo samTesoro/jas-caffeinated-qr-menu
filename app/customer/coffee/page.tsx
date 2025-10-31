@@ -30,27 +30,95 @@ export default function CoffeePage() {
     fetchCoffees();
   }, []);
 
-  const addToCart = (item: MenuItem) => {
+  const addToCart = async (item: MenuItem) => {
     try {
-      const existing = JSON.parse(localStorage.getItem("cartItems") || "[]");
-      const id =
-        (item as any).menuitem_id ?? (item as any).id ?? item.menuitem_id;
-      if (Array.isArray(existing)) {
-        const filtered = existing.filter(
-          (i: any) => (i.menuitem_id ?? i.id ?? i?.menuitem?.menuitem_id) !== id
-        );
-        const updated = [...filtered, { menuitem_id: id, quantity: 1 }];
-        localStorage.setItem("cartItems", JSON.stringify(updated));
-      } else {
-        localStorage.setItem(
-          "cartItems",
-          JSON.stringify([{ menuitem_id: id, quantity: 1 }])
-        );
+      const sid =
+        typeof window !== "undefined"
+          ? sessionStorage.getItem("sessionId") ||
+            sessionStorage.getItem("session_id") ||
+            undefined
+          : undefined;
+      const key = sid ? `cartItems:${sid}` : "cartItems";
+      const supabase = createClient();
+      const id = (item as any).menuitem_id ?? (item as any).id ?? item.menuitem_id;
+
+      if (!sid) throw new Error("No session ID found");
+
+      // Ensure or create open cart
+      let cart_id: number | null = null;
+      {
+        const { data: cartData } = await supabase
+          .from("cart")
+          .select("cart_id")
+          .eq("session_id", sid)
+          .eq("checked_out", false)
+          .order("time_created", { ascending: false })
+          .maybeSingle();
+        if (cartData?.cart_id) cart_id = cartData.cart_id;
+        else {
+          const { data: newCart, error: newErr } = await supabase
+            .from("cart")
+            .insert({
+              session_id: sid,
+              total_price: 0,
+              checked_out: false,
+              time_created: new Date().toISOString(),
+            })
+            .select("cart_id")
+            .single();
+          if (newErr) throw newErr;
+          cart_id = newCart?.cart_id ?? null;
+        }
       }
-      // Notify same-tab listeners immediately
-      window.dispatchEvent(new CustomEvent("cart-updated"));
+      if (!cart_id) throw new Error("Failed to create or fetch cart");
+
+      // Upsert cart item (no note)
+      let existingItem: { cartitem_id: number; quantity: number } | null = null;
+      {
+        const { data } = await supabase
+          .from("cartitem")
+          .select("cartitem_id, quantity")
+          .eq("cart_id", cart_id)
+          .eq("menuitem_id", id)
+          .is("note", null)
+          .maybeSingle();
+        if (data?.cartitem_id) existingItem = data as any;
+      }
+      if (existingItem) {
+        const newQty = Math.max(1, Number(existingItem.quantity || 0) + 1);
+        const price = Number(item.price || 0);
+        await supabase
+          .from("cartitem")
+          .update({ quantity: newQty, subtotal_price: price * newQty })
+          .eq("cartitem_id", existingItem.cartitem_id);
+      } else {
+        await supabase.from("cartitem").insert({
+          cart_id,
+          menuitem_id: id,
+          quantity: 1,
+          subtotal_price: Number(item.price || 0) * 1,
+          note: null,
+        });
+      }
+
+      // Update local badge store
+      try {
+        const existing = JSON.parse(localStorage.getItem(key) || "[]");
+        const list = Array.isArray(existing) ? existing : [];
+        let found = false;
+        const next = list.map((ci: any) => {
+          if (ci.menuitem_id === id && (ci.note ?? null) === null) {
+            found = true;
+            return { ...ci, quantity: Math.max(1, Number(ci.quantity || 0) + 1) };
+          }
+          return ci;
+        });
+        if (!found) next.push({ menuitem_id: id, quantity: 1, note: null });
+        localStorage.setItem(key, JSON.stringify(next));
+        window.dispatchEvent(new CustomEvent("cart-updated"));
+      } catch {}
     } catch {
-      // fall back to storage event if something goes wrong
+      // best-effort UI signal
       window.dispatchEvent(new Event("storage"));
     }
   };

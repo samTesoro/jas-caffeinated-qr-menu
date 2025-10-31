@@ -9,8 +9,9 @@ export const runtime = 'nodejs';
 // Create a new order
 export async function POST(request: NextRequest) {
   try {
-  const { session_id, payment_method, table_number } = await request.json();
-  console.log('Request body:', { session_id, payment_method, table_number });
+  const body = await request.json();
+  const { session_id, payment_method, table_number, menu_items, total_price } = body || {};
+  console.log('Request body:', { session_id, payment_method, table_number, menu_items_count: Array.isArray(menu_items) ? menu_items.length : 0 });
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -66,23 +67,67 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // First, get the cart_id for this session
-    const { data: cartData, error: cartError } = await supabase
-      .from("cart")
-      .select("cart_id")
-      .eq("session_id", session_id)
-      .eq("checked_out", false)
-      .single();
-
-    if (cartError || !cartData) {
-      console.error("Cart error:", cartError);
-      return NextResponse.json(
-        { error: "No active cart found for this session" },
-        { status: 404 }
-      );
+    // Ensure we have an open cart for this session (create if missing)
+    let cart_id: number | null = null;
+    {
+      const { data: existingCart } = await supabase
+        .from("cart")
+        .select("cart_id")
+        .eq("session_id", session_id)
+        .eq("checked_out", false)
+        .maybeSingle();
+      if (existingCart?.cart_id) {
+        cart_id = existingCart.cart_id;
+      } else {
+        const { data: createdCart, error: createCartError } = await supabase
+          .from("cart")
+          .insert({
+            session_id,
+            total_price: 0,
+            checked_out: false,
+            table_number: table_number ? parseInt(table_number) : null,
+            time_created: new Date().toISOString(),
+          })
+          .select("cart_id")
+          .single();
+        if (createCartError) {
+          console.error("Create cart error:", createCartError);
+          return NextResponse.json({ error: "Failed to create cart" }, { status: 500 });
+        }
+        cart_id = createdCart?.cart_id ?? null;
+      }
     }
 
-    const cart_id = cartData.cart_id;
+    if (!cart_id) {
+      return NextResponse.json({ error: "No active cart available" }, { status: 500 });
+    }
+
+    // If menu_items provided from client, replace cartitems accordingly (single write at checkout)
+    if (Array.isArray(menu_items) && menu_items.length > 0) {
+      // Clear existing items for this cart
+      await supabase.from("cartitem").delete().eq("cart_id", cart_id);
+      // Normalize and bulk insert
+      const itemsToInsert = menu_items.map((mi: any) => ({
+        cart_id,
+        menuitem_id: mi.menu_item_id ?? mi.menuitem_id,
+        quantity: Number(mi.quantity || 0),
+        subtotal_price: Number(mi.subtotal_price || 0),
+        note: mi.note ?? null,
+      }));
+      if (itemsToInsert.length > 0) {
+        const { error: insertItemsError } = await supabase
+          .from("cartitem")
+          .insert(itemsToInsert);
+        if (insertItemsError) {
+          console.error("Insert cartitems error:", insertItemsError);
+          return NextResponse.json({ error: "Failed to add items to cart" }, { status: 500 });
+        }
+      }
+      // Update cart total
+      const computedTotal = itemsToInsert.reduce((s, it) => s + (it.subtotal_price || 0), 0);
+      const newTotal = typeof total_price === 'number' ? total_price : computedTotal;
+      await supabase.from("cart").update({ total_price: newTotal, table_number: table_number ? parseInt(table_number) : null }).eq("cart_id", cart_id);
+    }
 
     // Insert into order table (focused on status tracking)
     const { data: orderData, error: orderError } = await supabase

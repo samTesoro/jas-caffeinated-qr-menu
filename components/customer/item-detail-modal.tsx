@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
-import { v4 as uuidv4 } from "uuid";
 import { createPortal } from "react-dom";
 
 type CartItem = {
@@ -26,7 +25,7 @@ export default function ItemDetailModal({
   cart,
   setCart,
   sessionId,
-  tableId,
+  tableId: _tableId,
 }: {
   item: MenuItem;
   onClose: () => void;
@@ -57,192 +56,116 @@ export default function ItemDetailModal({
   );
 
   const addToCart = async () => {
-    if (item.status && item.status !== "Available") {
-      // Guard: don't allow adding unavailable items
-      return;
-    }
-    const supabase = createClient();
-    let session_id: string;
-
-    if (sessionId) {
-      session_id = sessionId;
-    } else {
-      let storedSessionId = sessionStorage.getItem("session_id");
-      if (!storedSessionId) {
-        storedSessionId = uuidv4();
-        sessionStorage.setItem("session_id", storedSessionId);
-      }
-      session_id = storedSessionId;
-    }
-
+    if (item.status && item.status !== "Available") return;
+    // DB-backed add (ensure/create cart, upsert cartitem); keep quantity adjustments local-only on cart page
     try {
-      // Get or create the active cart for this session
-      const { data: cartData } = await supabase
-        .from("cart")
-        .select(`cart_id`)
-        .eq("session_id", session_id)
-        .eq("checked_out", false)
-        .order("time_created", { ascending: false })
-        .maybeSingle();
+      const sid =
+        sessionId ||
+        (typeof window !== "undefined"
+          ? sessionStorage.getItem("sessionId") ||
+            sessionStorage.getItem("session_id") ||
+            undefined
+          : undefined);
+      const key = sid ? `cartItems:${sid}` : "cartItems";
+      const supabase = createClient();
+      const normalizedNote = note?.trim() ? note.trim() : null;
 
-      let cart_id = null;
-      let existingItem = null;
+      if (!sid) throw new Error("No session ID found");
 
-      if (cartData) {
-        cart_id = cartData.cart_id;
-        // Try to find an exact cartitem match (same menuitem_id + same note)
-        const normalizedNote = note === "" ? null : String(note);
-        try {
-          if (normalizedNote === null) {
-            const { data: foundNull, error: foundNullErr } = await supabase
-              .from("cartitem")
-              .select("cartitem_id, quantity, subtotal_price, menuitem_id, note")
-              .eq("cart_id", cart_id)
-              .eq("menuitem_id", item.menuitem_id)
-              .is("note", null)
-              .limit(1)
-              .maybeSingle();
-            if (foundNullErr) console.debug("[addToCart] find null-note error:", foundNullErr);
-            existingItem = foundNull || null;
-          } else {
-            const { data: foundWithNote, error: foundWithNoteErr } = await supabase
-              .from("cartitem")
-              .select("cartitem_id, quantity, subtotal_price, menuitem_id, note")
-              .eq("cart_id", cart_id)
-              .eq("menuitem_id", item.menuitem_id)
-              .eq("note", normalizedNote)
-              .limit(1)
-              .maybeSingle();
-            if (foundWithNoteErr) console.debug("[addToCart] find note error:", foundWithNoteErr);
-            existingItem = foundWithNote || null;
-          }
-        } catch (e) {
-          console.error("[addToCart] error finding existing cartitem:", e);
-          existingItem = null;
-        }
-      } else {
-        const { data: emptyCartData } = await supabase
+      // Ensure or create open cart
+      let cart_id: number | null = null;
+      {
+        const { data: cartData, error: cartErr } = await supabase
           .from("cart")
           .select("cart_id")
-          .eq("session_id", session_id)
+          .eq("session_id", sid)
           .eq("checked_out", false)
           .order("time_created", { ascending: false })
           .maybeSingle();
-
-        if (emptyCartData) {
-          cart_id = emptyCartData.cart_id;
+        if (!cartErr && cartData?.cart_id) {
+          cart_id = cartData.cart_id;
+        } else {
+          const { data: newCart, error: newErr } = await supabase
+            .from("cart")
+            .insert({
+              session_id: sid,
+              total_price: 0,
+              checked_out: false,
+              time_created: new Date().toISOString(),
+            })
+            .select("cart_id")
+            .single();
+          if (newErr) throw newErr;
+          cart_id = newCart?.cart_id ?? null;
         }
       }
+      if (!cart_id) throw new Error("Failed to create or fetch cart");
 
-      if (!cart_id) {
-        const { data: newCart, error: newCartError } = await supabase
-          .from("cart")
-          .insert({
-            session_id,
-            total_price: 0,
-            checked_out: false,
-            table_number: parseInt(tableId || "0"),
-          })
-          .select("cart_id")
-          .single();
-
-        if (newCartError) {
-          if (newCartError.code === "23505") {
-            const { data: retryCart } = await supabase
-              .from("cart")
-              .select("cart_id")
-              .eq("session_id", session_id)
-              .eq("checked_out", false)
-              .single();
-            cart_id = retryCart?.cart_id;
-          }
-          if (!cart_id) {
-            alert("Failed to create cart");
-            return;
-          }
-        } else {
-          cart_id = newCart.cart_id;
-        }
+      // Try to find existing cartitem for same menuitem_id + note
+      let existingItem: { cartitem_id: number; quantity: number } | null = null;
+      {
+        const base = supabase
+          .from("cartitem")
+          .select("cartitem_id, quantity")
+          .eq("cart_id", cart_id)
+          .eq("menuitem_id", item.menuitem_id)
+          .limit(1);
+        const { data } = normalizedNote === null
+          ? await base.is("note", null).maybeSingle()
+          : await base.eq("note", normalizedNote).maybeSingle();
+        if (data?.cartitem_id) existingItem = data as any;
       }
 
       if (existingItem) {
-        // Update the matched cartitem (same menuitem_id + same note)
-        const newQty = existingItem.quantity + qty;
+        const newQty = Math.max(1, Number(existingItem.quantity || 0) + qty);
         const newSubtotal = item.price * newQty;
-        const { error: updateError } = await supabase
+        await supabase
           .from("cartitem")
           .update({ quantity: newQty, subtotal_price: newSubtotal })
-          .eq("cartitem_id", existingItem.cartitem_id)
-          .select()
-          .maybeSingle();
-
-        if (updateError) {
-          alert("Failed to update cart item");
-          return;
-        }
-
-        setCart(
-          cart.map((i) =>
-            i.cartitem_id && existingItem.cartitem_id && i.cartitem_id === existingItem.cartitem_id
-              ? { ...i, quantity: newQty, subtotal_price: newSubtotal }
-              : i
-          )
-        );
+          .eq("cartitem_id", existingItem.cartitem_id);
       } else {
-        const cartItem = {
+        await supabase.from("cartitem").insert({
+          cart_id,
+          menuitem_id: item.menuitem_id,
           quantity: qty,
           subtotal_price: item.price * qty,
-          menuitem_id: item.menuitem_id,
-          cart_id: cart_id,
-          note: note || null,
-        } as const;
-
-        const { data: inserted, error: itemError } = await supabase
-          .from("cartitem")
-          .insert([cartItem])
-          .select()
-          .single();
-
-        if (itemError) {
-          alert("Failed to add item to cart");
-          return;
-        }
-
-        // Use the inserted row returned by Supabase (has cartitem_id, note, etc.)
-        setCart([...cart, {
-          cartitem_id: inserted.cartitem_id,
-          quantity: inserted.quantity,
-          subtotal_price: inserted.subtotal_price,
-          menuitem_id: inserted.menuitem_id,
-          // keep note field if present
-          ...(inserted.note !== undefined ? { note: inserted.note } : {}),
-        }]);
+          note: normalizedNote,
+        });
       }
 
-      // 🔸 Dreame fix — Sync cart to localStorage for badge updates
+      // Update session-scoped localStorage for badge and quick UI feedback
       try {
-        const existingCart = JSON.parse(
-          localStorage.getItem("cartItems") || "[]"
-        );
-        const updatedCart = Array.isArray(existingCart)
-          ? [
-              ...existingCart.filter(
-                (i: any) => i.menuitem_id !== item.menuitem_id
-              ),
-              { menuitem_id: item.menuitem_id, quantity: qty },
-            ]
-          : [{ menuitem_id: item.menuitem_id, quantity: qty }];
+        const existing = JSON.parse(localStorage.getItem(key) || "[]");
+        const list = Array.isArray(existing) ? existing : [];
+        let merged = false;
+        const next = list.map((ci: any) => {
+          if (ci.menuitem_id === item.menuitem_id && (ci.note ?? null) === normalizedNote) {
+            merged = true;
+            return { ...ci, quantity: Math.max(1, Number(ci.quantity || 0) + qty) };
+          }
+          return ci;
+        });
+        if (!merged) {
+          next.push({ menuitem_id: item.menuitem_id, quantity: qty, note: normalizedNote });
+        }
+        localStorage.setItem(key, JSON.stringify(next));
+        window.dispatchEvent(new CustomEvent("cart-updated"));
+      } catch {}
 
-        localStorage.setItem("cartItems", JSON.stringify(updatedCart));
-        window.dispatchEvent(new Event("storage")); // Trigger update
-      } catch (e) {
-        console.warn("Failed to sync cart badge:", e);
-      }
+      // Minimal in-memory state nudge
+      setCart([
+        ...cart,
+        {
+          menuitem_id: item.menuitem_id,
+          quantity: qty,
+          subtotal_price: item.price * qty,
+        },
+      ] as any);
 
       onClose();
-    } catch (error) {
-      console.error("Cart error:", error);
-      alert("An error occurred while adding to cart");
+    } catch (e) {
+      console.error("Local cart error:", e);
+      alert("Failed to add to cart. Please try again.");
     }
   };
 

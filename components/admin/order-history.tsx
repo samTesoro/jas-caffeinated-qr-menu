@@ -25,7 +25,15 @@ export default function OrderHistory({
   const [order, setOrder] = useState<Order[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(20);
+  const [total, setTotal] = useState(0);
   // Clear action removed per new requirements
+
+  useEffect(() => {
+    // Reset to first page when date filters change
+    setPage(1);
+  }, [start, end]);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -48,7 +56,7 @@ export default function OrderHistory({
       setLoading(true);
       setError(null);
       try {
-        const params = new URLSearchParams({ start, end });
+        const params = new URLSearchParams({ start, end, page: String(page), pageSize: String(pageSize) });
         const response = await fetch(`/api/history?${params.toString()}`);
         if (!response.ok) throw new Error("Failed to fetch order history");
         const data = await response.json();
@@ -70,7 +78,8 @@ export default function OrderHistory({
         };
 
         // Transform backend data to match UI
-        const orderArr: Order[] = ((data as BackendOrder[]) || []).map((o) => ({
+        const items = (data?.items as BackendOrder[]) || (data as BackendOrder[]) || [];
+        const orderArr: Order[] = items.map((o) => ({
           id: o.order_id?.toString() || "",
           tableNo: o.customer_id?.toString() || "N/A",
           time: formatDateTime(o.date_ordered, o.time_ordered), // formatted output // dreame
@@ -82,6 +91,7 @@ export default function OrderHistory({
         }));
 
         setOrder(orderArr);
+        setTotal(typeof data?.total === 'number' ? data.total : orderArr.length);
       } catch (err: unknown) {
         let message = "Unknown error";
         if (err instanceof Error) message = err.message;
@@ -92,7 +102,7 @@ export default function OrderHistory({
       }
     };
     fetchOrders();
-  }, [start, end]);
+  }, [start, end, page, pageSize]);
 
   // Clear action removed
 
@@ -169,6 +179,41 @@ export default function OrderHistory({
           </div>
         ))
       )}
+
+      {/* Pagination: numeric pages + Next */}
+      <div className="flex items-center justify-center gap-2 mt-4 select-none">
+        {Array.from({ length: Math.min(10, Math.max(1, Math.ceil(total / pageSize))) }).map((_, idx) => {
+          const totalPages = Math.max(1, Math.ceil(total / pageSize));
+          // Sliding window of up to 10 pages around current page
+          let startPage = Math.max(1, page - 4);
+          const endPage = Math.min(totalPages, startPage + 9);
+          startPage = Math.max(1, endPage - 9);
+          const current = startPage + idx;
+          if (current > endPage) return null;
+          const isActive = current === page;
+          return (
+            <button
+              key={current}
+              onClick={() => setPage(current)}
+              disabled={isActive || loading}
+              className={
+                isActive
+                  ? "text-black font-semibold px-1"
+                  : "text-blue-600 hover:underline px-1"
+              }
+            >
+              {current}
+            </button>
+          );
+        })}
+        <button
+          className="text-blue-600 hover:underline disabled:opacity-50 ml-2"
+          onClick={() => setPage((p) => p + 1)}
+          disabled={loading || page >= Math.max(1, Math.ceil(total / pageSize))}
+        >
+          Next
+        </button>
+      </div>
 
       {/* Clear action removed as per new requirements */}
     </div>

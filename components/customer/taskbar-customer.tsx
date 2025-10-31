@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import styles from "./taskbar-customer.module.css";
 import Image from "next/image";
 
@@ -14,10 +14,24 @@ export default function MenuTaskbar({
 }) {
   const pathname = usePathname();
   const [cartCount, setCartCount] = useState(0); // 🔸 Dreame fix - Track cart item count
+  const getKey = (sid?: string) => (sid ? `cartItems:${sid}` : "cartItems");
+  const getSessionId = useCallback(
+    () =>
+      sessionId ||
+      (typeof window !== "undefined"
+        ? sessionStorage.getItem("sessionId") ||
+          sessionStorage.getItem("session_id") ||
+          undefined
+        : undefined),
+    [sessionId]
+  );
 
   // 🔸 Dreame fix - Initialize cart count from localStorage
   useEffect(() => {
-    const savedCart = JSON.parse(localStorage.getItem("cartItems") || "[]");
+    const sid = getSessionId();
+    const savedCart = JSON.parse(
+      localStorage.getItem(getKey(sid)) || "[]"
+    );
     const uniqueCount = Array.isArray(savedCart)
       ? (() => {
           const ids = new Set<string>();
@@ -40,12 +54,15 @@ export default function MenuTaskbar({
         })()
       : 0;
     setCartCount(uniqueCount);
-  }, []);
+  }, [getSessionId]);
 
   // 🔸 Dreame fix - Update count when localStorage changes
   useEffect(() => {
     const recalc = () => {
-      const updatedCart = JSON.parse(localStorage.getItem("cartItems") || "[]");
+      const sid = getSessionId();
+      const updatedCart = JSON.parse(
+        localStorage.getItem(getKey(sid)) || "[]"
+      );
       const uniqueCount = Array.isArray(updatedCart)
         ? (() => {
             const ids = new Set<string>();
@@ -75,7 +92,7 @@ export default function MenuTaskbar({
       window.removeEventListener("storage", recalc);
       window.removeEventListener("cart-updated", recalc as EventListener);
     };
-  }, []);
+  }, [sessionId, getSessionId]);
 
   // Use prop tableId first, then extract from pathname as fallback
   const tableId = useMemo(() => {

@@ -11,6 +11,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const start = searchParams.get("start");
     const end = searchParams.get("end");
+    const pageParam = searchParams.get("page");
+    const pageSizeParam = searchParams.get("pageSize");
+    const page = Math.max(1, parseInt(pageParam || '1', 10) || 1);
+    const pageSize = Math.max(1, Math.min(100, parseInt(pageSizeParam || '20', 10) || 20));
 
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -95,7 +99,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const items = Array.from(itemsMap.values())
+    const itemsAll = Array.from(itemsMap.values())
       .filter((i) => i.qty > 0)
       .sort((a, b) => b.qty - a.qty)
       .map((i) => ({
@@ -103,9 +107,17 @@ export async function GET(request: NextRequest) {
         percent: totalSales > 0 ? Math.round((i.subtotal / totalSales) * 100) : 0,
       }));
 
+    const totalItems = itemsAll.length;
+    const startIdx = (page - 1) * pageSize;
+    const endIdx = startIdx + pageSize;
+    const items = itemsAll.slice(startIdx, endIdx);
+
     const response = {
       totalSales,
       items,
+      totalItems,
+      page,
+      pageSize,
       summary: {
         Meals: catTotals["Meals"] || 0,
         Drinks: catTotals["Drinks"] || 0,

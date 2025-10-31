@@ -15,6 +15,19 @@ export default function CashCardOrderConfirmation({
   const [sessionId, setSessionId] = useState<string | null>(null);
 
   useEffect(() => {
+    // Clear any local cart cache on confirmation entry (session-scoped)
+    try {
+      const sid =
+        typeof window !== "undefined"
+          ? sessionStorage.getItem("sessionId") ||
+            sessionStorage.getItem("session_id") ||
+            null
+          : null;
+      if (sid) localStorage.removeItem(`cartItems:${sid}`);
+      localStorage.removeItem("cartItems"); // legacy fallback
+      window.dispatchEvent(new CustomEvent("cart-updated"));
+    } catch {}
+
     // Check for session in sessionStorage
     const storedSessionId = sessionStorage.getItem("sessionId");
     if (storedSessionId) {
