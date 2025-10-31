@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import DashboardHeader from "@/components/ui/header";
+import EstimatedTimeDisplay from "@/components/customer/estimated-time";
 
 export default function CashCardOrderConfirmation({
   params,
@@ -14,6 +15,19 @@ export default function CashCardOrderConfirmation({
   const [sessionId, setSessionId] = useState<string | null>(null);
 
   useEffect(() => {
+    // Clear any local cart cache on confirmation entry (session-scoped)
+    try {
+      const sid =
+        typeof window !== "undefined"
+          ? sessionStorage.getItem("sessionId") ||
+            sessionStorage.getItem("session_id") ||
+            null
+          : null;
+      if (sid) localStorage.removeItem(`cartItems:${sid}`);
+      localStorage.removeItem("cartItems"); // legacy fallback
+      window.dispatchEvent(new CustomEvent("cart-updated"));
+    } catch {}
+
     // Check for session in sessionStorage
     const storedSessionId = sessionStorage.getItem("sessionId");
     if (storedSessionId) {
@@ -26,6 +40,14 @@ export default function CashCardOrderConfirmation({
   }, [tableId, router]);
 
   const handleGoToTable = () => {
+    // Legacy flag
+    sessionStorage.setItem("hasOrderedBefore", "true");
+    // Session-scoped flag if available
+    try {
+      const sid = sessionId || sessionStorage.getItem("sessionId");
+      if (sid) sessionStorage.setItem(`hasOrderedBefore:${sid}`, "true");
+    } catch {}
+
     if (sessionId) {
       router.push(`/customer/${tableId}/session/${sessionId}`);
     } else if (tableId) {
@@ -70,14 +92,12 @@ export default function CashCardOrderConfirmation({
             <br />
             Thank you!
           </p>
-          <span className="text-base text-gray-700 text-center mb-6 block">
-            Est. Time of Arrival: 15 mins.
-          </span>
+          <EstimatedTimeDisplay tableId={tableId} sessionId={sessionId} />
         </div>
       </div>
       <div className="w-full bg-[#393939] h-20 flex items-center justify-center">
         <button
-          className="px-6 py-2 bg-[#E59C53] text-white rounded-full font-extrabold shadow hover:bg-[#d4883e] transition text-xl border-0"
+          className=" px-6 py-2 bg-[#E59C53] text-white rounded-full font-extrabold shadow hover:bg-[#8f4a05] transition text-xl border-0"
           onClick={handleGoToTable}
         >
           Back to home page

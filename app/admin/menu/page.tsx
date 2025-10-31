@@ -17,12 +17,14 @@ export default function MenuPage() {
     view_super: boolean;
     view_history: boolean;
     view_reviews: boolean;
+    view_tables?: boolean;
   }>({
     view_menu: false,
     view_orders: false,
     view_super: false,
     view_history: false,
     view_reviews: false,
+    view_tables: false,
   }); // Fixed syntax errors
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
@@ -52,13 +54,39 @@ export default function MenuPage() {
 
         console.log("Fetched permissions:", data); // Debugging log
 
+        const isAllowed = (v: unknown) =>
+          v === true || v === "true" || v === 1 || v === "1";
+
         if (error || !data) {
           console.error("Error fetching permissions from Supabase:", error);
+          setPermissions({
+            view_menu: false,
+            view_orders: false,
+            view_super: false,
+            view_history: false,
+            view_reviews: false,
+            view_tables: false,
+          });
         } else {
-          setPermissions(data);
+          setPermissions({
+            view_menu: isAllowed((data as any).view_menu),
+            view_orders: isAllowed((data as any).view_orders),
+            view_super: isAllowed((data as any).view_super),
+            view_history: isAllowed((data as any).view_history),
+            view_reviews: isAllowed((data as any).view_reviews),
+            view_tables: isAllowed((data as any).view_tables),
+          });
         }
       } catch (err) {
         console.error("Unexpected error while fetching permissions:", err);
+        setPermissions({
+          view_menu: false,
+          view_orders: false,
+          view_super: false,
+          view_history: false,
+          view_reviews: false,
+          view_tables: false,
+        });
       } finally {
         setIsLoading(false);
       }
@@ -118,7 +146,7 @@ export default function MenuPage() {
       <div className="flex-1 px-8 pb-8 pt-2">
         <MenuItemList
           onEdit={(item) => {
-            if (item) window.location.href = `/admin/menu/${item.menuitem_id}`;
+            window.location.href = `/admin/menu/${item.menuitem_id}`;
           }}
           refresh={refresh}
           setRefresh={setRefresh}

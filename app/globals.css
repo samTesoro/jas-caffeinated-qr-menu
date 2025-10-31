@@ -66,3 +66,53 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  /* Apply a subtle transition to buttons and common icon/button wrappers */
+  button,
+  .btn,
+  .icon,
+  .icon-btn,
+  .icon-button,
+  [role="button"] {
+    @apply transition-transform transition-colors duration-150 ease-in-out rounded;
+    will-change: transform, filter;
+  }
+
+  /* Hover: lift slightly, brighten and scale a touch */
+  button:hover,
+  .btn:hover,
+  .icon:hover,
+  .icon-btn:hover,
+  .icon-button:hover,
+  [role="button"]:hover {
+    transform: translateY(-2px) scale(1.01);
+    filter: brightness(1.03);
+  }
+
+  /* Active: press down slightly */
+  button:active,
+  .btn:active,
+  [role="button"]:active {
+    transform: translateY(0) scale(0.995);
+    filter: brightness(0.98);
+  }
+
+  /* Icons (SVG) get a gentle scale on hover */
+  .icon svg,
+  .icon-btn svg,
+  .icon-button svg {
+    @apply transition-transform duration-150 ease-in-out;
+    transform-origin: center;
+  }
+  .icon:hover svg,
+  .icon-btn:hover svg,
+  .icon-button:hover svg {
+    transform: scale(1.08);
+  }
+
+  /* Slightly darken colored buttons on hover for contrast (keeps text readable) */
+  button[class*="bg-"]:hover {
+    filter: brightness(0.95);
+  }
+}

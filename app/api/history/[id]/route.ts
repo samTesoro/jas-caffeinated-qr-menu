@@ -6,13 +6,14 @@ const supabase = createClient(
 	process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
-	const orderId = params.id;
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+	const { id: orderId } = await params;
 		const { data, error } = await supabase
 			.from("order")
 			.select(`order_id, date_ordered, time_ordered, isfinished, cart:cart_id (table_number, cartitem (quantity, menuitem (name)))`)
 			.eq("order_id", orderId)
 			.eq("isfinished", true)
+			.eq("iscancelled", false)
 			.single();
 
 	if (error) {

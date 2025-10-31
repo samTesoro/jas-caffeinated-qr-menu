@@ -36,15 +36,6 @@ export default function LandingPage() {
           Login
         </Link>
       </div>
-
-      <div className="absolute bottom-4 right-4">
-        <Link
-          href="/customer"
-          className="text-xs text-blue-600 hover:underline"
-        >
-          Access customer for testing
-        </Link>
-      </div>
     </div>
   );
 }

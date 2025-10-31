@@ -3,12 +3,11 @@ import Taskbar from "@/components/admin/taskbar-admin";
 import DashboardHeader from "@/components/ui/header";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import ReviewList from "@/components/admin/review-list";
+import ReviewList from "@/components/admin/order-reviews";
 import { useRouter } from "next/navigation";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 
 export default function ReviewsPage() {
-
   const router = useRouter();
   const [permissions, setPermissions] = useState<{
     view_menu: boolean;
@@ -16,13 +15,17 @@ export default function ReviewsPage() {
     view_super: boolean;
     view_history: boolean;
     view_reviews: boolean;
-  }>({
-    view_menu: false,
-    view_orders: false,
-    view_super: false,
-    view_history: false,
-    view_reviews: false,
-  });
+    view_tables?: boolean;
+  }>(
+    {
+      view_menu: false,
+      view_orders: false,
+      view_super: false,
+      view_history: false,
+      view_reviews: false,
+      view_tables: false,
+    }
+  );
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -36,9 +39,14 @@ export default function ReviewsPage() {
       try {
         const { data, error } = await supabase
           .from("adminusers")
-          .select("view_menu, view_orders, view_super, view_history, view_reviews")
+          .select(
+            "view_menu, view_orders, view_super, view_history, view_reviews, view_tables"
+          )
           .eq("user_id", adminId)
           .single();
+
+        const isAllowed = (v: unknown) => v === true || v === "true" || v === 1 || v === "1";
+
         if (error || !data) {
           setPermissions({
             view_menu: false,
@@ -46,9 +54,17 @@ export default function ReviewsPage() {
             view_super: false,
             view_history: false,
             view_reviews: false,
+            view_tables: false,
           });
         } else {
-          setPermissions(data);
+          setPermissions({
+            view_menu: isAllowed((data as any).view_menu),
+            view_orders: isAllowed((data as any).view_orders),
+            view_super: isAllowed((data as any).view_super),
+            view_history: isAllowed((data as any).view_history),
+            view_reviews: isAllowed((data as any).view_reviews),
+            view_tables: isAllowed((data as any).view_tables),
+          });
         }
       } catch {
         setPermissions({
@@ -81,7 +97,6 @@ export default function ReviewsPage() {
       router.replace(previousPage);
     }
   }, [permissions, isLoading, router]);
-
 
   if (isLoading) {
     return <LoadingSpinner message="Loading..." />;

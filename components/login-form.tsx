@@ -33,8 +33,11 @@ export function LoginForm() {
     } else {
       // Set admin_session cookie for middleware authentication
       document.cookie = `admin_session=${data.id}; path=/;`;
-      // Store user_id in localStorage
+      // Store identifiers in localStorage for quicker UI personalization
       localStorage.setItem("user_id", data.user_id);
+      try {
+        if (data.username) localStorage.setItem("username", data.username);
+      } catch {}
 
       // Construct permissions object from individual fields
       const permissions = {

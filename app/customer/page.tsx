@@ -1,6 +1,7 @@
-import CustomerMenu from "@/components/customer/menu";
+import { redirect } from 'next/navigation';
 
 export default function CustomerAccess() {
-  // Use a default tableId for demo purposes
-  return <CustomerMenu tableId="demo" />;
+  const tableId = 'demo';
+  const sessionId = crypto.randomUUID();
+  redirect(`/customer/${tableId}/session/${sessionId}`);
 }

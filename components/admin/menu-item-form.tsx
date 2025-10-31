@@ -16,11 +16,11 @@ interface MenuItem {
   thumbnail?: string;
   favorites?: string;
   estimatedTime?: number;
-  description?: string;
+  description?: string | null;
 }
 
 // removed broken line
-const categories = ["Meals", "Coffee", "Drinks"];
+const categories = ["Meals", "Coffee", "Drinks", "Desserts"];
 const statuses = ["Available", "Unavailable"];
 const favoritesOptions = ["Yes", "No"];
 
@@ -60,7 +60,8 @@ export default function MenuItemForm({
         status: item.status || "Available",
         thumbnail: item.thumbnail || "",
         favorites: item.favorites || "No",
-        estimatedTime: item.estimatedTime || 0,
+        // Use est_time if present, fallback to estimatedTime, fallback to 0
+        estimatedTime: (item as any).est_time ?? item.estimatedTime ?? 0,
         description: item.description || "",
       });
     }
@@ -78,19 +79,32 @@ export default function MenuItemForm({
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    const supabase = createClient();
-    const filePath = `public/${
-      typeof window !== "undefined" ? Date.now() : "ssr"
-    }-${file.name}`;
-    const { data, error } = await supabase.storage
-      .from("thumbnails")
-      .upload(filePath, file, { upsert: true });
-    if (!error && data) {
-      const url = supabase.storage.from("thumbnails").getPublicUrl(filePath)
-        .data.publicUrl;
-      setForm({ ...form, thumbnail: url });
+    setErrorMsg(null);
+    try {
+      const supabase = createClient();
+      const filePath = `public/${
+        typeof window !== "undefined" ? Date.now() : "ssr"
+      }-${file.name}`;
+      console.log("Uploading to:", filePath);
+      const { data, error } = await supabase.storage
+        .from("thumbnails")
+        .upload(filePath, file, { upsert: true });
+      console.log("Upload result:", { data, error });
+      if (!error && data) {
+        const url = supabase.storage.from("thumbnails").getPublicUrl(filePath)
+          .data.publicUrl;
+        console.log("Public URL:", url);
+        setForm({ ...form, thumbnail: url });
+      } else if (error) {
+        setErrorMsg("Thumbnail upload failed: " + (error.message || "Unknown error"));
+        console.error("Supabase upload error:", error);
+      }
+    } catch (err) {
+      setErrorMsg("Unexpected error during upload.");
+      console.error("Unexpected upload error:", err);
+    } finally {
+      setUploading(false);
     }
-    setUploading(false);
   };
 
   const saveItem = async () => {
@@ -168,17 +182,17 @@ export default function MenuItemForm({
           {errorMsg}
         </div>
       )}
-      <DashboardHeader showBack={false} />
+  <DashboardHeader />
 
       <form
         onSubmit={(e) => {
           e.preventDefault();
           setShowConfirmModal(true);
         }}
-        className={cn("space-y-5")}
+        className={cn("space-y-5", "md:px-[600px]")}
       >
         <div className="max-w-2xl mx-auto mt-2 mb-4 px-7">
-          <h2 className="text-xl font-bold mb-2 text-black">
+          <h2 className="text-xl md:text-center font-bold mb-2 text-black">
             {item ? "Edit Item" : "Add Item"}
           </h2>
         </div>
@@ -202,7 +216,7 @@ export default function MenuItemForm({
             </label>
             <input
               name="description"
-              value={form.description}
+              value={form.description ?? ""}
               onChange={handleChange}
               className="w-full py-1 px-2 border-2 border-black bg-white text-black h-8"
             />
@@ -285,7 +299,7 @@ export default function MenuItemForm({
               Thumbnail
             </label>
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 border flex items-center justify-center text-center overflow-hidden border-2 border-black">
+              <div className="w-10 h-10 flex items-center justify-center text-center overflow-hidden border-2 border-black">
                 {form.thumbnail ? (
                   <Image
                     src={form.thumbnail}
@@ -364,8 +378,8 @@ export default function MenuItemForm({
 
       {/* Confirm Add / Edit */}
       {showConfirmModal && (
-        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center transition-opacity duration-300">
-          <div className="bg-white rounded-md p-6 w-[250] text-center space-y-4 shadow-lg">
+        <div className="fixed inset-0 bg-white/50 flex items-center justify-center transition-opacity duration-300 z-[9999]">
+          <div className="bg-white rounded-md p-6 w-[90vw] max-w-[250px] text-center space-y-4 shadow-lg">
             <p className="text-md text-black font-bold mt-3">
               {item ? "Save changes?" : "Add this menu item?"}
             </p>
@@ -374,7 +388,7 @@ export default function MenuItemForm({
                 variant="red"
                 type="button"
                 onClick={() => setShowConfirmModal(false)}
-                className="border-transparent hover:bg-gray-200 w-[90] py-3 rounded-lg"
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
               >
                 No
               </Button>
@@ -382,7 +396,7 @@ export default function MenuItemForm({
                 variant="green"
                 type="button"
                 onClick={saveItem}
-                className="border-transparent hover:bg-gray-200 w-[90] py-3 rounded-lg"
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
               >
                 Yes
               </Button>
@@ -393,18 +407,26 @@ export default function MenuItemForm({
 
       {/* Confirm Delete */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center transition-opacity duration-300">
-          <div className="bg-white rounded-xl p-6 w-[300px] text-center space-y-4 shadow-lg">
-            <p className="text-sm text-black">Delete this item?</p>
-            <div className="flex justify-between">
+        <div className="fixed inset-0 bg-white/50 flex items-center justify-center transition-opacity duration-300 z-[9999]">
+          <div className="bg-white rounded-md p-6 w-[90vw] max-w-[250px] text-center space-y-4 shadow-lg">
+            <p className="text-md text-black font-bold mt-3">
+              Delete this item?
+            </p>
+            <div className="flex justify-between font-bold">
               <Button
-                variant="orange"
+                variant="red"
                 type="button"
                 onClick={() => setShowDeleteModal(false)}
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
               >
                 No
               </Button>
-              <Button variant="red" type="button" onClick={deleteItem}>
+              <Button
+                variant="green"
+                type="button"
+                onClick={deleteItem}
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
+              >
                 Yes
               </Button>
             </div>

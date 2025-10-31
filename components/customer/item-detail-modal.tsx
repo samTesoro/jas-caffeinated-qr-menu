@@ -1,8 +1,8 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
-import { v4 as uuidv4 } from "uuid";
+import { createPortal } from "react-dom";
 
 type CartItem = {
   cartitem_id?: number;
@@ -15,6 +15,11 @@ type MenuItem = {
   name: string;
   price: number;
   thumbnail?: string | null;
+<<<<<<< HEAD
+=======
+  description?: string | null;
+  status?: string | null;
+>>>>>>> ec41832455b74630153e4550fcb22d68a8e2d1e0
 };
 
 export default function ItemDetailModal({
@@ -23,7 +28,7 @@ export default function ItemDetailModal({
   cart,
   setCart,
   sessionId,
-  tableId,
+  tableId: _tableId,
 }: {
   item: MenuItem;
   onClose: () => void;
@@ -34,6 +39,7 @@ export default function ItemDetailModal({
 }) {
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
+  const [fetchedDescription] = useState<string | null | undefined>(undefined);
 
   const BackIcon = () => (
     <svg
@@ -88,18 +94,15 @@ export default function ItemDetailModal({
         .order("time_created", { ascending: false })
         .maybeSingle();
 
-      let cart_id = null;
-      let existingItem = null;
+      if (!sid) throw new Error("No session ID found");
 
-      if (cartData) {
-        cart_id = cartData.cart_id;
-        existingItem = cartData.cartitem?.[0];
-      } else {
-        // Try to get cart without the item filter
-        const { data: emptyCartData } = await supabase
+      // Ensure or create open cart
+      let cart_id: number | null = null;
+      {
+        const { data: cartData, error: cartErr } = await supabase
           .from("cart")
           .select("cart_id")
-          .eq("session_id", session_id)
+          .eq("session_id", sid)
           .eq("checked_out", false)
           .order("time_created", { ascending: false })
           .maybeSingle();
@@ -138,15 +141,41 @@ export default function ItemDetailModal({
             return;
           }
         } else {
-          cart_id = newCart.cart_id;
+          const { data: newCart, error: newErr } = await supabase
+            .from("cart")
+            .insert({
+              session_id: sid,
+              total_price: 0,
+              checked_out: false,
+              time_created: new Date().toISOString(),
+            })
+            .select("cart_id")
+            .single();
+          if (newErr) throw newErr;
+          cart_id = newCart?.cart_id ?? null;
         }
       }
+      if (!cart_id) throw new Error("Failed to create or fetch cart");
 
-      // Update or insert cart item
+      // Try to find existing cartitem for same menuitem_id + note
+      let existingItem: { cartitem_id: number; quantity: number } | null = null;
+      {
+        const base = supabase
+          .from("cartitem")
+          .select("cartitem_id, quantity")
+          .eq("cart_id", cart_id)
+          .eq("menuitem_id", item.menuitem_id)
+          .limit(1);
+        const { data } = normalizedNote === null
+          ? await base.is("note", null).maybeSingle()
+          : await base.eq("note", normalizedNote).maybeSingle();
+        if (data?.cartitem_id) existingItem = data as any;
+      }
+
       if (existingItem) {
-        const newQty = existingItem.quantity + qty;
+        const newQty = Math.max(1, Number(existingItem.quantity || 0) + qty);
         const newSubtotal = item.price * newQty;
-        const { error: updateError } = await supabase
+        await supabase
           .from("cartitem")
           .update({ quantity: newQty, subtotal_price: newSubtotal })
           .eq("cartitem_id", existingItem.cartitem_id);
@@ -164,7 +193,9 @@ export default function ItemDetailModal({
           )
         );
       } else {
-        const cartItem = {
+        await supabase.from("cartitem").insert({
+          cart_id,
+          menuitem_id: item.menuitem_id,
           quantity: qty,
           subtotal_price: item.price * qty,
           menuitem_id: item.menuitem_id,
@@ -185,38 +216,56 @@ export default function ItemDetailModal({
       }
 
       onClose();
-    } catch (error) {
-      console.error("Cart error:", error);
-      alert("An error occurred while adding to cart");
+    } catch (e) {
+      console.error("Local cart error:", e);
+      alert("Failed to add to cart. Please try again.");
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 z-30 flex items-center justify-center">
-      <div
-        className="bg-white w-full h-full max-w-md mx-auto rounded-none md:rounded-lg md:h-auto md:p-8 p-0 relative flex flex-col md:mb-[100px]"
-        style={{ maxHeight: "100vh md:max-h-[85vh]" }}
-      >
-        <button
-          className="absolute top-4 left-4 z-10 flex items-center justify-center rounded-full w-10 h-10"
-          onClick={onClose}
-          style={{ backgroundColor: "#F87171" }}
-        >
-          <BackIcon />
-        </button>
+  // Mount guard for portals
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
-        <Image
-          src={item.thumbnail || "/default-food.png"}
-          alt={item.name}
-          width={800}
-          height={400}
-          className="w-full h-[280px] md:h-[200px] object-cover rounded-b-none md:rounded-sm mb-4"
-        />
+  const modalUI = (
+    <div className="fixed inset-0 z-[10000] bg-white/50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="relative bg-white w-[90vw] max-w-xl max-h-[90vh] overflow-y-auto rounded-xl shadow-xl flex flex-col">
+        <div className="relative w-full h-[250px] md:h-[300px]">
+          <Image
+            src={item.thumbnail || "/default-food.png"}
+            alt={item.name}
+            width={1200}
+            height={400}
+            className="w-full h-full object-cover"
+          />
 
-        <div className="flex-1 flex flex-col px-6 pt-4 pb-3 overflow-y-auto">
-          {/* Name + Price */}
+          <button
+            className="absolute top-4 left-4 z-10 flex items-center justify-center rounded-full w-10 h-10 bg-red-400/90 hover:bg-red-500 transition"
+            onClick={onClose}
+          >
+            <BackIcon />
+          </button>
+
+          <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-transparent" />
+        </div>
+
+        <div className="flex-1 flex flex-col px-6 pt-6 pb-3 overflow-y-auto">
           <div className="flex items-center justify-between">
-            <div className="font-bold text-black text-xl">{item.name}</div>
+            <div className="pr-4">
+              <div className="font-bold text-black text-xl">{item.name}</div>
+              <div className="mt-1 text-gray-700 text-xs md:text-sm max-w-[60vw] md:max-w-xs">
+                {fetchedDescription ? (
+                  fetchedDescription
+                ) : (
+                  <span className="text-gray-400 italic">
+                    No description available
+                  </span>
+                )}
+              </div>
+            </div>
             <div className="text-right">
               <div className="text-black text-lg font-semibold">
                 ₱{item.price}.00
@@ -227,7 +276,6 @@ export default function ItemDetailModal({
 
           <hr className="my-5 border-black" />
 
-          {/* Note */}
           <div className="flex items-center justify-between mb-3">
             <label className="block text-black font-bold text-lg">
               Note to restaurant
@@ -242,8 +290,7 @@ export default function ItemDetailModal({
             placeholder="Add your request (subject to restaurant’s discretion)"
           />
 
-          {/* Quantity */}
-          <div className="flex items-center justify-center gap-7 mb-6">
+          <div className="flex items-center justify-center gap-7 mb-6 mt-8">
             <button
               className="bg-green-300 rounded-full w-8 h-8 text-2xl"
               onClick={() => setQty((q) => Math.max(1, q - 1))}
@@ -259,12 +306,15 @@ export default function ItemDetailModal({
             </button>
           </div>
 
-          {/* Add to Cart Button */}
           <button
             className="w-full bg-orange-400 hover:bg-orange-500 text-white py-3 px-3 md:py-3 md:px-2 rounded-xl font-semibold text-lg mt-auto mb-[120px] sm:mb-0"
             onClick={addToCart}
+            disabled={!!(item.status && item.status !== "Available")}
+            aria-disabled={!!(item.status && item.status !== "Available")}
           >
-            Add to Cart - ₱{item.price * qty}.00
+            {item.status && item.status !== "Available"
+              ? "Unavailable"
+              : `Add to Cart - ₱${item.price * qty}.00`}
           </button>
         </div>
       </div>

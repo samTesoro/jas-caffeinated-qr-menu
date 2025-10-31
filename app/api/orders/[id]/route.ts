@@ -4,26 +4,35 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
+export const runtime = 'nodejs';
+
 // Update the status of an order (mark as finished or cancelled)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { isfinished, iscancelled } = await request.json();
-    const orderId = params.id;
+  const { isfinished, iscancelled, iscleared } = await request.json();
+  const { id: orderIdRaw } = await params;
+  const orderId = String(orderIdRaw);
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Build update object based on what fields are provided
-    const updateFields: { isfinished?: boolean; iscancelled?: boolean } = {};
-    if (isfinished !== undefined) updateFields.isfinished = isfinished;
-    if (iscancelled !== undefined) updateFields.iscancelled = iscancelled;
+  const updateFields: { isfinished?: boolean; iscancelled?: boolean; iscleared?: boolean } = {};
+  const toBool = (v: any) => v === true || v === 'true' || v === 1 || v === '1';
+  if (isfinished !== undefined) updateFields.isfinished = toBool(isfinished);
+  if (iscancelled !== undefined) updateFields.iscancelled = toBool(iscancelled);
+  if (iscleared !== undefined) updateFields.iscleared = toBool(iscleared);
 
+  console.log(`Updating order ${orderId} with:`, updateFields);
+
+    // Try to coerce numeric ids into numbers to avoid type-mismatch
+    const idToMatch = /^[0-9]+$/.test(orderId) ? parseInt(orderId, 10) : orderId;
     const { data, error } = await supabase
       .from("order")
       .update(updateFields)
-      .eq("order_id", orderId)
+      .eq("order_id", idToMatch)
       .select()
       .single();
 

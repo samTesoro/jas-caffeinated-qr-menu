@@ -1,5 +1,5 @@
 import React from "react";
-import { createClient } from "@/lib/supabase/client"; // Replace require with ES6 import
+// Optimized: local-only updates; server sync occurs at checkout
 
 export default function Cart({
   cart,
@@ -40,18 +40,15 @@ export default function Cart({
   );
 
   React.useEffect(() => {
-    const fetchCart = async () => {
-      const supabase = createClient(); // Use ES6 import for Supabase client
-      let cart_id = null;
-      let customer_id = null;
-      if (typeof window !== "undefined") {
-        customer_id = localStorage.getItem("customer_id");
-        cart_id = localStorage.getItem("cart_id");
-      }
-      if (!customer_id) {
+    try {
+      const items = JSON.parse(localStorage.getItem("cartItems") || "[]");
+      if (Array.isArray(items)) {
+        // Minimal items; detailed pricing should be provided by parent when using this component
+        setCart(items as any);
+      } else {
         setCart([]);
-        return;
       }
+<<<<<<< HEAD
       // Find the latest open cart for this customer
       if (!cart_id) {
         const { data: cartData, error: cartError } = await supabase
@@ -125,33 +122,46 @@ export default function Cart({
     };
     fetchCart();
   }, [setCart]); // Add setCart to the dependency array
+=======
+    } catch {
+      setCart([]);
+    }
+  }, [setCart]);
+>>>>>>> ec41832455b74630153e4550fcb22d68a8e2d1e0
 
   const updateQty = async (cartitem_id: number, delta: number) => {
-    const supabase = createClient();
-    const item = cart.find((i) => i.cartitem_id === cartitem_id);
-    if (!item) return;
-    const newQty = Math.max(1, item.quantity + delta);
-    // Fix possible undefined menuitem
-    const newSubtotal = item.menuitem ? item.menuitem.price * newQty : 0;
-    await supabase
-      .from("cartitem")
-      .update({ quantity: newQty, subtotal_price: newSubtotal })
-      .eq("cartitem_id", cartitem_id);
-    setCart(
-      cart.map((i) =>
-        i.cartitem_id === cartitem_id
-          ? { ...i, quantity: newQty, subtotal_price: newSubtotal }
-          : i
-      )
-    );
+    const i = cart.findIndex((c) => c.cartitem_id === cartitem_id);
+    if (i === -1) return;
+    const it = cart[i];
+    const newQty = Math.max(1, it.quantity + delta);
+    const price = it.menuitem?.price || 0;
+    const updated = { ...it, quantity: newQty, subtotal_price: price * newQty } as any;
+    const next = [...cart];
+    next[i] = updated;
+    setCart(next);
+    try {
+      const simplified = next.map((x) => ({ menuitem_id: x.menuitem_id, quantity: x.quantity }));
+      localStorage.setItem("cartItems", JSON.stringify(simplified));
+      window.dispatchEvent(new CustomEvent("cart-updated"));
+    } catch {}
   };
 
   const removeItem = async (cartitem_id: number) => {
+<<<<<<< HEAD
     const supabase = createClient();
     setCart(cart.filter((i) => i.cartitem_id !== cartitem_id));
     await supabase.from("cartitem").delete().eq("cartitem_id", cartitem_id);
     setShowConfirmModal(false);
     setSelectedCartItem(null);
+=======
+    const next = cart.filter((i) => i.cartitem_id !== cartitem_id);
+    setCart(next);
+    try {
+      const simplified = next.map((x) => ({ menuitem_id: x.menuitem_id, quantity: x.quantity }));
+      localStorage.setItem("cartItems", JSON.stringify(simplified));
+      window.dispatchEvent(new CustomEvent("cart-updated"));
+    } catch {}
+>>>>>>> ec41832455b74630153e4550fcb22d68a8e2d1e0
   };
 
   const total = cart.reduce((sum, i) => sum + (i.subtotal_price || 0), 0);

@@ -2,36 +2,43 @@
 
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
-
+import { Button } from "../ui/button";
 interface Order {
   order_id: string;
-  status: "Pending" | "Preparing" | "Finished";
+  status: "Pending" | "Preparing" | "Finished" | "Cancelled";
   tableNo: string;
   time: string;
   items: OrderItem[];
   paymentMethod: string;
+  iscancelled?: boolean;
 }
-
 interface OrderItem {
   name: string;
   quantity: number;
   note?: string | null;
 }
 import NotesModal from "./note-modal";
+import { createClient } from "@/lib/supabase/client";
 export default function OrderNotification() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [noteOpen, setNoteOpen] = useState(false);
   const [noteText, setNoteText] = useState<string | undefined>(undefined);
-  const [noteItemName, setNoteItemName] = useState<string | undefined>(undefined);
+  const [noteItemName, setNoteItemName] = useState<string | undefined>(
+    undefined
+  );
+  const [showFinishedModal, setShowFinishedModal] = useState(false);
+  const [finishedOrderId, setFinishedOrderId] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const response = await fetch("/api/orders");
-        if (!response.ok) {
-          throw new Error("Failed to fetch orders");
-        }
-        const data = await response.json();
+      const fetchOrders = async () => {
+        try {
+          const response = await fetch("/api/orders");
+          if (!response.ok) {
+            throw new Error("Failed to fetch orders");
+          }
+          const data = await response.json();
         // Transform API data to match UI structure
         interface Item {
           item_name: string;
@@ -41,19 +48,34 @@ export default function OrderNotification() {
         interface Order {
           order_id: string;
           isfinished: boolean;
+          iscancelled?: boolean;
           customer_id: string | number | null;
           time_ordered: string;
           items?: Item[];
           payment_type: string;
         }
+
+        const convertTo12Hour = (timeString: string): string => {
+          if (!timeString) return "";
+          const [hourStr, minuteStr] = timeString.split(":");
+          let hour = parseInt(hourStr, 10);
+          const minute = parseInt(minuteStr, 10);
+          const ampm = hour >= 12 ? "PM" : "AM";
+          hour = hour % 12 || 12;
+          return `${hour}:${minute.toString().padStart(2, "0")} ${ampm}`;
+        };
+
         const transformed = (data as Order[])
           .map((order) => ({
             order_id: order.order_id?.toString() ?? "",
-            status: order.isfinished
+            status: order.iscancelled
+              ? "Cancelled"
+              : order.isfinished
               ? "Finished"
-              : ("Preparing" as "Preparing" | "Finished"),
+              : ("Preparing" as "Preparing" | "Finished" | "Cancelled"),
+            iscancelled: !!order.iscancelled,
             tableNo: String(order.customer_id ?? "N/A"),
-            time: order.time_ordered ?? "",
+            time: convertTo12Hour(order.time_ordered ?? ""),
             items:
               order.items?.map((item) => ({
                 name: item.item_name,
@@ -62,21 +84,89 @@ export default function OrderNotification() {
               })) ?? [],
             paymentMethod: order.payment_type ?? "",
           }))
-          .sort(
-            (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime()
-          );
+          .sort((a, b) => {
+            const to24HourDate = (time: string) => {
+              const [timePart, modifier] = time.split(" ");
+              const [h, m] = timePart.split(":").map(Number);
+              let hour = h;
+              if (modifier === "PM" && h !== 12) hour += 12;
+              if (modifier === "AM" && h === 12) hour = 0;
+              const today = new Date().toISOString().split("T")[0];
+              return new Date(
+                `${today}T${hour.toString().padStart(2, "0")}:${m
+                  .toString()
+                  .padStart(2, "0")}:00`
+              );
+            };
+            const dateA = to24HourDate(a.time);
+            const dateB = to24HourDate(b.time);
+            // earliest first
+            return dateA.getTime() - dateB.getTime();
+          });
+
         setOrders(transformed);
       } catch {
         setOrders([]);
       }
     };
     fetchOrders();
+
+    // Start polling as a fallback (every 30s)
     const interval = setInterval(fetchOrders, 30000);
-    return () => clearInterval(interval);
+
+    // Set up Supabase realtime subscription so the list refreshes immediately
+    // when orders are inserted or updated.
+    try {
+      const supabase = createClient();
+
+      const channel = supabase
+        .channel("public:order")
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "order" },
+          () => {
+            fetchOrders();
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "order" },
+          () => {
+            // If an order was marked finished or cancelled, refresh
+            fetchOrders();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        clearInterval(interval);
+        try {
+          if (channel && typeof (channel as any).unsubscribe === "function") {
+            (channel as any).unsubscribe();
+          }
+        } catch {
+          // ignore
+        }
+      };
+    } catch {
+      // If realtime setup fails, just rely on polling
+      return () => clearInterval(interval);
+    }
   }, []);
 
-  const deleteOrder = (id: string) => {
-    setOrders((prev) => prev.filter((order) => order.order_id !== id));
+  const deleteOrder = async (id: string) => {
+    try {
+      // Admin "delete" should mark the order as cleared so it forever disappears from lists
+      const res = await fetch(`/api/orders/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ iscleared: true }),
+      });
+      if (!res.ok) throw new Error('Failed to cancel order');
+      setOrders((prev) => prev.filter((order) => order.order_id !== id));
+    } catch (err) {
+      console.error('Error cancelling order:', err);
+    }
   };
 
   const markAsFinished = async (id: string) => {
@@ -98,28 +188,41 @@ export default function OrderNotification() {
   };
 
   return (
-    <div className="px-8 md:px-[500px] py-3 w-full pb-20">
-      <div className="mx-auto mb-4">
+    <div className="flex flex-col w-full min-h-screen py-3 pb-20 px-7 md:px-24 lg:px-[300px] overflow-x-hidden">
+      <div className="mb-4">
         <h2 className="text-2xl font-bold text-black md:text-3xl">Orders</h2>
       </div>
+
       <hr className="border-black my-4" />
 
       {orders.map((order, index) => (
-        <div key={order.order_id} className="mb-6">
+        <div key={order.order_id} className="mb-3">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
               <span className="text-2xl font-bold text-black p-1">
                 {index + 1}
               </span>
-              <button
-                onClick={() => markAsFinished(order.order_id)}
-                className="bg-[#A7F586] hover:bg-gray-400 transition-colors px-1 border text-black text-sm md:text-lg"
-              >
-                Finished
-              </button>
+              {order.iscancelled ? (
+                <div className="bg-red-400 text-black font-normal px-1 border text-sm md:text-lg rounded">
+                  Canceled
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    setFinishedOrderId(order.order_id);
+                    setShowFinishedModal(true);
+                  }}
+                  className="bg-[#A7F586] hover:bg-gray-400 transition-colors px-1 border text-black text-sm md:text-lg"
+                >
+                  Mark as finished
+                </button>
+              )}
             </div>
             <button
-              onClick={() => deleteOrder(order.order_id)}
+              onClick={() => {
+                setDeleteOrderId(order.order_id);
+                setShowDeleteModal(true);
+              }}
               className="text-black hover:text-red-700"
             >
               <X className="w-5 h-5 md:w-7 md:h-7" />
@@ -128,7 +231,7 @@ export default function OrderNotification() {
 
           <hr className="border-black my-2" />
 
-          <div className="grid grid-cols-[65px_90px_100px_60px] md:grid-cols-[1fr_2fr_3fr_1fr] gap-2 mb-2 font-semibold text-black text-sm md:text-lg">
+          <div className="grid grid-cols-[50px_1fr_2fr_auto] md:grid-cols-[1fr_2fr_3fr_1fr] lg:grid-cols-[1fr_2fr_3fr_1fr] gap-2 mb-2 font-semibold text-black text-sm md:text-lg">
             <div className="text-center">Table No.</div>
             <div className="text-center">Time</div>
             <div className="text-center">Order</div>
@@ -137,7 +240,7 @@ export default function OrderNotification() {
 
           <hr className="border-black my-2" />
 
-          <div className="grid grid-cols-[65px_90px_100px_60px] md:grid-cols-[1fr_2fr_3fr_1fr] gap-2 mb-2 text-black text-sm md:text-lg">
+          <div className="grid grid-cols-[50px_1fr_2fr_auto] md:grid-cols-[1fr_2fr_3fr_1fr] lg:grid-cols-[1fr_2fr_3fr_1fr] gap-2 mb-2 text-black text-sm md:text-lg">
             <div className="flex justify-center items-center row-span-full text-center">
               {order.tableNo}
             </div>
@@ -149,8 +252,10 @@ export default function OrderNotification() {
                 {order.items.map((item, idx) => (
                   <div
                     key={idx}
-                    className={`truncate px-2 py-1 ${item.note ? "text-blue-600 cursor-pointer underline" : ""}`}
-                    title={item.name}
+                    className={`truncate px-2 py-1 ${
+                      item.note ? "text-blue-600 cursor-pointer underline" : ""
+                    }`}
+                    title={item.note ? "View note" : item.name}
                     onClick={() => {
                       if (item.note) {
                         setNoteText(item.note || undefined);
@@ -200,6 +305,70 @@ export default function OrderNotification() {
         itemName={noteItemName}
         onClose={() => setNoteOpen(false)}
       />
+
+      {/* Finished Confirmation Modal */}
+      {showFinishedModal && (
+        <div className="fixed inset-0 bg-white/50 flex items-center justify-center transition-opacity duration-300 z-[9999]">
+          <div className="bg-white rounded-md p-6 w-[90vw] max-w-[250px] text-center space-y-4 shadow-lg">
+            <p className="text-md text-black font-bold mt-2">
+              Mark order as finished?
+            </p>
+            <div className="flex justify-between font-bold">
+              <Button
+                variant="red"
+                type="button"
+                onClick={() => setShowFinishedModal(false)}
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
+              >
+                No
+              </Button>
+              <Button
+                variant="green"
+                type="button"
+                onClick={() => {
+                  if (finishedOrderId) markAsFinished(finishedOrderId);
+                  setShowFinishedModal(false);
+                }}
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
+              >
+                Yes
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-white/50 flex items-center justify-center transition-opacity duration-300 z-[9999]">
+          <div className="bg-white rounded-md p-6 w-[90vw] max-w-[250px] text-center space-y-4 shadow-lg">
+            <p className="text-md text-black font-bold mt-3">
+              Delete this order?
+            </p>
+            <div className="flex justify-between font-bold">
+              <Button
+                variant="red"
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
+              >
+                No
+              </Button>
+              <Button
+                variant="green"
+                type="button"
+                onClick={() => {
+                  if (deleteOrderId) deleteOrder(deleteOrderId);
+                  setShowDeleteModal(false);
+                }}
+                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
+              >
+                Yes
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

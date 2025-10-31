@@ -1,9 +1,9 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import styles from "./taskbar.module.css";
+import styles from "./taskbar-admin.module.css";
 import Image from "next/image";
-import { LogoutButton } from "@/components/logout-button";
+// import { LogoutButton } from "@/components/logout-button";
 
 type Permissions = {
   view_orders?: boolean;
@@ -53,18 +53,6 @@ export default function Taskbar({
 
   return (
     <footer className={styles.taskbar}>
-      <div className={styles.backButton}>
-        <LogoutButton>
-          <Image
-            src="/back-button.png"
-            alt="Back"
-            className={styles.backIcon}
-            width={25}
-            height={25}
-          />
-        </LogoutButton>
-      </div>
-
       <nav className={styles.nav}>
         {/* Regular nav links */}
         {links.map((link) =>
@@ -78,7 +66,7 @@ export default function Taskbar({
             >
               {link.label}
             </Link>
-          ) : ( 
+          ) : (
             <span
               key={link.href}
               className={`${styles.link} ${styles.disabled}`}

@@ -1,27 +1,121 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import styles from "./taskbar-customer.module.css";
 import Image from "next/image";
 
-export default function MenuTaskbar({ tableId: propTableId, sessionId }: { tableId?: string; sessionId?: string }) {
+export default function MenuTaskbar({
+  tableId: propTableId,
+  sessionId,
+}: {
+  tableId?: string;
+  sessionId?: string;
+}) {
   const pathname = usePathname();
+  const [cartCount, setCartCount] = useState(0); // 🔸 Dreame fix - Track cart item count
+  const getKey = (sid?: string) => (sid ? `cartItems:${sid}` : "cartItems");
+  const getSessionId = useCallback(
+    () =>
+      sessionId ||
+      (typeof window !== "undefined"
+        ? sessionStorage.getItem("sessionId") ||
+          sessionStorage.getItem("session_id") ||
+          undefined
+        : undefined),
+    [sessionId]
+  );
+
+  // 🔸 Dreame fix - Initialize cart count from localStorage
+  useEffect(() => {
+    const sid = getSessionId();
+    const savedCart = JSON.parse(
+      localStorage.getItem(getKey(sid)) || "[]"
+    );
+    const uniqueCount = Array.isArray(savedCart)
+      ? (() => {
+          const ids = new Set<string>();
+          for (const i of savedCart) {
+            const id =
+              (i &&
+                (i.menuitem_id ??
+                  i.id ??
+                  i?.menuitem?.menuitem_id ??
+                  i?.menuitem?.id)) ??
+              null;
+            if (id !== null && id !== undefined) ids.add(String(id));
+            else {
+              // Fallback: attempt to build a stable key from name
+              const key = i?.name ?? i?.menuitem?.name ?? JSON.stringify(i);
+              ids.add(String(key));
+            }
+          }
+          return ids.size;
+        })()
+      : 0;
+    setCartCount(uniqueCount);
+  }, [getSessionId]);
+
+  // 🔸 Dreame fix - Update count when localStorage changes
+  useEffect(() => {
+    const recalc = () => {
+      const sid = getSessionId();
+      const updatedCart = JSON.parse(
+        localStorage.getItem(getKey(sid)) || "[]"
+      );
+      const uniqueCount = Array.isArray(updatedCart)
+        ? (() => {
+            const ids = new Set<string>();
+            for (const i of updatedCart) {
+              const id =
+                (i &&
+                  (i.menuitem_id ??
+                    i.id ??
+                    i?.menuitem?.menuitem_id ??
+                    i?.menuitem?.id)) ??
+                null;
+              if (id !== null && id !== undefined) ids.add(String(id));
+              else {
+                const key = i?.name ?? i?.menuitem?.name ?? JSON.stringify(i);
+                ids.add(String(key));
+              }
+            }
+            return ids.size;
+          })()
+        : 0;
+      setCartCount(uniqueCount);
+    };
+    // Listen to both native storage changes (other tabs) and a custom event we dispatch locally
+    window.addEventListener("storage", recalc);
+    window.addEventListener("cart-updated", recalc as EventListener);
+    return () => {
+      window.removeEventListener("storage", recalc);
+      window.removeEventListener("cart-updated", recalc as EventListener);
+    };
+  }, [sessionId, getSessionId]);
+
   // Use prop tableId first, then extract from pathname as fallback
   const tableId = useMemo(() => {
     if (propTableId) return propTableId;
+    if (!pathname) return null;
     const match = pathname.match(/customer\/(\w+)/);
     return match ? match[1] : null;
   }, [pathname, propTableId]);
 
   // Helper function to check if path is active
   const isPathActive = (path: string) => {
-    // Check session-based route first, then table-based route
-    const sessionPath = tableId && sessionId ? `/customer/${tableId}/session/${sessionId}/${path}` : null;
+    const sessionPath =
+      tableId && sessionId
+        ? `/customer/${tableId}/session/${sessionId}/${path}`
+        : null;
     const tablePath = tableId ? `/customer/${tableId}/${path}` : null;
     const basePath = `/customer/${path}`;
-    
-    return pathname === sessionPath || pathname === tablePath || pathname === basePath;
+
+    return (
+      pathname === sessionPath ||
+      pathname === tablePath ||
+      pathname === basePath
+    );
   };
 
   return (
@@ -30,7 +124,13 @@ export default function MenuTaskbar({ tableId: propTableId, sessionId }: { table
         {/* Meals */}
         <div className="flex flex-col items-center">
           <Link
-            href={tableId && sessionId ? `/customer/${tableId}/session/${sessionId}/meals` : tableId ? `/customer/${tableId}/meals` : "/customer/meals"}
+            href={
+              tableId && sessionId
+                ? `/customer/${tableId}/session/${sessionId}/meals`
+                : tableId
+                ? `/customer/${tableId}/meals`
+                : "/customer/meals"
+            }
             className={styles.link}
           >
             <Image
@@ -40,17 +140,13 @@ export default function MenuTaskbar({ tableId: propTableId, sessionId }: { table
                   : "/meals-icon.png"
               }
               alt="Meals"
-              width={70}
-              height={70}
+              width={40}
+              height={40}
               className={styles.icon}
               unoptimized
             />
             <span
-              className={
-                isPathActive("meals")
-                  ? styles.active
-                  : styles.link
-              }
+              className={isPathActive("meals") ? styles.active : styles.label}
             >
               Meals
             </span>
@@ -60,7 +156,13 @@ export default function MenuTaskbar({ tableId: propTableId, sessionId }: { table
         {/* Coffee */}
         <div className="flex flex-col items-center">
           <Link
-            href={tableId && sessionId ? `/customer/${tableId}/session/${sessionId}/coffee` : tableId ? `/customer/${tableId}/coffee` : "/customer/coffee"}
+            href={
+              tableId && sessionId
+                ? `/customer/${tableId}/session/${sessionId}/coffee`
+                : tableId
+                ? `/customer/${tableId}/coffee`
+                : "/customer/coffee"
+            }
             className={styles.link}
           >
             <Image
@@ -76,31 +178,27 @@ export default function MenuTaskbar({ tableId: propTableId, sessionId }: { table
               unoptimized
             />
             <span
-              className={
-                isPathActive("coffee")
-                  ? styles.active
-                  : styles.link
-              }
+              className={isPathActive("coffee") ? styles.active : styles.label}
             >
               Coffee
             </span>
           </Link>
         </div>
 
-        <div
-          className="relative flex flex-col items-center"
-          style={{ margin: "0 16px" }}
-        >
-          <Link href={tableId && sessionId ? `/customer/${tableId}/session/${sessionId}/cart` : tableId ? `/customer/${tableId}/cart` : "/customer/cart"}>
+        {/* Cart */}
+        <div className="relative flex flex-col items-center">
+          <Link
+            href={
+              tableId && sessionId
+                ? `/customer/${tableId}/session/${sessionId}/cart`
+                : tableId
+                ? `/customer/${tableId}/cart`
+                : "/customer/cart"
+            }
+          >
             <button
-              className="rounded-full shadow-lg flex items-center justify-center"
-              style={{
-                width: "64px", // 👈 equal width & height
-                height: "64px",
-                background: "#E59C53",
-                position: "relative",
-                top: "-30px",
-              }}
+              className="rounded-full shadow-lg flex items-center justify-center relative hover:bg-orange-900"
+              style={{ width: "64px", height: "64px", background: "#E59C53", position: "relative", top: "-30px" }}
             >
               <Image
                 src="/shopping-cart-icon.png"
@@ -110,6 +208,16 @@ export default function MenuTaskbar({ tableId: propTableId, sessionId }: { table
                 style={{ objectFit: "contain" }}
                 priority
               />
+
+              {/* 🔸 Dreame fix - Badge display */}
+              {cartCount > 0 && (
+                <span
+                  className={styles.cartBadge}
+                  title={`${cartCount} item${cartCount > 1 ? "s" : ""} in cart`}
+                >
+                  {cartCount}
+                </span>
+              )}
             </button>
           </Link>
         </div>
@@ -117,7 +225,13 @@ export default function MenuTaskbar({ tableId: propTableId, sessionId }: { table
         {/* Drinks */}
         <div className="flex flex-col items-center">
           <Link
-            href={tableId && sessionId ? `/customer/${tableId}/session/${sessionId}/drinks` : tableId ? `/customer/${tableId}/drinks` : "/customer/drinks"}
+            href={
+              tableId && sessionId
+                ? `/customer/${tableId}/session/${sessionId}/drinks`
+                : tableId
+                ? `/customer/${tableId}/drinks`
+                : "/customer/drinks"
+            }
             className={styles.link}
           >
             <Image
@@ -133,22 +247,22 @@ export default function MenuTaskbar({ tableId: propTableId, sessionId }: { table
               unoptimized
             />
             <span
-              className={
-                isPathActive("drinks")
-                  ? styles.active
-                  : styles.link
-              }
+              className={isPathActive("drinks") ? styles.active : styles.label}
             >
               Drinks
             </span>
           </Link>
         </div>
 
-        {/* Favorites */}
+        {/* Desserts (replaces previous Favorites) */}
         <div className="flex flex-col items-center">
           <Link
             href={
-              tableId && sessionId ? `/customer/${tableId}/session/${sessionId}/favorites` : tableId ? `/customer/${tableId}/favorites` : "/customer/favorites"
+              tableId && sessionId
+                ? `/customer/${tableId}/session/${sessionId}/favorites`
+                : tableId
+                ? `/customer/${tableId}/favorites`
+                : "/customer/favorites"
             }
             className={styles.link}
           >
@@ -158,7 +272,7 @@ export default function MenuTaskbar({ tableId: propTableId, sessionId }: { table
                   ? "/favorites-icon-selected.png"
                   : "/favorites-icon.png"
               }
-              alt="Favorites"
+              alt="Desserts"
               width={40}
               height={40}
               className={styles.icon}
@@ -166,12 +280,10 @@ export default function MenuTaskbar({ tableId: propTableId, sessionId }: { table
             />
             <span
               className={
-                isPathActive("favorites")
-                  ? styles.active
-                  : styles.link
+                isPathActive("favorites") ? styles.active : styles.label
               }
             >
-              Favorites
+              Desserts
             </span>
           </Link>
         </div>
