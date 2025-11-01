@@ -1,22 +1,22 @@
- # J.A.S. Caffeinated — QR Menu
+# J.A.S. Caffeinated — QR Menu
 
-A Next.js + Supabase app for an in-restaurant QR-driven menu and ordering system. This repository contains the Next.js frontend (App Router, TypeScript, Tailwind) and SQL / Supabase configuration to run a local Supabase stack for development.
+A Next.js + Supabase app for an in-restaurant QR-driven menu and ordering system. This repository contains the Next.js frontend (App Router, TypeScript, Tailwind) and SQL / Supabase configuration for local development with Supabase or using a hosted Supabase instance.
 
-This README helps you get started locally, run the app, and connect a phone on the same network/hotspot for testing.
+This README explains the two Supabase options (online vs local), how to configure environment variables, and how to test the app from another device (phone).
 
 ## Quick summary
 
 - Framework: Next.js (App Router) with TypeScript
 - Styling: Tailwind CSS
-- Database / Auth: Supabase (local Docker stack supported in `supabase/`)
+- Database / Auth: Supabase (hosted or local Docker/Supabase CLI)
 - Purpose: Customer-facing menu, admin dashboard, ordering, reviews, and inventory management.
 
 ## Prerequisites
 
-- Node >= 18 (install from https://nodejs.org/)
+- Node >= 18 — [Node.js](https://nodejs.org/)
 - npm (bundled with Node) or your preferred package manager
-- Docker (for local Supabase) if you want to run the full stack locally
-- (Optional) Supabase CLI if you prefer `supabase start` for the local stack
+- Docker Desktop (only required for local Supabase)
+- (Optional) Supabase CLI (recommended if you want the CLI workflow)
 
 ## Repository layout (high level)
 
@@ -26,370 +26,116 @@ This README helps you get started locally, run the app, and connect a phone on t
 - `sql/` — SQL schema, indexes, policies, and sample data
 - `supabase/` — local supabase project config / seed files
 
-## Setup (local development)
+## Supabase — Online vs Local
 
-1. Install dependencies
+You can use a hosted Supabase project (online) or run a local Supabase stack (Docker + Supabase CLI). Choose one and set environment variables accordingly.
 
-```powershell
-npm install
-```
+### Hosted Supabase (recommended when you don't need a local DB)
 
-2. Environment variables
-
-Create a `.env.local` file in the project root. Minimal variables required by the app:
+- Use the Supabase project URL (for example `https://xyzcompany.supabase.co`) and the project's anon/public key.
+- Set your `.env.local` like:
 
 ```env
-# .env.local
-NEXT_PUBLIC_SUPABASE_URL=http://<YOUR_MACHINE_IP>:54321
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_OR_ANON_KEY=<anon-public-key>
-# (Optional) Service role or server keys go into server-only environment variables if needed
-# SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
+NEXT_PUBLIC_SUPABASE_URL=https://<YOUR_PROJECT_ID>.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_OR_ANON_KEY=<ANON_PUBLIC_KEY>
 ```
 
-Notes:
-- When testing from a phone on the same network/hotspot, set `NEXT_PUBLIC_SUPABASE_URL` to your desktop/laptop IP (e.g. `http://192.168.1.100:54321`) so the phone can reach the local Supabase instance. Make sure Docker/Supabase is bound to 0.0.0.0 and firewall allows the port.
-- The `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_OR_ANON_KEY` is typically found in the Supabase project's settings or the local seed. For local Supabase it may be in `supabase/seed.sql` or the Supabase CLI output when the stack starts.
+- When using hosted Supabase you do not need to run Docker or the Supabase CLI locally. The site can talk to your online Supabase from any device that has network access.
 
-3. Start Supabase (local)
+### Local Supabase (useful for offline dev, seeds, and local migrations)
 
-- Option A: Using the Supabase CLI
-  - Install: https://supabase.com/docs/guides/cli
-  - From the repo root: `supabase start` (or follow the `supabase/README` if present)
+- Run a local Supabase stack using the Supabase CLI or Docker. This repository includes a `supabase/` folder with config and a `seed.sql` used for local development.
+- Typical ports in this repo's config (see `supabase/config.toml`):
+  - Supabase API: 54321
+  - Postgres DB: 54322
+  - Supabase Studio: 54323
 
-- Option B: Using Docker compose
-  - If the repo includes a docker-compose / supabase config, run the provided compose or the Supabase CLI generated compose files. Use `docker ps` to confirm the stack is running and note the Postgres/API port (commonly `54321` for local Supabase in some setups).
-
-4. Start Next.js (dev)
-
-This project uses Next's dev server. In PowerShell, run:
-
-```powershell
-npm run dev
-```
-
-If you need to access the Next dev server from another device on your network, run Next bound to all interfaces (example):
-
-```powershell
-npx next dev --hostname 0.0.0.0
-# or
-npm run dev -- --hostname 0.0.0.0
-```
-
-Then open `http://<YOUR_MACHINE_IP>:3000` on the phone to view the site.
-
-## Database migrations & seed
-
-- The `sql/` directory contains schema and sample data. To apply schema changes to a running Supabase instance, use the Supabase UI or `psql` to run the SQL files.
-- If you added/changed categories (for example `Desserts`), make sure to run the appropriate migration SQL so the DB constraint and sample data include the new category.
-
-## Common commands
-
-- Start dev server: `npm run dev`
-- Build: `npm run build`
-- Start production server: `npm run start`
-- Lint: `npm run lint`
-
-## Testing from a phone (hotspot / LAN)
-
-1. Connect your phone to the same network (Wi‑Fi or phone-hosted hotspot).
-2. Ensure your machine's firewall allows inbound connections on ports 3000 (Next) and 54321 (local Supabase) or whatever your stack uses.
-3. Use your machine IP (e.g. `192.168.1.100`) in both the phone's browser and in the `.env.local` `NEXT_PUBLIC_SUPABASE_URL` value, then restart the Next dev server if you changed envs.
-
-Note: Browsers may block mixed-content if your site is served over HTTPS but Supabase is on HTTP. For local testing use HTTP consistently.
-
-# J.A.S. Caffeinated — QR Menu
-
-A Next.js + Supabase app for an in-restaurant QR-driven menu and ordering system. This repository contains the Next.js frontend (App Router, TypeScript, Tailwind) and SQL / Supabase configuration to run a local Supabase stack for development.
-
-This README provides a concise project overview plus a detailed "Development" section that explains how to run the local Supabase stack, apply migrations and seeds, and test the site from another device (phone).
-
-## Quick summary
-
-- Framework: Next.js (App Router) with TypeScript
-- Styling: Tailwind CSS
-- Database / Auth: Supabase (local Docker stack supported in `supabase/`)
-- Purpose: Customer-facing menu, admin dashboard, ordering, reviews, and inventory management.
-
-## Prerequisites
-
-- Node >= 18
-- npm (bundled with Node) or your preferred package manager
-- Docker Desktop (for local Supabase)
-- (Optional) Supabase CLI (recommended for `supabase start`)
-
-## Repository layout (high level)
-
-- `app/` — Next.js App Router pages and layouts
-- `components/` — React components used by pages (admin/customer/ui)
-- `lib/` — app helpers (Supabase client wrapper, utils)
-- `sql/` — SQL schema, indexes, policies, and sample data
-- `supabase/` — local supabase project config / seed files
-
-## Getting started (quick)
-
-1. Install dependencies:
-
-```powershell
-npm install
-```
-
-2. Create `.env.local` (see Development -> Environment variables for details)
-
-3. Start local services (Supabase + Next) — see Development for step-by-step commands.
-
-## Common commands
-
-- Start dev server: `npm run dev`
-- Build: `npm run build`
-- Start production server: `npm run start`
-- Lint: `npm run lint`
-
-## Development (local Supabase + Next)
-
-This project includes a `supabase/` folder with configuration, migrations and a seed file. The following steps show the recommended developer workflow for running the full local stack and testing from another device (phone).
-# J.A.S. Caffeinated — QR Menu
-
-A Next.js + Supabase app for an in-restaurant QR-driven menu and ordering system. This repository contains the Next.js frontend (App Router, TypeScript, Tailwind) and SQL / Supabase configuration to run a local Supabase stack for development.
-
-This README provides a concise project overview and developer guidance for running the app locally and testing from another device (phone).
-
-## Quick summary
-
-- Framework: Next.js (App Router) with TypeScript
-- Styling: Tailwind CSS
-- Database / Auth: Supabase (local Docker stack supported in `supabase/`)
-- Purpose: Customer-facing menu, admin dashboard, ordering, reviews, and inventory management
-
-## Prerequisites
-
-- [Node.js](https://nodejs.org/) (>= 18)
-- npm (bundled with Node) or your preferred package manager
-- Docker Desktop (for local Supabase)
-- (Optional) Supabase CLI (recommended) — see the [Supabase CLI docs](https://supabase.com/docs/guides/cli)
-
-## Repository layout (high level)
-
-- `app/` — Next.js App Router pages and layouts
-- `components/` — React components used by pages (admin/customer/ui)
-- `lib/` — app helpers (Supabase client wrapper, utils)
-- `sql/` — SQL schema, indexes, policies, and sample data
-- `supabase/` — local supabase project config / seed files
-
-## Getting started (quick)
-
-1. Install dependencies:
-
-```powershell
-npm install
-```
-
-1. Create `.env.local` (see Development -> Environment variables for details)
-
-1. Start local services (Supabase + Next) — see Development for step-by-step commands
-
-## Common commands
-
-- Start dev server: `npm run dev`
-- Build: `npm run build`
-- Start production server: `npm run start`
-- Lint: `npm run lint`
-
-## Development (local Supabase + Next)
-
-This project includes a `supabase/` folder with configuration, migrations and a seed file. The following steps show the recommended developer workflow for running the full local stack and testing from another device (phone).
-
-### Key ports (from `supabase/config.toml`)
-
-- Supabase API: 54321
-- Postgres DB: 54322
-- Supabase Studio: 54323
-- Next.js dev server: 3000
-
-### Prereqs recap
-
-- Docker Desktop (Windows)
-- Supabase CLI (recommended): see the [Supabase CLI docs](https://supabase.com/docs/guides/cli)
-- Node.js and npm (or pnpm/yarn)
-
-### Start the local Supabase stack (Supabase CLI — recommended)
-
-```powershell
-# from the repo root
-supabase start
-
-# stop when done
-supabase stop
-```
-
-Notes: `supabase start` will create and manage the containers using the config in `supabase/config.toml`. If you don't want to use the CLI you can run the containers manually with Docker, but the CLI avoids manual compose management.
-
-### Apply migrations and seed (optional / when needed)
-
-1. Push migrations (apply incremental migrations):
-
-```powershell
-supabase db push
-```
-
-1. Reset the DB and re-run seeds (wipes the local DB):
-
-```powershell
-supabase db reset
-```
-
-The `config.toml` in this repo enables migrations and configures `supabase/seed.sql` to run on reset.
-
-### Find the anon (publishable) key
-
-When the stack is running you can copy the anon/public key from Supabase Studio: open `http://localhost:54323` (or `http://<HOST_IP>:54323`), navigate to Project Settings → API and copy the anon key. The CLI also prints keys on startup.
-
-### Environment variables (.env.local)
-
-Create a file named `.env.local` at the project root and add:
+- Example `.env.local` for local testing (replace `<HOST_IP>` with your machine's LAN IP when testing from a phone):
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=http://<HOST_IP>:54321
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_OR_ANON_KEY=<ANON_KEY>
 ```
 
-Important: replace `<HOST_IP>` with your machine's LAN IP (for phone testing use the IP visible to the phone, not `localhost`).
-
-### Find your machine IP (Windows PowerShell)
+- Start with the Supabase CLI:
 
 ```powershell
-Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.PrefixOrigin -ne 'WellKnown' } | Select-Object IPAddress
+# from the repo root
+supabase start
+# stop when done
+supabase stop
 ```
 
-### Run Next.js and bind to all interfaces (so the phone can connect)
-
-PowerShell example (binds runtime to 0.0.0.0 for the session):
+- Apply migrations or reset/seed the DB when needed:
 
 ```powershell
+supabase db push    # apply migrations
+supabase db reset   # wipe local DB and re-run seed.sql
+```
+
+## Environment variables and phone testing
+
+- If you plan to open the site from a phone on the same network, use a reachable IP in `NEXT_PUBLIC_SUPABASE_URL` (for local Supabase) and bind Next's dev server to `0.0.0.0`.
+- Example `.env.local` (local):
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=http://192.168.1.100:54321
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_OR_ANON_KEY=<ANON_KEY>
+```
+
+- Example `.env.local` (hosted):
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://<YOUR_PROJECT_ID>.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_OR_ANON_KEY=<ANON_KEY>
+```
+
+- Start Next.js dev server bound to all interfaces so your phone can connect:
+
+```powershell
+# bind runtime to 0.0.0.0 for the session then run dev
 $env:HOST = '0.0.0.0'; npm run dev
-```
-
-Alternatively, if your Next version supports a hostname flag:
-
-```powershell
+# or, if supported by your Next version:
 npx next dev --hostname 0.0.0.0
 ```
 
-### Firewall & routing
+- Then open `http://<HOST_IP>:3000` on the phone.
 
-- Ensure Windows Firewall allows inbound connections on ports 3000 (Next) and 54321/54323 (Supabase) when testing from another device.
-- If using a phone hotspot, confirm the phone and the machine are on the same subnet.
+Note: when using hosted Supabase you don't need to change the host IP — just use the hosted project URL.
 
-### Example quick test flow
+## Common commands
+
+- Install deps: `npm install`
+- Start dev server: `npm run dev`
+- Build: `npm run build`
+- Start production server: `npm run start`
+- Lint: `npm run lint`
+
+## Key developer workflow (local stack)
 
 1. Start Supabase: `supabase start`
-1. Create `.env.local` with `NEXT_PUBLIC_SUPABASE_URL=http://<HOST_IP>:54321` and the anon key
-1. Start Next bound to `0.0.0.0`: `$env:HOST='0.0.0.0'; npm run dev`
-1. Open `http://<HOST_IP>:3000` on the phone
+2. Create `.env.local` with the proper `NEXT_PUBLIC_SUPABASE_URL` and anon key
+3. Start Next bound to `0.0.0.0`: `$env:HOST='0.0.0.0'; npm run dev`
+4. Visit `http://<HOST_IP>:3000` from your phone or desktop
 
-### Troubleshooting tips
+## Troubleshooting
 
-- If the app can't reach Supabase from the phone, open Studio at `http://<HOST_IP>:54323` to confirm the API is reachable.
+- If the app can't reach Supabase from your phone, open Supabase Studio at `http://<HOST_IP>:54323` to confirm the stack is reachable.
 - After changing `supabase/config.toml`, restart the stack: `supabase stop && supabase start`.
 - If data is missing, run `supabase db reset` to reseed the local DB.
 - If you don't have the anon key, copy it from Studio → Settings → API.
+- For TypeScript/compile errors after edits: stop the dev server, delete `.next`, and run `npm run dev` again.
 
-### Files of interest
-
-- `supabase/config.toml` — local Supabase configuration (ports, seeds, studio, api_url)
-- `supabase/seed.sql` — seed data loaded by `supabase db reset`
-- `supabase/migrations/` — SQL migration files
-
-### Checklist for new contributors
-
-- [ ] Docker Desktop running
-- [ ] `supabase start` (or equivalent Docker compose)
-- [ ] `supabase db push` (migrations) or `supabase db reset` (reset + seed)
-- [ ] Create `.env.local` with NEXT_PUBLIC_SUPABASE_URL and anon key
-- [ ] Start Next binding to 0.0.0.0 and test from phone
-
-## Database migrations & seed
-
-- The `sql/` directory contains schema and sample data. To apply schema changes to a running Supabase instance, use the Supabase UI or `psql` to run the SQL files, or use the Supabase CLI migration commands above.
-
-## Testing from a phone (hotspot / LAN)
-
-1. Connect your phone to the same network (Wi‑Fi or phone-hosted hotspot).
-1. Ensure your machine's firewall allows inbound connections on ports 3000 (Next) and 54321 (local Supabase) or whatever your stack uses.
-1. Use your machine IP (e.g. `192.168.1.100`) in both the phone's browser and in the `.env.local` `NEXT_PUBLIC_SUPABASE_URL` value, then restart the Next dev server if you changed envs.
-
-Note: Browsers may block mixed-content if your site is served over HTTPS but Supabase is on HTTP. For local testing use HTTP consistently.
-
-## Common commands
-
-- Start dev server: `npm run dev`
-- Build: `npm run build`
-- Start production server: `npm run start`
-- Lint: `npm run lint`
-
-## Troubleshooting
-
-- TypeScript/compile errors after edits:
-  - Try a full rebuild: stop dev server, delete `.next` and run `npm run dev`.
-- If the admin taskbar items are grayed out, confirm the admin permissions rows include the correct permission columns (some admin pages fetch specific permission columns).
-- If images or icons don't load, confirm they exist in `public/` and the `Image` components use `unoptimized` or Next image config allows local files.
-
-## Contributing
-
-- Create a branch for your change: `git checkout -b feat/some-change`
-- Make small commits and open a PR against `ui-fixes` (or the main branch as appropriate)
-
-Suggested commit for this README:
-
-```powershell
-git add README.md
-git commit -m "docs: merge developer guide into README"
-git push -u origin ui-fixes
-```
-
----
-
-If you'd like, I can also:
-
-- Add a `.env.example` to the repo with the two `NEXT_PUBLIC_*` lines (safe to commit without keys)
-- Tidy the README to satisfy markdown-lint rules (headings, bare URLs)
-
-
-### Files of interest
+## Files of interest
 
 - `supabase/config.toml` — local Supabase configuration (ports, seeds, studio, api_url)
 - `supabase/seed.sql` — seed data loaded by `supabase db reset`
 - `supabase/migrations/` — SQL migration files
 
-### Checklist for new contributors
+## Checklist for new contributors
 
-- [ ] Docker Desktop running
+- [ ] Docker Desktop running (if using local Supabase)
 - [ ] `supabase start` (or equivalent Docker compose)
 - [ ] `supabase db push` (migrations) or `supabase db reset` (reset + seed)
 - [ ] Create `.env.local` with NEXT_PUBLIC_SUPABASE_URL and anon key
 - [ ] Start Next binding to 0.0.0.0 and test from phone
-
-## Database migrations & seed
-
-- The `sql/` directory contains schema and sample data. To apply schema changes to a running Supabase instance, use the Supabase UI or `psql` to run the SQL files, or use the Supabase CLI migration commands above.
-
-## Testing from a phone (hotspot / LAN)
-
-1. Connect your phone to the same network (Wi‑Fi or phone-hosted hotspot).
-2. Ensure your machine's firewall allows inbound connections on ports 3000 (Next) and 54321 (local Supabase) or whatever your stack uses.
-3. Use your machine IP (e.g. `192.168.1.100`) in both the phone's browser and in the `.env.local` `NEXT_PUBLIC_SUPABASE_URL` value, then restart the Next dev server if you changed envs.
-
-Note: Browsers may block mixed-content if your site is served over HTTPS but Supabase is on HTTP. For local testing use HTTP consistently.
-
-## Common commands
-
-- Start dev server: `npm run dev`
-- Build: `npm run build`
-- Start production server: `npm run start`
-- Lint: `npm run lint`
-
-## Troubleshooting
-
-- TypeScript/compile errors after edits:
-  - Try a full rebuild: stop dev server, delete `.next` and run `npm run dev`.
-- If the admin taskbar items are grayed out, confirm the admin permissions rows include the correct permission columns (some admin pages fetch specific permission columns).
-- If images or icons don't load, confirm they exist in `public/` and the `Image` components use `unoptimized` or Next image config allows local files.
