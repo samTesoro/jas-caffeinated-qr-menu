@@ -435,9 +435,24 @@ export default function MenuList({
                 <MenuItemCard
                   key={item.menuitem_id ? String(item.menuitem_id) : item.name}
                   item={item}
-                  setModalItem={setSelectedItem}
+                  // Wrap setSelectedItem so we can log the exact object passed when opening the modal
+                  setModalItem={(it) => {
+                    try {
+                      console.debug("[menu-list] open modal item:", it);
+                    } catch {
+                      /* ignore */
+                    }
+                    setSelectedItem(it);
+                  }}
                   mode="customer"
-                  onAdd={() => setSelectedItem(item)}
+                  onAdd={() => {
+                    try {
+                      console.debug("[menu-list] add-click item:", item);
+                    } catch {
+                      /* ignore */
+                    }
+                    setSelectedItem(item);
+                  }}
                 />
               ))}
             </div>

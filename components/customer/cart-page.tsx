@@ -25,6 +25,7 @@ export default function CartPage({
       name: string;
       price: number;
       thumbnail?: string;
+      description?: string | null;
     };
   };
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -141,7 +142,7 @@ export default function CartPage({
             if (ids.length > 0) {
               const { data: itemsData } = await supabase
                 .from("menuitem")
-                .select("menuitem_id, name, price, thumbnail")
+                .select("menuitem_id, name, price, thumbnail, description")
                 .in("menuitem_id", ids);
               const index = new Map((itemsData || []).map((m: any) => [m.menuitem_id, m]));
               const normalized = local.map((li: any, idx: number) => {
@@ -173,7 +174,7 @@ export default function CartPage({
       const { data, error } = await supabase
         .from("cartitem")
         .select(
-          "cartitem_id, quantity, subtotal_price, menuitem_id, note, menuitem:menuitem_id (name, price, thumbnail)"
+          "cartitem_id, quantity, subtotal_price, menuitem_id, note, menuitem:menuitem_id (name, price, thumbnail, description)"
         )
         .eq("cart_id", cart_id);
 

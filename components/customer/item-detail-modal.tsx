@@ -36,7 +36,53 @@ export default function ItemDetailModal({
 }) {
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
-  const [fetchedDescription] = useState<string | null | undefined>(undefined);
+  // Allow an optional fetched description to override or supplement the item's description.
+  // Initialize to the provided item's description so we display it immediately.
+  // Keep the setter name prefixed with '_' since it's unused for now but useful later
+  // (this avoids lint errors about an unused variable while keeping the API ready).
+  const [fetchedDescription, _setFetchedDescription] = useState<
+    string | null | undefined
+  >(item.description ?? undefined);
+
+  // Debug log to help diagnose why descriptions may not appear at runtime.
+  useEffect(() => {
+    // Defensive debug: log description to browser console for troubleshooting.
+    // Avoid unused-catch variable by not naming the error.
+    try {
+      console.debug("[ItemDetailModal] mounted item.description:", item?.description);
+    } catch {
+      /* ignore */
+    }
+  }, [item]);
+
+  // If the incoming item doesn't include a description, attempt to fetch it from
+  // Supabase (ensures we display the DB-backed description even if the list
+  // query omitted it).
+  useEffect(() => {
+    let active = true;
+    const tryFetch = async () => {
+      try {
+        const current = (fetchedDescription ?? item.description) ?? "";
+        if (current && String(current).trim().length > 0) return;
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from("menuitem")
+          .select("description")
+          .eq("menuitem_id", Number(item.menuitem_id))
+          .maybeSingle();
+        if (!error && active && data && data.description) {
+          _setFetchedDescription(data.description);
+          console.debug("[ItemDetailModal] fetched description:", data.description);
+        }
+      } catch {
+        console.debug("[ItemDetailModal] description fetch failed");
+      }
+    };
+    tryFetch();
+    return () => {
+      active = false;
+    };
+  }, [item, _setFetchedDescription, fetchedDescription]);
 
   const BackIcon = () => (
     <svg
@@ -204,13 +250,15 @@ export default function ItemDetailModal({
             <div className="pr-4">
               <div className="font-bold text-black text-xl">{item.name}</div>
               <div className="mt-1 text-gray-700 text-xs md:text-sm max-w-[60vw] md:max-w-xs">
-                {fetchedDescription ? (
-                  fetchedDescription
-                ) : (
-                  <span className="text-gray-400 italic">
-                    No description available
-                  </span>
-                )}
+                {(() => {
+                  const desc = (fetchedDescription ?? item.description) ?? "";
+                  const has = desc && String(desc).trim().length > 0;
+                  return has ? (
+                    <span>{desc}</span>
+                  ) : (
+                    <span className="text-gray-400 italic">No description available</span>
+                  );
+                })()}
               </div>
             </div>
             <div className="text-right">
