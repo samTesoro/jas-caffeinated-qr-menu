@@ -1,4 +1,4 @@
-# J.A.S. Caffeinated — QR Menu
+# J.A.S. Caffeinated — QR Menu Ordering System
 
 A Next.js + Supabase app for an in-restaurant QR-driven menu and ordering system. This repository contains the Next.js frontend (App Router, TypeScript, Tailwind) and SQL / Supabase configuration for local development with Supabase or using a hosted Supabase instance.
 
