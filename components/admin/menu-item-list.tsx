@@ -4,31 +4,21 @@ import Link from "next/link";
 import Image from "next/image";
 import { Search } from "lucide-react";
 import { Plus } from "lucide-react";
-import ItemCard from "@/components/ui/menu-item-card";
+import ItemCard, { MenuItem as UIMenuItem } from "@/components/ui/menu-item-card";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "../ui/button";
-
-export interface MenuItem {
-  menuitem_id: number;
-  name: string;
-  category: string;
-  price: number;
-  status: string;
-  thumbnail?: string;
-  description?: string;
-}
 
 export default function MenuItemList({
   onEdit,
   refresh,
 }: // setRefresh,
 {
-  onEdit: (item: MenuItem | null) => void;
+  onEdit: (item: UIMenuItem | null) => void;
   refresh: boolean;
   setRefresh: (r: boolean) => void;
 }) {
-  const [modalItem, setModalItem] = useState<MenuItem | null>(null);
-  const [items, setItems] = useState<MenuItem[]>([]);
+  const [modalItem, setModalItem] = useState<UIMenuItem | null>(null);
+  const [items, setItems] = useState<UIMenuItem[]>([]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("All");
   const [categories, setCategories] = useState<string[]>([]);

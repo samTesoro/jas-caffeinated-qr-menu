@@ -3,13 +3,11 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import MenuItemForm from '@/components/admin/menu-item-form';
 import { createClient } from '@/lib/supabase/client';
-import type { MenuItem } from '@/components/admin/menu-item-list';
+import type { MenuItem } from '@/components/ui/menu-item-card';
 
-import React from 'react';
-
-export default function EditMenuItemPage({ params }: { params: Promise<{ id: string }> }) {
+export default function EditMenuItemPage({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const { id } = React.use(params);
+  const { id } = params;
   const [item, setItem] = useState<MenuItem | null>(null);
   const [loading, setLoading] = useState(true);
 

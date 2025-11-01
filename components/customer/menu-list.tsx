@@ -181,7 +181,7 @@ type CartItem = {
   menuitem_id: number;
 };
 interface MenuListProps {
-  activeTab: "All" | "Meals" | "Coffee" | "Drinks" | "Favorites" | string;
+  activeTab: "All" | "Meals" | "Coffee" | "Drinks" | "Favorites" | "Desserts" | string;
   cart: CartItem[];
   setCart: (cart: CartItem[]) => void;
   sessionId?: string;
@@ -253,8 +253,10 @@ export default function MenuList({
           "menuitem_id, name, price, thumbnail, category, status, description, is_favorites"
         );
       if (activeTab === "Favorites") {
+        // Favorites tab: filter by the boolean column is_favorites
         query = query.eq("is_favorites", true);
       } else if (activeTab !== "All") {
+        // Other tabs (including "Desserts"): filter by category name
         query = query.eq("category", activeTab);
       } else {
         // Favorites-first when showing All

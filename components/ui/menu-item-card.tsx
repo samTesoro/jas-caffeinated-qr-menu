@@ -10,6 +10,7 @@ export interface MenuItem {
   status: string;
   thumbnail?: string;
   description?: string | null;
+  is_favorites?: boolean;
 }
 
 interface MenuItemCardProps {
@@ -67,6 +68,18 @@ export default function ItemCard({
         mode === "customer" && item.status !== "Available" ? "opacity-60" : ""
       }`}
     >
+      {/* Favorite badge (absolute on top of card) */}
+      {mode === "customer" && item.is_favorites && (
+        <div
+          title="Favorite"
+          className="absolute -top-2 -left-2 w-11 h-11 rounded-full bg-[#E59C53] flex items-center justify-center shadow z-20 transform transition-transform duration-150 hover:scale-110"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="35" height="35" fill="#ffffff" aria-hidden>
+            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+          </svg>
+        </div>
+      )}
+
       {/* Thumbnail */}
       <div
         className="w-full aspect-[4/3] overflow-hidden cursor-pointer relative"

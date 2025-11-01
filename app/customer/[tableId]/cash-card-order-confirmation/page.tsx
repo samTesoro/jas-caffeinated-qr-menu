@@ -8,7 +8,7 @@ import EstimatedTimeDisplay from "@/components/customer/estimated-time";
 export default function CashCardOrderConfirmation({
   params,
 }: {
-  params: Promise<{ tableId: string }>;
+  params: { tableId: string };
 }) {
   const router = useRouter();
   const { tableId } = params;

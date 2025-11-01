@@ -42,92 +42,11 @@ export default function Cart({
   React.useEffect(() => {
     try {
       const items = JSON.parse(localStorage.getItem("cartItems") || "[]");
-      if (Array.isArray(items)) {
-        // Minimal items; detailed pricing should be provided by parent when using this component
-        setCart(items as any);
-      } else {
-        setCart([]);
-      }
-<<<<<<< HEAD
-      // Find the latest open cart for this customer
-      if (!cart_id) {
-        const { data: cartData, error: cartError } = await supabase
-          .from("cart")
-          .select("cart_id")
-          .eq("customer_id", customer_id)
-          .eq("checked_out", false)
-          .order("time_created", { ascending: false })
-          .maybeSingle();
-        if (cartError) {
-          alert("Supabase fetch error: " + JSON.stringify(cartError));
-          setCart([]);
-          return;
-        }
-        if (cartData && cartData.cart_id) {
-          cart_id = cartData.cart_id;
-          localStorage.setItem("cart_id", String(cart_id));
-        }
-      }
-      if (!cart_id) {
-        setCart([]);
-        return;
-      }
-      // Join cartitem with menuitem for display
-      const { data, error } = await supabase
-        .from("cartitem")
-        .select(
-          "cartitem_id, quantity, subtotal_price, menuitem_id, menuitem:menuitem_id (name, price, thumbnail)"
-        )
-        .eq("cart_id", cart_id);
-      if (error) {
-        alert("Supabase fetch error: " + JSON.stringify(error));
-      }
-      // Fix type mismatch in setCart
-      const formattedData = (data || []).map((item) => {
-        let menuitemObj;
-        if (item.menuitem) {
-          if (Array.isArray(item.menuitem)) {
-            // If menuitem is an array, take the first item
-            menuitemObj = item.menuitem[0]
-              ? {
-                  name: item.menuitem[0].name,
-                  price: item.menuitem[0].price,
-                  thumbnail: item.menuitem[0].thumbnail,
-                }
-              : undefined;
-          } else {
-            const mi = item.menuitem as {
-              name: string;
-              price: number;
-              thumbnail?: string;
-            };
-            menuitemObj = {
-              name: mi.name,
-              price: mi.price,
-              thumbnail: mi.thumbnail,
-            };
-          }
-        } else {
-          menuitemObj = undefined;
-        }
-        return {
-          cartitem_id: item.cartitem_id,
-          quantity: item.quantity,
-          subtotal_price: item.subtotal_price,
-          menuitem_id: item.menuitem_id,
-          menuitem: menuitemObj,
-        };
-      });
-      setCart(formattedData);
-    };
-    fetchCart();
-  }, [setCart]); // Add setCart to the dependency array
-=======
+      setCart(Array.isArray(items) ? (items as any) : []);
     } catch {
       setCart([]);
     }
   }, [setCart]);
->>>>>>> ec41832455b74630153e4550fcb22d68a8e2d1e0
 
   const updateQty = async (cartitem_id: number, delta: number) => {
     const i = cart.findIndex((c) => c.cartitem_id === cartitem_id);
@@ -147,13 +66,6 @@ export default function Cart({
   };
 
   const removeItem = async (cartitem_id: number) => {
-<<<<<<< HEAD
-    const supabase = createClient();
-    setCart(cart.filter((i) => i.cartitem_id !== cartitem_id));
-    await supabase.from("cartitem").delete().eq("cartitem_id", cartitem_id);
-    setShowConfirmModal(false);
-    setSelectedCartItem(null);
-=======
     const next = cart.filter((i) => i.cartitem_id !== cartitem_id);
     setCart(next);
     try {
@@ -161,7 +73,8 @@ export default function Cart({
       localStorage.setItem("cartItems", JSON.stringify(simplified));
       window.dispatchEvent(new CustomEvent("cart-updated"));
     } catch {}
->>>>>>> ec41832455b74630153e4550fcb22d68a8e2d1e0
+    setShowConfirmModal(false);
+    setSelectedCartItem(null);
   };
 
   const total = cart.reduce((sum, i) => sum + (i.subtotal_price || 0), 0);

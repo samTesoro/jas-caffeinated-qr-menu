@@ -14,7 +14,10 @@ interface MenuItem {
   price: number;
   status: string;
   thumbnail?: string;
+  // Supabase stores this as a boolean column `is_favorites`.
+  // The admin form exposes a string select ('Yes' / 'No') and maps to/from this boolean.
   favorites?: string;
+  is_favorites?: boolean;
   estimatedTime?: number;
   description?: string | null;
 }
@@ -39,7 +42,9 @@ export default function MenuItemForm({
     price: item?.price || 0,
     status: item?.status || "Available",
     thumbnail: item?.thumbnail || "",
-    favorites: item?.favorites || "No",
+    // Prefer explicit mapping from is_favorites boolean when present
+    favorites:
+      item?.favorites ?? (item?.is_favorites ? "Yes" : item?.is_favorites === false ? "No" : "No"),
     estimatedTime: item?.estimatedTime || 0,
     description: item?.description || "",
   });
@@ -59,7 +64,8 @@ export default function MenuItemForm({
         price: item.price || 0,
         status: item.status || "Available",
         thumbnail: item.thumbnail || "",
-        favorites: item.favorites || "No",
+        // Map boolean is_favorites to the Yes/No select used by the form
+        favorites: item.favorites ?? (item.is_favorites ? "Yes" : item.is_favorites === false ? "No" : "No"),
         // Use est_time if present, fallback to estimatedTime, fallback to 0
         estimatedTime: (item as any).est_time ?? item.estimatedTime ?? 0,
         description: item.description || "",

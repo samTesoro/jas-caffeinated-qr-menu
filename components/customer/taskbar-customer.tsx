@@ -259,18 +259,18 @@ export default function MenuTaskbar({
           <Link
             href={
               tableId && sessionId
-                ? `/customer/${tableId}/session/${sessionId}/favorites`
+                ? `/customer/${tableId}/session/${sessionId}/desserts`
                 : tableId
-                ? `/customer/${tableId}/favorites`
-                : "/customer/favorites"
+                ? `/customer/${tableId}/desserts`
+                : "/customer/desserts"
             }
             className={styles.link}
           >
             <Image
               src={
-                isPathActive("favorites")
-                  ? "/favorites-icon-selected.png"
-                  : "/favorites-icon.png"
+                isPathActive("desserts")
+                  ? "/desserts-icon-selected.png"
+                  : "/desserts-icon.png"
               }
               alt="Desserts"
               width={40}
@@ -280,7 +280,7 @@ export default function MenuTaskbar({
             />
             <span
               className={
-                isPathActive("favorites") ? styles.active : styles.label
+                isPathActive("desserts") ? styles.active : styles.label
               }
             >
               Desserts
