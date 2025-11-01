@@ -140,16 +140,12 @@ export default function MenuTaskbar({
                   : "/meals-icon.png"
               }
               alt="Meals"
-              width={40}
-              height={40}
-              className={styles.icon}
+              width={48}
+              height={48}
+              className={styles.icon + " " + styles.iconLarge}
               unoptimized
             />
-            <span
-              className={isPathActive("meals") ? styles.active : styles.label}
-            >
-              Meals
-            </span>
+            {/* icon-only: label removed per design */}
           </Link>
         </div>
 
@@ -177,11 +173,7 @@ export default function MenuTaskbar({
               className={styles.icon}
               unoptimized
             />
-            <span
-              className={isPathActive("coffee") ? styles.active : styles.label}
-            >
-              Coffee
-            </span>
+            {/* icon-only: label removed per design */}
           </Link>
         </div>
 
@@ -241,16 +233,12 @@ export default function MenuTaskbar({
                   : "/drinks-icon.png"
               }
               alt="Drinks"
-              width={40}
-              height={40}
-              className={styles.icon}
+              width={48}
+              height={48}
+              className={styles.icon + " " + styles.iconLarge}
               unoptimized
             />
-            <span
-              className={isPathActive("drinks") ? styles.active : styles.label}
-            >
-              Drinks
-            </span>
+            {/* icon-only: label removed per design */}
           </Link>
         </div>
 
@@ -278,13 +266,7 @@ export default function MenuTaskbar({
               className={styles.icon}
               unoptimized
             />
-            <span
-              className={
-                isPathActive("desserts") ? styles.active : styles.label
-              }
-            >
-              Desserts
-            </span>
+            {/* icon-only: label removed per design */}
           </Link>
         </div>
       </div>

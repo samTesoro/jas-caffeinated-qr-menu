@@ -80,6 +80,11 @@
   transition: filter 150ms ease-in-out; /* avoid transform to prevent jump */
 }
 
+.iconLarge {
+  width: 48px;
+  height: 48px;
+}
+
 .icon:hover {
   filter: brightness(1.05);
 }
@@ -128,6 +133,10 @@
   .icon {
     width: 30px;
     height: 30px;
+  }
+  .iconLarge {
+    width: 36px;
+    height: 36px;
   }
   .link {
     min-height: 68px;
