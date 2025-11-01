@@ -157,10 +157,6 @@ export default function ReviewList({ permissions }: ReviewListProps) {
                 {review.comment}
               </div>
               {/* Rating */}
-<<<<<<< HEAD
-              <div className="flex justify-center items-center font-semibold">
-                {r.rating}/5
-=======
               <div className="flex flex-col items-center">
                 <div className="flex items-center gap-1">
                   {Array.from({ length: 5 }).map((_, idx) => (
@@ -168,7 +164,6 @@ export default function ReviewList({ permissions }: ReviewListProps) {
                   ))}
                 </div>
                 <span className="text-[10px] md:text-xs text-gray-500 mt-1">{review.rating}/5</span>
->>>>>>> ec41832455b74630153e4550fcb22d68a8e2d1e0
               </div>
             </div>
           );

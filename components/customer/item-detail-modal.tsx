@@ -15,11 +15,8 @@ type MenuItem = {
   name: string;
   price: number;
   thumbnail?: string | null;
-<<<<<<< HEAD
-=======
   description?: string | null;
   status?: string | null;
->>>>>>> ec41832455b74630153e4550fcb22d68a8e2d1e0
 };
 
 export default function ItemDetailModal({
@@ -59,40 +56,19 @@ export default function ItemDetailModal({
   );
 
   const addToCart = async () => {
-    const supabase = createClient();
-    let session_id: string;
-
-    if (sessionId) {
-      session_id = sessionId;
-    } else {
-      let storedSessionId = sessionStorage.getItem("session_id");
-      if (!storedSessionId) {
-        storedSessionId = uuidv4();
-        sessionStorage.setItem("session_id", storedSessionId);
-      }
-      session_id = storedSessionId;
-    }
-
+    if (item.status && item.status !== "Available") return;
+    // DB-backed add (ensure/create cart, upsert cartitem); keep quantity adjustments local-only on cart page
     try {
-      // Single query to get cart and existing cart items
-      const { data: cartData } = await supabase
-        .from("cart")
-        .select(
-          `
-          cart_id,
-          cartitem!inner (
-            cartitem_id,
-            quantity,
-            subtotal_price,
-            menuitem_id
-          )
-        `
-        )
-        .eq("session_id", session_id)
-        .eq("checked_out", false)
-        .eq("cartitem.menuitem_id", item.menuitem_id)
-        .order("time_created", { ascending: false })
-        .maybeSingle();
+      const sid =
+        sessionId ||
+        (typeof window !== "undefined"
+          ? sessionStorage.getItem("sessionId") ||
+            sessionStorage.getItem("session_id") ||
+            undefined
+          : undefined);
+      const key = sid ? `cartItems:${sid}` : "cartItems";
+      const supabase = createClient();
+      const normalizedNote = note?.trim() ? note.trim() : null;
 
       if (!sid) throw new Error("No session ID found");
 
@@ -106,40 +82,8 @@ export default function ItemDetailModal({
           .eq("checked_out", false)
           .order("time_created", { ascending: false })
           .maybeSingle();
-
-        if (emptyCartData) {
-          cart_id = emptyCartData.cart_id;
-        }
-      }
-
-      // Create cart if it doesn't exist
-      if (!cart_id) {
-        const { data: newCart, error: newCartError } = await supabase
-          .from("cart")
-          .insert({
-            session_id,
-            total_price: 0,
-            checked_out: false,
-            table_number: parseInt(tableId || "0"),
-          })
-          .select("cart_id")
-          .single();
-
-        if (newCartError) {
-          if (newCartError.code === "23505") {
-            // Retry once if duplicate key
-            const { data: retryCart } = await supabase
-              .from("cart")
-              .select("cart_id")
-              .eq("session_id", session_id)
-              .eq("checked_out", false)
-              .single();
-            cart_id = retryCart?.cart_id;
-          }
-          if (!cart_id) {
-            alert("Failed to create cart");
-            return;
-          }
+        if (!cartErr && cartData?.cart_id) {
+          cart_id = cartData.cart_id;
         } else {
           const { data: newCart, error: newErr } = await supabase
             .from("cart")
@@ -179,41 +123,44 @@ export default function ItemDetailModal({
           .from("cartitem")
           .update({ quantity: newQty, subtotal_price: newSubtotal })
           .eq("cartitem_id", existingItem.cartitem_id);
-
-        if (updateError) {
-          alert("Failed to update cart item");
-          return;
-        }
-
-        setCart(
-          cart.map((i) =>
-            i.menuitem_id === item.menuitem_id
-              ? { ...i, quantity: newQty, subtotal_price: newSubtotal }
-              : i
-          )
-        );
       } else {
         await supabase.from("cartitem").insert({
           cart_id,
           menuitem_id: item.menuitem_id,
           quantity: qty,
           subtotal_price: item.price * qty,
-          menuitem_id: item.menuitem_id,
-          cart_id: cart_id,
-          note: note || null,
-        } as const;
-
-        const { error: itemError } = await supabase
-          .from("cartitem")
-          .insert([cartItem]);
-
-        if (itemError) {
-          alert("Failed to add item to cart");
-          return;
-        }
-
-        setCart([...cart, { ...cartItem }]);
+          note: normalizedNote,
+        });
       }
+
+      // Update session-scoped localStorage for badge and quick UI feedback
+      try {
+        const existing = JSON.parse(localStorage.getItem(key) || "[]");
+        const list = Array.isArray(existing) ? existing : [];
+        let merged = false;
+        const next = list.map((ci: any) => {
+          if (ci.menuitem_id === item.menuitem_id && (ci.note ?? null) === normalizedNote) {
+            merged = true;
+            return { ...ci, quantity: Math.max(1, Number(ci.quantity || 0) + qty) };
+          }
+          return ci;
+        });
+        if (!merged) {
+          next.push({ menuitem_id: item.menuitem_id, quantity: qty, note: normalizedNote });
+        }
+        localStorage.setItem(key, JSON.stringify(next));
+        window.dispatchEvent(new CustomEvent("cart-updated"));
+      } catch {}
+
+      // Minimal in-memory state nudge
+      setCart([
+        ...cart,
+        {
+          menuitem_id: item.menuitem_id,
+          quantity: qty,
+          subtotal_price: item.price * qty,
+        },
+      ] as any);
 
       onClose();
     } catch (e) {
@@ -307,7 +254,11 @@ export default function ItemDetailModal({
           </div>
 
           <button
-            className="w-full bg-orange-400 hover:bg-orange-500 text-white py-3 px-3 md:py-3 md:px-2 rounded-xl font-semibold text-lg mt-auto mb-[120px] sm:mb-0"
+            className={`w-full py-3 px-3 md:py-3 md:px-2 rounded-xl font-semibold text-lg mt-auto sm:mb-0 ${
+              item.status && item.status !== "Available"
+                ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                : "bg-orange-400 text-white"
+            }`}
             onClick={addToCart}
             disabled={!!(item.status && item.status !== "Available")}
             aria-disabled={!!(item.status && item.status !== "Available")}
@@ -320,4 +271,7 @@ export default function ItemDetailModal({
       </div>
     </div>
   );
+
+  if (!mounted) return null;
+  return createPortal(modalUI, document.body);
 }

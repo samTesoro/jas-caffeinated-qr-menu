@@ -47,7 +47,7 @@ export default function MenuPage() {
         const { data, error } = await supabase
           .from("adminusers")
           .select(
-            "view_menu, view_orders, view_super, view_history, view_reviews"
+            "view_menu, view_orders, view_super, view_history, view_reviews, view_tables"
           )
           .eq("user_id", adminId)
           .single();
@@ -146,6 +146,7 @@ export default function MenuPage() {
       <div className="flex-1 px-8 pb-8 pt-2">
         <MenuItemList
           onEdit={(item) => {
+            if (!item) return;
             window.location.href = `/admin/menu/${item.menuitem_id}`;
           }}
           refresh={refresh}

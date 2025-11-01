@@ -1,148 +1,472 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { Button } from "../ui/button";
+import Image from "next/image";
+import MenuItemCard from "../ui/menu-item-card";
+import ItemDetailModal from "./item-detail-modal";
+import NotificationModal from "./notification-modal"; // ✅ import
 import { createClient } from "@/lib/supabase/client";
-import MenuTaskbar from "./taskbar-customer";
-import MenuList from "./menu-list";
-import ConfirmModal from "./confirm-modal";
-import DashboardHeader from "../ui/header";
+import { Search } from "lucide-react";
 
-type CustomerMenuProps = {
-  tableId: string;
-  sessionId: string;
-  initialTab?: "Meals" | "Coffee" | "Drinks" | "Favorites";
-};
+// Star icon SVG for reviews button
+function StarIcon({ className = "", ...props }: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="currentColor"
+      viewBox="0 0 24 24"
+      className={`${className} hover:fill-[#E59C53] transition-colors`}
+      {...props}
+    >
+      <circle cx="12" cy="12" r="12" fill="#FFD600" />
+      <path
+        d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"
+        fill="#fff"
+      />
+    </svg>
+  );
+}
 
-export default function CustomerMenu({
+// Review Modal Component (above MenuList)
+function ReviewModal({
+  onClose,
   tableId,
   sessionId,
-  initialTab = "Meals",
-}: CustomerMenuProps) {
-  type MenuCartItem = {
-    cartitem_id?: number;
-    quantity: number;
-    subtotal_price: number;
-    menuitem_id: number;
-    menuitem?: { name: string; price: number; thumbnail?: string } | null;
-  };
-  const [activeTab, setActiveTab] = useState<
-    "Meals" | "Coffee" | "Drinks" | "Favorites"
-  >(initialTab);
-  const [cart, setCart] = useState<MenuCartItem[]>([]);
-  const [showConfirm, setShowConfirm] = useState(false);
+}: {
+  onClose: () => void;
+  tableId?: string;
+  sessionId?: string;
+}) {
+  const [rating, setRating] = React.useState(0);
+  const [hover, setHover] = React.useState(0);
+  const [comment, setComment] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [showThankYou, setShowThankYou] = React.useState(false);
 
-  // Handle tab from URL
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const tab = params.get("tab") as
-        | "Meals"
-        | "Coffee"
-        | "Drinks"
-        | "Favorites";
-      if (tab && tab !== activeTab) setActiveTab(tab);
-    }
-  }, [activeTab]);
+  const handleStarClick = (idx: number) => setRating(idx);
+  const handleStarHover = (idx: number) => setHover(idx);
+  const handleStarLeave = () => setHover(0);
 
-  // Ensure cart exists for this session/sessionId
-  useEffect(() => {
-    const supabase = createClient();
-    const ensureCart = async () => {
-      try {
-        const { data: existing, error } = await supabase
-          .from("cart")
-          .select("cart_id")
-          .eq("session_id", sessionId)
-          .eq("checked_out", false)
-          .order("time_created", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (error) {
-          console.error("Error fetching existing cart:", error);
-          return;
-        }
-
-        let cart_id: number | undefined;
-        if (existing && existing.cart_id) {
-          cart_id = existing.cart_id;
-        } else {
-          // Try to create a new cart with proper error handling
-          const { data: created, error: createError } = await supabase
-            .from("cart")
-            .insert([
-              {
-                total_price: 0,
-                session_id: sessionId,
-                table_number: tableId,
-                time_created: new Date().toISOString(),
-                checked_out: false,
-              },
-            ])
-            .select("cart_id")
-            .single();
-
-          if (createError) {
-            // If error is duplicate key (23505), another process created the cart
-            if (createError.code === "23505") {
-              // Retry fetching the cart that was created by another process
-              const { data: retryCart, error: retryError } = await supabase
-                .from("cart")
-                .select("cart_id")
-                .eq("session_id", sessionId)
-                .eq("checked_out", false)
-                .order("time_created", { ascending: false })
-                .limit(1)
-                .maybeSingle();
-
-              if (retryError || !retryCart?.cart_id) {
-                console.warn(
-                  "No existing cart found, will create new one if needed"
-                );
-                return;
-              }
-              cart_id = retryCart.cart_id;
-            } else {
-              console.error("Error creating cart:", createError);
-              return;
-            }
-          } else if (created && created.cart_id) {
-            cart_id = created.cart_id;
-          } else {
-            console.error("No cart created and no error returned");
-            return;
-          }
-        }
-
-        // Fetch cart items for this cart
-        const { data: items } = await supabase
-          .from("cartitem")
-          .select(
-            "cartitem_id, quantity, subtotal_price, menuitem_id, menuitem:menuitem_id (name, price, thumbnail)"
-          )
-          .eq("cart_id", cart_id);
-        setCart((items || []) as unknown as MenuCartItem[]);
-      } catch (error) {
-        console.error("Unexpected error in ensureCart:", error);
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.from("reviews").insert([
+        {
+          rating,
+          comment: comment.trim() === "" ? null : comment,
+          table_id: tableId || null,
+          session_id: sessionId || null,
+          iscleared: false,
+        },
+      ]);
+      if (error) {
+        console.error("Supabase insert error:", error);
+        throw error;
       }
-    };
-    ensureCart();
-  }, [sessionId, tableId]);
+      setShowThankYou(true);
+    } catch (err) {
+      console.error("Review submit error:", err);
+      setError((err as Error).message || "Failed to submit review");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-[#ebebeb]">
-      <DashboardHeader mode="customer" tableId={tableId} />
-      <div className="flex-1 px-8 pb-8 pt-2">
-        <MenuList
-          activeTab={activeTab}
+    <div className="fixed inset-0 bg-white/50 z-50 flex items-center justify-center">
+      {!showThankYou ? (
+        <div className="bg-white rounded-lg shadow-lg p-8 relative min-w-[90vw] max-w-xs sm:min-w-[340px] sm:max-w-md min-h-[260px] flex flex-col items-center">
+          <button
+            className="absolute top-2 right-2 text-gray-500 hover:text-black"
+            onClick={onClose}
+            aria-label="Close reviews modal"
+          >
+            <span style={{ fontSize: 24, fontWeight: "bold" }}>&times;</span>
+          </button>
+          <h2
+            className="mb-3 font-bold"
+            style={{
+              fontFamily: "Inter, sans-serif",
+              fontWeight: 700,
+              fontSize: 16,
+              color: "#000",
+            }}
+          >
+            Leave us a Review
+          </h2>
+          <div className="flex flex-row items-center mb-4">
+            {[1, 2, 3, 4, 5].map((idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => handleStarClick(idx)}
+                onMouseEnter={() => handleStarHover(idx)}
+                onMouseLeave={handleStarLeave}
+                aria-label={`Rate ${idx} star${idx > 1 ? "s" : ""}`}
+                className="focus:outline-none"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill={(hover || rating) >= idx ? "#E5D453" : "none"}
+                  stroke="#000"
+                  strokeWidth="1"
+                  className="w-10 h-10"
+                >
+                  <polygon points="12,2 15,9 22,9.5 17,14.5 18.5,22 12,18 5.5,22 7,14.5 2,9.5 9,9" />
+                </svg>
+              </button>
+            ))}
+          </div>
+          <form
+            onSubmit={handleSend}
+            className="w-full flex flex-col items-center bg-white"
+          >
+            <label className="block text-black mb-1 text-md w-full text-center font-semibold">
+              Reviews/Comments
+            </label>
+            <textarea
+              className="w-full border border-black rounded-lg p-2 mb-4 text-black bg-white placeholder-gray-400"
+              rows={4}
+              maxLength={150}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Don’t be shy! J.A.S. Caffeinated is always willing to improve its service for your next visit."
+            />
+            {error && <div className="text-red-600 text-sm mb-2">{error}</div>}
+            <Button
+              type="submit"
+              variant="orange"
+              className="w-full h-8 font-semibold text-md mt-2 rounded-2xl border-0 !bg-[#E59C53] !text-white !border-none !shadow-none hover:!bg-[#E59C53] active:!bg-[#E59C53] focus:!bg-[#E59C53]"
+              style={{ border: "none" }}
+              disabled={loading || rating === 0}
+            >
+              {loading ? "Sending..." : "Send"}
+            </Button>
+          </form>
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg shadow-lg p-8 relative min-w-[90vw] max-w-xs sm:min-w-[250px] sm:max-w-md flex flex-col items-center justify-center text-center">
+          <h2 className="font-bold text-lg mb-4 text-black">
+            Thank you for your <br />
+            honest review!
+          </h2>
+          <p className="text-black mb-6 text-sm">
+            We at J.A.S. Caffeinated are always willing to serve you better, and
+            treat you best.
+            <br />
+            Until your next visit!
+          </p>
+          <Button
+            variant="orange"
+            className="w-full h-8 font-semibold text-md rounded-2xl border-0 !bg-[#E59C53] !text-white !border-none !shadow-none hover:!bg-[#E59C53] active:!bg-[#E59C53] focus:!bg-[#E59C53]"
+            onClick={onClose}
+          >
+            Back
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+type CartItem = {
+  cartitem_id?: number;
+  quantity: number;
+  subtotal_price: number;
+  menuitem_id: number;
+};
+interface MenuListProps {
+  activeTab: "All" | "Meals" | "Coffee" | "Drinks" | "Favorites" | string;
+  cart: CartItem[];
+  setCart: (cart: CartItem[]) => void;
+  sessionId?: string;
+  tableId?: string;
+}
+
+export default function MenuList({
+  activeTab,
+  cart,
+  setCart,
+  sessionId,
+  tableId,
+}: MenuListProps) {
+  type MenuItem = {
+    menuitem_id: number;
+    name: string;
+    price: number;
+    thumbnail?: string;
+    category: string;
+    status: string;
+    description?: string | null;
+    is_favorites?: boolean;
+  };
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false); //state for modal
+  const [reviewsOpen, setReviewsOpen] = useState(false); // state for reviews modal
+  const [ongoingCount, setOngoingCount] = useState(0);
+  const [canOpenReviews, setCanOpenReviews] = useState(false); // disabled until after first checkout
+
+  // Session-based: enable reviews after first checkout in THIS session; auto-open once
+  useEffect(() => {
+    try {
+      const sid =
+        sessionId ||
+        (typeof window !== "undefined"
+          ? sessionStorage.getItem("sessionId") || undefined
+          : undefined);
+      const hasOrdered = sid
+        ? sessionStorage.getItem(`hasOrderedBefore:${sid}`) === "true"
+        : sessionStorage.getItem("hasOrderedBefore") === "true"; // legacy fallback
+      setCanOpenReviews(!!hasOrdered);
+
+      const hasShown = sid
+        ? sessionStorage.getItem(`firstReviewPromptShown:${sid}`) === "true"
+        : sessionStorage.getItem("firstReviewPromptShown") === "true"; // legacy fallback
+      if (hasOrdered && !hasShown) {
+        setReviewsOpen(true);
+        if (sid)
+          sessionStorage.setItem(`firstReviewPromptShown:${sid}`, "true");
+        else sessionStorage.setItem("firstReviewPromptShown", "true");
+      }
+    } catch {
+      // ignore SSR/storage errors
+    }
+  }, [sessionId]);
+
+  useEffect(() => {
+    setLoading(true);
+    // Only reset local search when switching tabs if there is no active search
+    if (search.trim() === "") {
+      setSelectedItem(null);
+      const supabase = createClient();
+      let query = supabase
+        .from("menuitem")
+        .select(
+          "menuitem_id, name, price, thumbnail, category, status, description, is_favorites"
+        );
+      if (activeTab === "Favorites") {
+        query = query.eq("is_favorites", true);
+      } else if (activeTab !== "All") {
+        query = query.eq("category", activeTab);
+      } else {
+        // Favorites-first when showing All
+        query = query
+          .order("is_favorites", { ascending: false })
+          .order("name", { ascending: true });
+      }
+      query.limit(50).then(({ data }) => {
+        setMenuItems(data || []);
+        console.debug(
+          "[menu-list] fetched items count:",
+          (data || []).length,
+          "sample:",
+          (data || [])[0]
+        );
+        setLoading(false);
+      });
+    } else {
+      // If there's an active search, don't override the search-results by refetching category items
+      setLoading(false);
+    }
+  }, [activeTab, search]); // Refetch and reset on tab change; guarded so it won't override active search results
+
+  // Debounced server-side search across all categories when a search term exists
+  useEffect(() => {
+    const term = search.trim();
+    if (term === "") return; // handled by the activeTab effect
+
+    setLoading(true);
+    const timer = setTimeout(async () => {
+      try {
+        const supabase = createClient();
+        // Search name OR description across all categories (case-insensitive)
+        // Use ilike with %term%
+        const ilikeTerm = `%${term.replace(/%/g, "\\%")}%`;
+        const { data, error } = await supabase
+          .from("menuitem")
+          .select(
+            "menuitem_id, name, price, thumbnail, category, status, description, is_favorites"
+          )
+          .or(`name.ilike.${ilikeTerm},description.ilike.${ilikeTerm}`)
+          .limit(50);
+        if (error) {
+          console.error("[menu-list] search error", error);
+          setMenuItems([]);
+        } else {
+          setMenuItems(data || []);
+          console.debug(
+            "[menu-list] search fetched items count:",
+            (data || []).length,
+            "term:",
+            term
+          );
+        }
+      } catch (err) {
+        console.error("[menu-list] search exception", err);
+        setMenuItems([]);
+      } finally {
+        setLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Poll orders count to display a badge on the notification bell
+  useEffect(() => {
+    let active = true;
+    if (!sessionId) return;
+    const fetchCount = async () => {
+      try {
+        const res = await fetch(`/api/orders?sessionId=${sessionId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const count = Array.isArray(data)
+          ? data.filter((o: any) => o?.status === "preparing").length
+          : 0;
+        if (active) setOngoingCount(count);
+      } catch {
+        // ignore
+      }
+    };
+    fetchCount();
+    const interval = setInterval(fetchCount, 5000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [sessionId]);
+
+  let filtered;
+  if (search.trim() !== "") {
+    const term = search.toLowerCase();
+    filtered = menuItems.filter(
+      (i) =>
+        (i.name || "").toLowerCase().includes(term) ||
+        (i.description || "")!.toLowerCase().includes(term)
+    );
+  } else {
+    filtered = menuItems;
+  }
+
+  return (
+    <div>
+      {/* Search + Actions: make sticky below header */}
+      <div className="mb-6 flex flex-col sm:flex-row gap-2 justify-center items-center sticky top-[170px] z-40 bg-[#ebebeb] py-2">
+        <div className="flex items-center gap-3 w-full">
+          {/* Notification bell (left) */}
+          <div
+            className="relative flex items-center justify-center cursor-pointer"
+            style={{ width: "45px", height: "45px" }}
+            onClick={() => setNotifOpen(true)}
+          >
+            <div
+              className={`rounded-full flex items-center justify-center ${
+                ongoingCount > 0
+                  ? "bg-red-400 hover:bg-red-600"
+                  : "bg-gray-300 hover:bg-gray-400"
+              }`}
+              style={{ width: "45px", height: "45px" }}
+            >
+              <Image
+                src="/notifications-icon.png"
+                alt="Notifications"
+                width={25}
+                height={25}
+                style={{ objectFit: "contain" }}
+              />
+            </div>
+            {ongoingCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-green-500 text-white text-[10px] leading-none rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-[4px] border border-white">
+                {ongoingCount}
+              </span>
+            )}
+          </div>
+
+          {/* Search bar (center, flex-grow) */}
+          <div className="relative w-[280px] flex-grow">
+            <Search className="absolute right-4 mx-2 top-1/2 -translate-y-1/2 h-4 w-4 text-black" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full h-[45px] pl-8 pr-4 py-2 rounded-3xl border-white bg-white text-sm text-black"
+            />
+          </div>
+
+          {/* Reviews button (right) */}
+          <button
+            className={`relative flex items-center justify-center ml-2 ${
+              canOpenReviews
+                ? "cursor-pointer"
+                : "opacity-50 cursor-not-allowed"
+            }`}
+            style={{ width: "45px", height: "45px" }}
+            onClick={() => {
+              if (canOpenReviews) setReviewsOpen(true);
+            }}
+            disabled={!canOpenReviews}
+            aria-label="Open reviews"
+          >
+            <StarIcon className="w-[45px] h-[45px]" />
+          </button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="text-center text-gray-500 py-8">Loading items...</div>
+      ) : (
+        <div>
+          {filtered.length === 0 ? (
+            <div className="text-center text-gray-500 py-8">No items found</div>
+          ) : (
+            <div className="grid grid-cols-2 gap-7 sm:gap-2 place-items-center mb-40">
+              {filtered.map((item) => (
+                <MenuItemCard
+                  key={item.menuitem_id ? String(item.menuitem_id) : item.name}
+                  item={item}
+                  setModalItem={setSelectedItem}
+                  mode="customer"
+                  onAdd={() => setSelectedItem(item)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {selectedItem && (
+        <ItemDetailModal
+          item={selectedItem}
+          onClose={() => setSelectedItem(null)}
           cart={cart}
           setCart={setCart}
           sessionId={sessionId}
           tableId={tableId}
         />
-        {showConfirm && <ConfirmModal onClose={() => setShowConfirm(false)} />}
-      </div>
-      {/* Dashboard-style taskbar */}
-      <MenuTaskbar tableId={tableId} sessionId={sessionId} />
+      )}
+
+      <NotificationModal
+        open={notifOpen}
+        onClose={() => setNotifOpen(false)}
+        sessionId={sessionId}
+      />
+      {/* Reviews Modal */}
+      {reviewsOpen && (
+        <ReviewModal
+          onClose={() => setReviewsOpen(false)}
+          tableId={tableId}
+          sessionId={sessionId}
+        />
+      )}
     </div>
   );
 }
