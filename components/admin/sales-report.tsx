@@ -18,7 +18,7 @@ type SalesResponse = {
   totalItems?: number;
   page?: number;
   pageSize?: number;
-  summary: { Meals: number; Drinks: number; Coffee: number; Other?: number };
+  summary: { Meals: number; Drinks: number; Coffee: number; Desserts?: number; Other?: number };
 };
 
 export default function SalesReport({
@@ -87,7 +87,7 @@ export default function SalesReport({
     (data?.items || []).forEach((i) => set.add(i.category));
     // Ensure common ones appear predictably if present in summary
     const ordered: string[] = [];
-    ["Meals", "Drinks", "Coffee", "Other"].forEach((c) => {
+    ["Meals", "Drinks", "Coffee", "Desserts", "Other"].forEach((c) => {
       if (set.has(c)) ordered.push(c);
     });
     // Add any remaining categories (sorted alpha for stability)
@@ -126,9 +126,9 @@ export default function SalesReport({
   }, [data]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-6 items-start">
-      {/* Summary column: mobile/tablet first, desktop right */}
-  <div className="order-1 lg:order-none lg:col-start-2 lg:row-start-1 w-full lg:w-auto lg:min-w-[360px] flex flex-col gap-3">
+  <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,200px)] lg:grid-cols-[minmax(0,1fr)_minmax(0,260px)] gap-6 items-start">
+      {/* Summary column: mobile first, side-by-side from md upwards */}
+  <div className="order-1 md:order-none md:col-start-2 md:row-start-1 w-full md:w-auto md:min-w-[200px] lg:min-w-[260px] flex flex-col gap-3">
         <div className="bg-white md:h-[150px] rounded-md border border-gray-200 shadow-sm p-7 flex flex-col items-center justify-center text-center">
           <div className="text-gray-600 text-xs md:text-sm">Total Sales</div>
           <div className="text-3xl md:text-4xl font-bold text-black mt-1">
@@ -149,25 +149,27 @@ export default function SalesReport({
                 { color: "#E59C53", value: data?.summary?.Meals || 0 },
                 { color: "#B5651D", value: data?.summary?.Drinks || 0 },
                 { color: "#7A4A2F", value: data?.summary?.Coffee || 0 },
+                { color: "#F19C9C", value: data?.summary?.Desserts || 0 },
               ]}
             />
           </div>
-          <div className="flex items-center justify-center gap-3 mt-2 text-sm">
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mt-2 text-sm">
             <Legend color="#E59C53" label="Meals" />
             <Legend color="#B5651D" label="Drinks" />
             <Legend color="#7A4A2F" label="Coffee" />
+            <Legend color="#F19C9C" label="Desserts" />
           </div>
         </div>
       </div>
       {/* Sales per item list: mobile below, desktop left */}
-  <div className="order-2 lg:order-none lg:col-start-1 lg:row-start-1 flex-1 bg-white/60 rounded-md border border-gray-200 shadow-sm p-4 md:p-6">
+  <div className="order-2 md:order-none md:col-start-1 md:row-start-1 flex-1 bg-white/60 rounded-md border border-gray-200 shadow-sm p-4 md:p-6">
         {/* Title + Filters in a single header row */}
         <div className="mb-3 md:mb-4 border-b border-gray-200 pb-3">
-          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-2 md:flex-col md:items-start md:justify-start lg:flex-row lg:items-center lg:justify-between">
             <h3 className="text-xl md:text-2xl font-bold text-black">Sales per item</h3>
-            <div className="flex w-full md:w-auto items-center gap-2 md:gap-3">
-              {/* Search pill with icon on the right */}
-              <div className="relative w-full md:w-[360px]">
+            <div className="flex w-full flex-col md:flex-col lg:flex-row md:w-full lg:w-auto items-center md:items-stretch lg:items-center gap-2 md:gap-2 lg:gap-3">
+              {/* Search pill with icon on the right (stacked on md) */}
+              <div className="relative w-full md:w-full lg:w-56">
                 <input
                   type="text"
                   value={search}
@@ -184,7 +186,7 @@ export default function SalesReport({
               </div>
               {/* Category select pill */}
               <select
-                className="w-full md:w-[220px] text-center py-1 px-2 border-2 border-black bg-white text-black text-xs h-7 rounded-lg"
+                className="w-full md:w-full lg:w-40 text-center py-1 px-2 border-2 border-black bg-white text-black text-xs h-7 rounded-lg"
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
               >
@@ -199,11 +201,11 @@ export default function SalesReport({
         </div>
 
         {/* Header row (desktop only) */}
-  <div className="hidden md:grid md:grid-cols-[3.5fr_1.5fr_2fr_300px] gap-3 text-black font-semibold text-sm md:text-base">
-          <div>Product Description</div>
-          <div className="text-left pl-4">Qty sold</div>
-          <div className="text-left">Subtotal</div>
-          <div className="text-right">% of total</div>
+    <div className="hidden md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,64px)_minmax(0,96px)_minmax(0,90px)] lg:grid-cols-[minmax(0,1fr)_minmax(0,72px)_minmax(0,120px)_minmax(0,220px)] gap-1 text-black font-semibold text-sm md:text-base">
+      <div>Product Description</div>
+    <div className="text-center">Qty sold</div>
+    <div className="text-center lg:text-left">Subtotal</div>
+    <div className="text-right">% of total</div>
         </div>
         <hr className="hidden md:block my-2 border-gray-300" />
 
@@ -222,7 +224,7 @@ export default function SalesReport({
             {itemsFiltered.map((it) => (
               <div
                 key={it.menuitem_id}
-                className="grid grid-cols-1 md:grid-cols-[3.5fr_1.5fr_2fr_300px] gap-1 items-center text-black min-w-0"
+                className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,64px)_minmax(0,96px)_minmax(0,90px)] lg:grid-cols-[minmax(0,1fr)_minmax(0,72px)_minmax(0,120px)_minmax(0,220px)] gap-1 items-center text-black min-w-0"
               >
                 {/* Product + Qty inline on small screens */}
                 <div className="flex justify-between items-center w-full">
@@ -238,24 +240,24 @@ export default function SalesReport({
                 </div>
 
                 {/* Qty (desktop only) */}
-                <div className="hidden md:block md:text-left text-sm pl-4">
+                <div className="hidden md:block md:text-center text-sm">
                   {it.qty}
                 </div>
 
                 {/* Subtotal */}
-                <div className="md:text-left text-sm">
+                <div className="md:text-center text-sm">
                   ₱{it.subtotal.toFixed(2)}
                 </div>
 
-                {/* Percent Bar */}
-                <div className="flex items-center gap-2">
-                  <div className="w-full h-2 rounded-full bg-gray-200 overflow-hidden">
+                {/* Percent Bar - make flexible so it doesn't force overflow */}
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex-1 h-2 rounded-full bg-gray-200 overflow-hidden min-w-0">
                     <div
                       className="h-2 bg-[#E59C53]"
                       style={{ width: `${Math.min(100, it.percent)}%` }}
                     />
                   </div>
-                  <div className="text-sm w-10 text-right">
+                  <div className="text-sm w-8 text-right flex-shrink-0">
                     {Math.round(it.percent)}%
                   </div>
                 </div>
