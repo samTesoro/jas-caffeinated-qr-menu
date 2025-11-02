@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 
 type SalesItem = {
   menuitem_id: number;
@@ -18,7 +19,13 @@ type SalesResponse = {
   totalItems?: number;
   page?: number;
   pageSize?: number;
-  summary: { Meals: number; Drinks: number; Coffee: number; Desserts?: number; Other?: number };
+  summary: {
+    Meals: number;
+    Drinks: number;
+    Coffee: number;
+    Desserts?: number;
+    Other?: number;
+  };
 };
 
 export default function SalesReport({
@@ -91,9 +98,7 @@ export default function SalesReport({
       if (set.has(c)) ordered.push(c);
     });
     // Add any remaining categories (sorted alpha for stability)
-    const remaining = Array.from(set).filter(
-      (c) => !ordered.includes(c)
-    );
+    const remaining = Array.from(set).filter((c) => !ordered.includes(c));
     remaining.sort((a, b) => a.localeCompare(b));
     return ["All", ...ordered, ...remaining];
   }, [data]);
@@ -126,9 +131,9 @@ export default function SalesReport({
   }, [data]);
 
   return (
-  <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,200px)] lg:grid-cols-[minmax(0,1fr)_minmax(0,260px)] gap-6 items-start">
+    <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,200px)] lg:grid-cols-[minmax(0,1fr)_minmax(0,260px)] gap-6 items-start">
       {/* Summary column: mobile first, side-by-side from md upwards */}
-  <div className="order-1 md:order-none md:col-start-2 md:row-start-1 w-full md:w-auto md:min-w-[200px] lg:min-w-[260px] flex flex-col gap-3">
+      <div className="order-1 md:order-none md:col-start-2 md:row-start-1 w-full md:w-auto md:min-w-[200px] lg:min-w-[260px] flex flex-col gap-3">
         <div className="bg-white md:h-[150px] rounded-md border border-gray-200 shadow-sm p-7 flex flex-col items-center justify-center text-center">
           <div className="text-gray-600 text-xs md:text-sm">Total Sales</div>
           <div className="text-3xl md:text-4xl font-bold text-black mt-1">
@@ -161,12 +166,15 @@ export default function SalesReport({
           </div>
         </div>
       </div>
+
       {/* Sales per item list: mobile below, desktop left */}
-  <div className="order-2 md:order-none md:col-start-1 md:row-start-1 flex-1 bg-white/60 rounded-md border border-gray-200 shadow-sm p-4 md:p-6">
+      <div className="order-2 md:order-none md:col-start-1 md:row-start-1 flex-1 bg-white/60 rounded-md border border-gray-200 shadow-sm p-4 md:p-6">
         {/* Title + Filters in a single header row */}
         <div className="mb-3 md:mb-4 border-b border-gray-200 pb-3">
           <div className="flex flex-col gap-2 md:flex-col md:items-start md:justify-start lg:flex-row lg:items-center lg:justify-between">
-            <h3 className="text-xl md:text-2xl font-bold text-black">Sales per item</h3>
+            <h3 className="text-xl md:text-2xl font-bold text-black">
+              Sales per item
+            </h3>
             <div className="flex w-full flex-col md:flex-col lg:flex-row md:w-full lg:w-auto items-center md:items-stretch lg:items-center gap-2 md:gap-2 lg:gap-3">
               {/* Search pill with icon on the right (stacked on md) */}
               <div className="relative w-full md:w-full lg:w-56">
@@ -175,39 +183,52 @@ export default function SalesReport({
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search"
-                  className="w-full border border-gray-300 rounded-full text-sm pl-4 pr-10 py-2 bg-white text-black placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#E59C53]/40 focus:border-[#E59C53]"
+                  className="w-full border border-gray-300 rounded-md text-sm pl-3 pr-10 py-2 bg-white text-black placeholder:text-gray-500"
                 />
                 <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <circle cx="11" cy="11" r="8"></circle>
                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                   </svg>
                 </span>
               </div>
               {/* Category select pill */}
-              <select
-                className="w-full md:w-full lg:w-40 text-center py-1 px-2 border-2 border-black bg-white text-black text-xs h-7 rounded-lg"
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-              >
-                {categories.map((c) => (
-                  <option key={c} value={c}>
-                    {c === "All" ? "Select category" : c}
-                  </option>
-                ))}
-              </select>
+              <div className="relative w-full md:w-full lg:w-40">
+                <select
+                  className="appearance-none w-full text-left py-1 px-2 border border-gray-300 md:border-gray-300 md:h-9 bg-white text-gray-500 text-xs h-7 rounded-md pr-6"
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                >
+                  {categories.map((c) => (
+                    <option key={c} value={c}>
+                      {c === "All" ? "Select category" : c}
+                    </option>
+                  ))}
+                </select>
+
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pr-1 pointer-events-none" />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Header row (desktop only) */}
-    <div className="hidden md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,64px)_minmax(0,96px)_minmax(0,90px)] lg:grid-cols-[minmax(0,1fr)_minmax(0,72px)_minmax(0,120px)_minmax(0,220px)] gap-1 text-black font-semibold text-sm md:text-base">
-      <div>Product Description</div>
-    <div className="text-center">Qty sold</div>
-    <div className="text-center lg:text-left">Subtotal</div>
-    <div className="text-right">% of total</div>
+        <div className="hidden md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,56px)_24px_minmax(0,80px)_minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_minmax(0,64px)_32px_minmax(0,120px)_minmax(0,1fr)] gap-2 text-black font-semibold text-sm md:text-base">
+          <div>Product Description</div>
+          <div className="text-center whitespace-nowrap">Qty sold</div>
+          <div></div> {/* spacer column */}
+          <div className="text-left">Subtotal</div>
+          <div className="text-right">% of total</div>
         </div>
-        <hr className="hidden md:block my-2 border-gray-300" />
+        <hr className="hidden md:block my-2 border-t border-gray-300" />
 
         {loading ? (
           <p className="text-sm text-gray-600">Generating report…</p>
@@ -218,15 +239,17 @@ export default function SalesReport({
             No sales for the selected range.
           </p>
         ) : itemsFiltered.length === 0 ? (
-          <p className="text-sm text-gray-600">No items matched your filters.</p>
+          <p className="text-sm text-gray-600">
+            No items matched your filters.
+          </p>
         ) : (
           <div className="space-y-3">
             {itemsFiltered.map((it) => (
               <div
                 key={it.menuitem_id}
-                className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,64px)_minmax(0,96px)_minmax(0,90px)] lg:grid-cols-[minmax(0,1fr)_minmax(0,72px)_minmax(0,120px)_minmax(0,220px)] gap-1 items-center text-black min-w-0"
+                className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,56px)_24px_minmax(0,96px)_minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_minmax(0,64px)_32px_minmax(0,120px)_minmax(0,1fr)] gap-2 items-center text-black min-w-0"
               >
-                {/* Product + Qty inline on small screens */}
+                {/* Product + Qty */}
                 <div className="flex justify-between items-center w-full">
                   <div>
                     <div className="font-semibold">{it.name}</div>
@@ -244,13 +267,16 @@ export default function SalesReport({
                   {it.qty}
                 </div>
 
-                {/* Subtotal */}
-                <div className="md:text-center text-sm">
+                {/* spacer column */}
+                <div className="hidden md:block" />
+
+                {/* Subtotal (desktop only) */}
+                <div className="hidden md:block md:text-left text-sm">
                   ₱{it.subtotal.toFixed(2)}
                 </div>
 
-                {/* Percent Bar - make flexible so it doesn't force overflow */}
-                <div className="flex items-center gap-2 min-w-0">
+                {/* Percent Bar (desktop only) */}
+                <div className="hidden md:flex items-center gap-2 min-w-0">
                   <div className="flex-1 h-2 rounded-full bg-gray-200 overflow-hidden min-w-0">
                     <div
                       className="h-2 bg-[#E59C53]"
@@ -261,6 +287,29 @@ export default function SalesReport({
                     {Math.round(it.percent)}%
                   </div>
                 </div>
+
+                {/* MOBILE VIEW */}
+                <div className="md:hidden w-full mt-1">
+                  {/* Subtotal */}
+                  <div className="text-sm font-medium mb-1">
+                    ₱{it.subtotal.toFixed(2)}
+                  </div>
+
+                  {/* Bar + % of total */}
+                  <div className="flex items-center gap-2 w-full">
+                    <div className="flex-1 relative h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="absolute top-0 left-0 h-2 bg-[#E59C53]"
+                        style={{ width: `${Math.min(100, it.percent)}%` }}
+                      ></div>
+                    </div>
+                    <div className="text-sm font-medium text-gray-800 flex-shrink-0 pl-1">
+                      {Math.round(it.percent)}%
+                    </div>
+                  </div>
+                </div>
+
+                <hr className=" md:my-2 border-gray-300 md:border-transparent" />
               </div>
             ))}
           </div>
@@ -268,12 +317,26 @@ export default function SalesReport({
 
         {/* Pagination for items list: numeric pages + Next */}
         <div className="flex items-center justify-center gap-2 mt-4 select-none">
+          {/* Prev chevron */}
+          <button
+            className="flex items-center gap-1 text-black hover:underline disabled:opacity-50 mr-2"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={loading || page <= 1}
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+
+          {/* Page numbers */}
           {(() => {
             const totalItems = data?.totalItems || 0;
             const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-            const startPage = Math.max(1, Math.min(page - 4, Math.max(1, totalPages - 9)));
+            const startPage = Math.max(
+              1,
+              Math.min(page - 4, Math.max(1, totalPages - 9))
+            );
             const endPage = Math.min(totalPages, startPage + 9);
             const count = endPage - startPage + 1;
+
             return Array.from({ length: count }).map((_, idx) => {
               const current = startPage + idx;
               const isActive = current === page;
@@ -282,19 +345,28 @@ export default function SalesReport({
                   key={current}
                   onClick={() => setPage(current)}
                   disabled={isActive || loading}
-                  className={isActive ? "text-black font-semibold px-1" : "text-blue-600 hover:underline px-1"}
+                  className={
+                    isActive
+                      ? "text-black bg-[#E59C53] px-3 py-1 rounded-full font-semibold"
+                      : "text-black px-3 py-1 border border-gray-300 rounded-full hover:bg-gray-100"
+                  }
                 >
                   {current}
                 </button>
               );
             });
           })()}
+
+          {/* Next chevron */}
           <button
-            className="text-blue-600 hover:underline disabled:opacity-50 ml-2"
+            className="flex items-center gap-1 text-black hover:underline disabled:opacity-50 ml-2"
             onClick={() => setPage((p) => p + 1)}
-            disabled={loading || page >= Math.max(1, Math.ceil((data?.totalItems || 0) / pageSize))}
+            disabled={
+              loading ||
+              page >= Math.max(1, Math.ceil((data?.totalItems || 0) / pageSize))
+            }
           >
-            Next
+            <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       </div>

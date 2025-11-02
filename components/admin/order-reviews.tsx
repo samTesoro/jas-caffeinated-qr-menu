@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "../ui/button";
-
+import { ChevronLeft, ChevronRight } from "lucide-react";
 interface ReviewListProps {
   permissions: {
     view_menu: boolean;
@@ -60,7 +60,9 @@ export default function ReviewList({ permissions }: ReviewListProps) {
       const to = from + pageSize - 1;
       const { data, error, count } = await supabase
         .from("reviews")
-        .select("id, rating, comment, created_at, table_id, session_id", { count: 'exact' })
+        .select("id, rating, comment, created_at, table_id, session_id", {
+          count: "exact",
+        })
         .eq("iscleared", false)
         .order("created_at", { ascending: false })
         .range(from, to);
@@ -163,7 +165,9 @@ export default function ReviewList({ permissions }: ReviewListProps) {
                     <Star key={idx} filled={idx < Math.round(review.rating)} />
                   ))}
                 </div>
-                <span className="text-[10px] md:text-xs text-gray-500 mt-1">{review.rating}/5</span>
+                <span className="text-[10px] md:text-xs text-gray-500 mt-1">
+                  {review.rating}/5
+                </span>
               </div>
             </div>
           );
@@ -172,11 +176,23 @@ export default function ReviewList({ permissions }: ReviewListProps) {
 
       {/* Pagination: numeric pages + Next */}
       <div className="flex items-center justify-center gap-2 mt-4 select-none">
+        <button
+          className="flex items-center gap-1 text-black hover:underline disabled:opacity-50 mr-2"
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
+          disabled={reviewsLoading || page <= 1}
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+
         {(() => {
           const totalPages = Math.max(1, Math.ceil(total / pageSize));
-          const startPage = Math.max(1, Math.min(page - 4, Math.max(1, totalPages - 9)));
+          const startPage = Math.max(
+            1,
+            Math.min(page - 4, Math.max(1, totalPages - 9))
+          );
           const endPage = Math.min(totalPages, startPage + 9);
           const count = endPage - startPage + 1;
+
           return Array.from({ length: count }).map((_, idx) => {
             const current = startPage + idx;
             const isActive = current === page;
@@ -185,21 +201,29 @@ export default function ReviewList({ permissions }: ReviewListProps) {
                 key={current}
                 onClick={() => setPage(current)}
                 disabled={isActive || reviewsLoading}
-                className={isActive ? "text-black font-semibold px-1" : "text-blue-600 hover:underline px-1"}
+                className={
+                  isActive
+                    ? "text-black bg-[#E59C53] px-3 py-1 rounded-full font-semibold"
+                    : "text-black px-3 py-1 border border-gray-300 rounded-full hover:bg-gray-100"
+                }
               >
                 {current}
               </button>
             );
           });
         })()}
+
         <button
-          className="text-blue-600 hover:underline disabled:opacity-50 ml-2"
+          className="flex items-center gap-1 text-black hover:underline disabled:opacity-50 ml-2"
           onClick={() => setPage((p) => p + 1)}
-          disabled={reviewsLoading || page >= Math.max(1, Math.ceil(total / pageSize))}
+          disabled={
+            reviewsLoading || page >= Math.max(1, Math.ceil(total / pageSize))
+          }
         >
-          Next
+          <ChevronRight className="w-4 h-4" />
         </button>
       </div>
+
       {/* Confirm Clear Modal */}
       {showClearModal && (
         <div className="fixed inset-0 bg-white/50 flex items-center justify-center transition-opacity duration-300 z-[9999]">

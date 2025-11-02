@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 // import { Button } from "../ui/button";
 
 interface Order {
@@ -56,7 +57,12 @@ export default function OrderHistory({
       setLoading(true);
       setError(null);
       try {
-        const params = new URLSearchParams({ start, end, page: String(page), pageSize: String(pageSize) });
+        const params = new URLSearchParams({
+          start,
+          end,
+          page: String(page),
+          pageSize: String(pageSize),
+        });
         const response = await fetch(`/api/history?${params.toString()}`);
         if (!response.ok) throw new Error("Failed to fetch order history");
         const data = await response.json();
@@ -78,7 +84,8 @@ export default function OrderHistory({
         };
 
         // Transform backend data to match UI
-        const items = (data?.items as BackendOrder[]) || (data as BackendOrder[]) || [];
+        const items =
+          (data?.items as BackendOrder[]) || (data as BackendOrder[]) || [];
         const orderArr: Order[] = items.map((o) => ({
           id: o.order_id?.toString() || "",
           tableNo: o.customer_id?.toString() || "N/A",
@@ -91,7 +98,9 @@ export default function OrderHistory({
         }));
 
         setOrder(orderArr);
-        setTotal(typeof data?.total === 'number' ? data.total : orderArr.length);
+        setTotal(
+          typeof data?.total === "number" ? data.total : orderArr.length
+        );
       } catch (err: unknown) {
         let message = "Unknown error";
         if (err instanceof Error) message = err.message;
@@ -107,7 +116,7 @@ export default function OrderHistory({
   // Clear action removed
 
   return (
-    <div className="flex flex-col w-full min-h-screen py-3 pb-1">
+    <div className="flex flex-col w-full min-h-screen py-3">
       {/* Title is now provided by the parent container (HistoryAndSales) */}
 
       {/* Table header */}
@@ -182,15 +191,25 @@ export default function OrderHistory({
 
       {/* Pagination: numeric pages + Next */}
       <div className="flex items-center justify-center gap-2 mt-4 select-none">
-        {Array.from({ length: Math.min(10, Math.max(1, Math.ceil(total / pageSize))) }).map((_, idx) => {
+        <button
+          className="flex items-center gap-1 text-black hover:underline disabled:opacity-50 mr-2"
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
+          disabled={loading || page <= 1}
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>{" "}
+        {/* Page number buttons */}
+        {Array.from({
+          length: Math.min(10, Math.max(1, Math.ceil(total / pageSize))),
+        }).map((_, idx) => {
           const totalPages = Math.max(1, Math.ceil(total / pageSize));
-          // Sliding window of up to 10 pages around current page
           let startPage = Math.max(1, page - 4);
           const endPage = Math.min(totalPages, startPage + 9);
           startPage = Math.max(1, endPage - 9);
           const current = startPage + idx;
           if (current > endPage) return null;
           const isActive = current === page;
+
           return (
             <button
               key={current}
@@ -198,20 +217,21 @@ export default function OrderHistory({
               disabled={isActive || loading}
               className={
                 isActive
-                  ? "text-black font-semibold px-1"
-                  : "text-blue-600 hover:underline px-1"
+                  ? "text-black bg-[#E59C53] px-3 py-1 rounded-full font-semibold"
+                  : "text-black px-3 py-1 border border-gray-300 rounded-full hover:bg-gray-100"
               }
             >
               {current}
             </button>
           );
         })}
+        {/* Next button */}
         <button
-          className="text-blue-600 hover:underline disabled:opacity-50 ml-2"
+          className="flex items-center gap-1 text-black hover:underline disabled:opacity-50 ml-2"
           onClick={() => setPage((p) => p + 1)}
           disabled={loading || page >= Math.max(1, Math.ceil(total / pageSize))}
         >
-          Next
+          <ChevronRight className="w-4 h-4" />
         </button>
       </div>
 

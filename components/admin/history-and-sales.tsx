@@ -92,7 +92,7 @@ export default function HistoryAndSales() {
           {/* Date range button */}
           <button
             onClick={() => setShowPicker((v) => !v)}
-            className="flex items-center gap-1 md:gap-2 bg-[#d9d9d9] text-black px-2 md:px-3 py-1.5 rounded border border-black/20"
+            className="flex items-center gap-1 md:gap-2 bg-[#d9d9d9] text-black px-2 md:px-3 py-1.5 md:py-2.5 rounded border border-black/20"
             aria-label="Select date range"
           >
             {/* Mobile: calendar icon + Date label */}
