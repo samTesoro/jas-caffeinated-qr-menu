@@ -444,6 +444,14 @@ export default function CartPage({
                     const result = await response.json();
                     console.log("Order creation result:", result);
 
+                    // Store order creation timestamp for countdown timer
+                    if (result.order?.order_id && result.orderCreatedAt) {
+                      const key = `orderCancelStart:${result.order.order_id}`;
+                      try {
+                        localStorage.setItem(key, String(result.orderCreatedAt));
+                      } catch {}
+                    }
+
                     // Clear local cart then navigate to confirmation page
                     clearLocalCart();
                     const gcashPath = sessionId
@@ -524,6 +532,14 @@ export default function CartPage({
 
                     const result = await response.json();
                     console.log("Order creation result:", result);
+
+                    // Store order creation timestamp for countdown timer
+                    if (result.order?.order_id && result.orderCreatedAt) {
+                      const key = `orderCancelStart:${result.order.order_id}`;
+                      try {
+                        localStorage.setItem(key, String(result.orderCreatedAt));
+                      } catch {}
+                    }
 
                     // Clear local cart then navigate to confirmation page
                     clearLocalCart();

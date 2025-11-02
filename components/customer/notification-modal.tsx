@@ -44,18 +44,22 @@ export default function NotificationModal({
   const [noteText, setNoteText] = React.useState<string | undefined>(undefined);
   const [noteItemName, setNoteItemName] = React.useState<string | undefined>(undefined);
 
-  // Utility to get or set the cancel window start time in localStorage
+  // Utility to get the cancel window start time from localStorage
+  // No longer creates a timestamp if missing - it should have been set at order creation
   const getCancelStart = React.useCallback((orderId: string) => {
     const key = `orderCancelStart:${orderId}`;
     const existing =
       typeof window !== "undefined" ? window.localStorage.getItem(key) : null;
-    if (existing) return parseInt(existing, 10) || Date.now();
-    const ts = Date.now();
-    try {
-      if (typeof window !== "undefined")
-        window.localStorage.setItem(key, String(ts));
-    } catch {}
-    return ts;
+    if (existing) {
+      const timestamp = parseInt(existing, 10);
+      // Validate timestamp is reasonable (not too far in past/future)
+      if (!isNaN(timestamp) && timestamp > 0) {
+        return timestamp;
+      }
+    }
+    // If no timestamp found or invalid, use current time as fallback
+    // (This shouldn't normally happen if order creation properly set it)
+    return Date.now();
   }, []);
 
   const getRemainingMs = React.useCallback(

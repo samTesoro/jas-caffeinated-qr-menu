@@ -130,6 +130,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert into order table (focused on status tracking)
+    const orderCreatedAt = Date.now();
     const { data: orderData, error: orderError } = await supabase
       .from("order")
       .insert({
@@ -181,7 +182,7 @@ export async function POST(request: NextRequest) {
     console.log("Cart marked as checked out");
 
     return NextResponse.json(
-      { order: orderData, message: "Order created successfully" },
+      { order: orderData, message: "Order created successfully", orderCreatedAt },
       { status: 201 }
     );
   } catch (error) {
