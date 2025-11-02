@@ -204,7 +204,7 @@ export default function OrderNotification() {
               </span>
               {order.iscancelled ? (
                 <div className="bg-red-400 text-black font-normal px-1 border text-sm md:text-lg rounded">
-                  Canceled
+                  Cancelled
                 </div>
               ) : (
                 <button

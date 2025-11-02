@@ -32,7 +32,7 @@ export default function SalesReport({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(20);
+  const [pageSize] = useState(8);
   const [categoryFilter, setCategoryFilter] = useState<string>("All");
   const [search, setSearch] = useState<string>("");
 
@@ -220,7 +220,7 @@ export default function SalesReport({
         ) : itemsFiltered.length === 0 ? (
           <p className="text-sm text-gray-600">No items matched your filters.</p>
         ) : (
-          <div className="max-h-[60vh] overflow-y-auto pr-1 space-y-3">
+          <div className="space-y-3">
             {itemsFiltered.map((it) => (
               <div
                 key={it.menuitem_id}
