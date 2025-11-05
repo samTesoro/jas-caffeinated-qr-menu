@@ -32,13 +32,31 @@ export default function MenuPage() {
   useEffect(() => {
     const fetchPermissions = async () => {
       const supabase = createClient();
-      const adminId = localStorage.getItem("user_id");
-      console.log("Fetching permissions for user_id:", adminId); // Debugging log
+  let adminId = localStorage.getItem("user_id");
+  console.log("Fetching permissions for user_id:", adminId); // Debugging log
+
+      // Fallback: recover user_id from stored username if missing (origin changed or storage cleared)
+      if (!adminId) {
+        try {
+          const storedUsername = localStorage.getItem("username");
+          if (storedUsername) {
+            const { data: userByName } = await supabase
+              .from("adminusers")
+              .select("user_id, view_menu, view_orders, view_super, view_history, view_reviews, view_tables")
+              .eq("username", storedUsername)
+              .maybeSingle();
+            if (userByName?.user_id != null) {
+              adminId = String(userByName.user_id);
+              try { localStorage.setItem("user_id", adminId); } catch {}
+            }
+          }
+        } catch {}
+      }
 
       if (!adminId) {
-        console.error(
-          "User ID is null or undefined. Redirecting to login page."
-        );
+        console.error("User ID is null or undefined. Redirecting to login page.");
+        // Ensure we don't get stuck showing the loading spinner
+        setIsLoading(false);
         router.replace("/auth/login");
         return;
       }
@@ -50,7 +68,7 @@ export default function MenuPage() {
             "view_menu, view_orders, view_super, view_history, view_reviews, view_tables"
           )
           .eq("user_id", adminId)
-          .single();
+          .maybeSingle();
 
         console.log("Fetched permissions:", data); // Debugging log
 
@@ -58,7 +76,10 @@ export default function MenuPage() {
           v === true || v === "true" || v === 1 || v === "1";
 
         if (error || !data) {
-          console.error("Error fetching permissions from Supabase:", error);
+          console.error(
+            "Error fetching permissions from Supabase:",
+            error?.message || error || "no row found"
+          );
           setPermissions({
             view_menu: false,
             view_orders: false,

@@ -43,7 +43,9 @@ export default function NotificationModal({
   const [now, setNow] = React.useState<number>(Date.now());
   const [noteOpen, setNoteOpen] = React.useState(false);
   const [noteText, setNoteText] = React.useState<string | undefined>(undefined);
-  const [noteItemName, setNoteItemName] = React.useState<string | undefined>(undefined);
+  const [noteItemName, setNoteItemName] = React.useState<string | undefined>(
+    undefined
+  );
 
   // Utility to get the cancel window start time from localStorage
   // No longer creates a timestamp if missing - it should have been set at order creation
@@ -191,10 +193,14 @@ export default function NotificationModal({
                   {/* Names column */}
                   <div className="flex flex-col gap-1">
                     {order.items.map((item, idx) => (
-                      <div key={idx} className="w-full max-w-[220px]">
+                      <div key={idx} className="w-full max-w-[150px]">
                         <div className="truncate">
                           <div
-                            className={`${item.note ? "text-blue-600 cursor-pointer underline" : "text-black"}`}
+                            className={`${
+                              item.note
+                                ? "text-blue-600 cursor-pointer underline"
+                                : "text-black"
+                            }`}
                             title={item.note ? "View note" : item.item_name}
                             onClick={() => {
                               if (item.note) {
@@ -207,10 +213,13 @@ export default function NotificationModal({
                             {item.item_name}
                           </div>
                         </div>
-                        {/* Subtotal under item name */}
+                        {/* Subtotal under item name (merged change) */}
                         <div className="text-xs text-gray-700">
                           {typeof (item as any).subtotal_price === "number"
-                            ? new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format((item as any).subtotal_price as number)
+                            ? new Intl.NumberFormat("en-PH", {
+                                style: "currency",
+                                currency: "PHP",
+                              }).format((item as any).subtotal_price as number)
                             : "-"}
                         </div>
                       </div>
@@ -343,14 +352,14 @@ export default function NotificationModal({
                 <Button
                   variant="red"
                   onClick={cancelCancel}
-                  className="min-w-[100px] text-lg py-2"
+                  className="border-transparent min-w-[100px] text-md font-semibold py-2"
                 >
                   No
                 </Button>
                 <Button
                   variant="green"
                   onClick={confirmCancel}
-                  className="min-w-[100px] text-lg py-2"
+                  className="border-transparent min-w-[100px] text-md font-semibold py-2"
                 >
                   Yes
                 </Button>

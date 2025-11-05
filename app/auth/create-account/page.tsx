@@ -132,7 +132,7 @@ export default function CreateAccountPage() {
         <div className="flex justify-center gap-10">
           <button
             type="submit"
-            className="px-2 border bg-[#ebebeb] text-black mt-10"
+            className="px-2 border bg-[#A7F586] hover:bg-gray-400 text-black mt-10"
             disabled={loading}
           >
             {loading ? "Creating..." : "Confirm"}
@@ -141,7 +141,7 @@ export default function CreateAccountPage() {
           <button
             type="button"
             onClick={() => router.push("/admin/view-accounts")}
-            className="px-2 border bg-[#ebebeb] text-black mt-10 w-[80px]"
+            className="px-2 border bg-[#E59C53] hover:bg-gray-400 text-black mt-10 w-[80px]"
           >
             Back
           </button>

@@ -22,6 +22,22 @@ const EditIcon = () => (
   </svg>
 );
 
+// Small yellow star for super accounts
+const StarSmall = ({ className = "w-3.5 h-3.5" }: { className?: string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="#E5D453"
+    stroke="#000"
+    strokeWidth="0.5"
+    className={className}
+    aria-label="Super account"
+    role="img"
+  >
+    <polygon points="12,2 15,9 22,9.5 17,14.5 18.5,22 12,18 5.5,22 7,14.5 2,9.5 9,9" />
+  </svg>
+);
+
 const TrashIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -64,6 +80,7 @@ type User = {
   view_history: boolean;
   view_menu: boolean;
   view_reviews: boolean;
+  view_super?: boolean;
   view_tables?: boolean;
   manage_menu: boolean;
   is_blocked?: boolean;
@@ -172,10 +189,7 @@ export default function ViewAccounts() {
     return matchesSearch && matchesCategory;
   });
 
-  const togglePermission = async (
-    user: User,
-    field: PermKey,
-  ) => {
+  const togglePermission = async (user: User, field: PermKey) => {
     const supabase = createClient();
     const current = Boolean((user as any)[field]);
     const key = `${user.user_id}:${field}`;
@@ -187,8 +201,8 @@ export default function ViewAccounts() {
     if (!error) {
       setUsers((prev) =>
         prev.map((u) =>
-          u.user_id === user.user_id ? ({ ...u, [field]: !current } as User) : u,
-        ),
+          u.user_id === user.user_id ? ({ ...u, [field]: !current } as User) : u
+        )
       );
     } else {
       console.error("Toggle permission error:", error.message);
@@ -292,8 +306,11 @@ export default function ViewAccounts() {
                       <strong className="text-black font-normal">
                         Username:
                       </strong>{" "}
-                      <span className="text-black font-bold">
-                        {user.username}
+                      <span className="text-black font-bold flex items-center gap-1">
+                        {user.view_super ? (
+                          <StarSmall className="w-3.5 h-3.5 inline-block" />
+                        ) : null}
+                        <span>{user.username}</span>
                       </span>
                     </p>
                     {isBlocked && (
@@ -305,87 +322,97 @@ export default function ViewAccounts() {
 
                   <div className="flex items-start justify-between">
                     <div className="space-y-2 w-full max-w-[520px]">
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        {!user.view_super && (
+                          <Toggle
+                            label="View Orders"
+                            enabled={!!user.view_orders}
+                            onClick={() =>
+                              togglePermission(user, "view_orders")
+                            }
+                            disabled={saving[`${user.user_id}:view_orders`]}
+                          />
+                        )}
                         <p className="text-black">
-                          Allow “View Orders”?:{" "}
+                          Allow “View Orders”?: {""}
                           <span className="text-black font-bold">
                             {user.view_orders ? "Yes" : "No"}
                           </span>
                         </p>
-                        <Toggle
-                          label="View Orders"
-                          enabled={!!user.view_orders}
-                          onClick={() =>
-                            togglePermission(user, "view_orders")
-                          }
-                          disabled={saving[`${user.user_id}:view_orders`]}
-                        />
                       </div>
 
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        {!user.view_super && (
+                          <Toggle
+                            label="View Order History"
+                            enabled={!!user.view_history}
+                            onClick={() =>
+                              togglePermission(user, "view_history")
+                            }
+                            disabled={saving[`${user.user_id}:view_history`]}
+                          />
+                        )}
                         <p className="text-black">
-                          Allow “View Order History”?:{" "}
+                          Allow “View Order History”?: {""}
                           <span className="text-black font-bold">
                             {user.view_history ? "Yes" : "No"}
                           </span>
                         </p>
-                        <Toggle
-                          label="View Order History"
-                          enabled={!!user.view_history}
-                          onClick={() =>
-                            togglePermission(user, "view_history")
-                          }
-                          disabled={saving[`${user.user_id}:view_history`]}
-                        />
                       </div>
 
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        {!user.view_super && (
+                          <Toggle
+                            label="View and Edit Menu"
+                            enabled={!!user.view_menu}
+                            onClick={() => togglePermission(user, "view_menu")}
+                            disabled={saving[`${user.user_id}:view_menu`]}
+                          />
+                        )}
                         <p className="text-black">
-                          Allow “View and Edit Menu”?:{" "}
+                          Allow “View and Edit Menu”?: {""}
                           <span className="text-black font-bold">
                             {user.view_menu ? "Yes" : "No"}
                           </span>
                         </p>
-                        <Toggle
-                          label="View and Edit Menu"
-                          enabled={!!user.view_menu}
-                          onClick={() => togglePermission(user, "view_menu")}
-                          disabled={saving[`${user.user_id}:view_menu`]}
-                        />
                       </div>
 
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        {!user.view_super && (
+                          <Toggle
+                            label="View Reviews"
+                            enabled={!!user.view_reviews}
+                            onClick={() =>
+                              togglePermission(user, "view_reviews")
+                            }
+                            disabled={saving[`${user.user_id}:view_reviews`]}
+                          />
+                        )}
                         <p className="text-black">
-                          Allow “View Reviews”?:{" "}
+                          Allow “View Reviews”?: {""}
                           <span className="text-black font-bold">
                             {user.view_reviews ? "Yes" : "No"}
                           </span>
                         </p>
-                        <Toggle
-                          label="View Reviews"
-                          enabled={!!user.view_reviews}
-                          onClick={() =>
-                            togglePermission(user, "view_reviews")
-                          }
-                          disabled={saving[`${user.user_id}:view_reviews`]}
-                        />
                       </div>
 
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        {!user.view_super && (
+                          <Toggle
+                            label="View Tables"
+                            enabled={!!user.view_tables}
+                            onClick={() =>
+                              togglePermission(user, "view_tables")
+                            }
+                            disabled={saving[`${user.user_id}:view_tables`]}
+                          />
+                        )}
                         <p className="text-black">
-                          Allow “View Tables”?:{" "}
+                          Allow “View Tables”?: {""}
                           <span className="text-black font-bold">
                             {user.view_tables ? "Yes" : "No"}
                           </span>
                         </p>
-                        <Toggle
-                          label="View Tables"
-                          enabled={!!user.view_tables}
-                          onClick={() =>
-                            togglePermission(user, "view_tables")
-                          }
-                          disabled={saving[`${user.user_id}:view_tables`]}
-                        />
                       </div>
                     </div>
 
@@ -413,21 +440,33 @@ export default function ViewAccounts() {
                         <TrashIcon />
                       </button>
                       <button
-                        onClick={() =>
-                          isBlocked
-                            ? setUnblockUser({
-                                user_id: user.user_id,
-                                username: user.username,
-                              })
-                            : setBlockUser({
-                                user_id: user.user_id,
-                                username: user.username,
-                              })
-                        }
+                        onClick={() => {
+                          if (user.view_super) return; // Superadmin cannot be blocked/unblocked
+                          if (isBlocked) {
+                            setUnblockUser({
+                              user_id: user.user_id,
+                              username: user.username,
+                            });
+                          } else {
+                            setBlockUser({
+                              user_id: user.user_id,
+                              username: user.username,
+                            });
+                          }
+                        }}
+                        disabled={user.view_super === true}
                         className={`${
                           isBlocked ? "bg-red-700" : "bg-[#d9d9d9]"
-                        } w-6 h-6 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shadow`}
-                        title={isBlocked ? "Unblock User" : "Block User"}
+                        } w-6 h-6 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shadow ${
+                          user.view_super ? "opacity-50 cursor-not-allowed" : ""
+                        }`}
+                        title={
+                          user.view_super
+                            ? "Super admin cannot be blocked"
+                            : isBlocked
+                            ? "Unblock User"
+                            : "Block User"
+                        }
                       >
                         <BlockIcon />
                       </button>
@@ -444,7 +483,7 @@ export default function ViewAccounts() {
 
       <div className="flex justify-center items-center mt-7 pb-10">
         <button
-          className="px-2 border bg-[#ebebeb] text-black hover:bg-green-300"
+          className="px-2 border bg-[#A7F586] text-black hover:bg-green-400"
           onClick={() => router.push("/auth/create-account")}
         >
           Add Account

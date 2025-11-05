@@ -282,8 +282,6 @@ export default function HistoryAndSales() {
               >
                 Reset
               </Button>
-
-              {/* Generate button removed per request */}
             </div>
           </div>
         </div>

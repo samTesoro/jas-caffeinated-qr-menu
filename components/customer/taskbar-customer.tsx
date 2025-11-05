@@ -8,9 +8,19 @@ import Image from "next/image";
 export default function MenuTaskbar({
   tableId: propTableId,
   sessionId,
+  onGoToMeals,
+  onGoToCoffee,
+  onGoToDrinks,
+  onGoToDesserts,
+  currentCategory,
 }: {
   tableId?: string;
   sessionId?: string;
+  onGoToMeals?: () => void;
+  onGoToCoffee?: () => void;
+  onGoToDrinks?: () => void;
+  onGoToDesserts?: () => void;
+  currentCategory?: "Meals" | "Coffee" | "Drinks" | "Desserts";
 }) {
   const pathname = usePathname();
   const [cartCount, setCartCount] = useState(0); // 🔸 Dreame fix - Track cart item count
@@ -29,9 +39,7 @@ export default function MenuTaskbar({
   // 🔸 Dreame fix - Initialize cart count from localStorage
   useEffect(() => {
     const sid = getSessionId();
-    const savedCart = JSON.parse(
-      localStorage.getItem(getKey(sid)) || "[]"
-    );
+    const savedCart = JSON.parse(localStorage.getItem(getKey(sid)) || "[]");
     const uniqueCount = Array.isArray(savedCart)
       ? (() => {
           const ids = new Set<string>();
@@ -60,9 +68,7 @@ export default function MenuTaskbar({
   useEffect(() => {
     const recalc = () => {
       const sid = getSessionId();
-      const updatedCart = JSON.parse(
-        localStorage.getItem(getKey(sid)) || "[]"
-      );
+      const updatedCart = JSON.parse(localStorage.getItem(getKey(sid)) || "[]");
       const uniqueCount = Array.isArray(updatedCart)
         ? (() => {
             const ids = new Set<string>();
@@ -118,63 +124,113 @@ export default function MenuTaskbar({
     );
   };
 
+  const isCatActive = (
+    cat: "Meals" | "Coffee" | "Drinks" | "Desserts",
+    fallbackPath: string
+  ) => {
+    if (currentCategory) return currentCategory === cat;
+    return isPathActive(fallbackPath);
+  };
+
   return (
     <footer className={styles.taskbar}>
       <div className={styles.nav}>
         {/* Meals */}
         <div className="flex flex-col items-center">
-          <Link
-            href={
-              tableId && sessionId
-                ? `/customer/${tableId}/session/${sessionId}/meals`
-                : tableId
-                ? `/customer/${tableId}/meals`
-                : "/customer/meals"
-            }
-            className={styles.link}
-          >
-            <Image
-              src={
-                isPathActive("meals")
-                  ? "/meals-icon-selected.png"
-                  : "/meals-icon.png"
+          {onGoToMeals ? (
+            <button
+              type="button"
+              className={styles.link}
+              onClick={onGoToMeals}
+              aria-label="Go to Meals"
+            >
+              <Image
+                src={
+                  isCatActive("Meals", "meals")
+                    ? "/meals-icon-selected.png"
+                    : "/meals-icon.png"
+                }
+                alt="Meals"
+                width={48}
+                height={48}
+                className={styles.icon + " " + styles.iconLarge}
+                unoptimized
+              />
+            </button>
+          ) : (
+            <Link
+              href={
+                tableId && sessionId
+                  ? `/customer/${tableId}/session/${sessionId}/meals`
+                  : tableId
+                  ? `/customer/${tableId}/meals`
+                  : "/customer/meals"
               }
-              alt="Meals"
-              width={48}
-              height={48}
-              className={styles.icon + " " + styles.iconLarge}
-              unoptimized
-            />
-            {/* icon-only: label removed per design */}
-          </Link>
+              className={styles.link}
+            >
+              <Image
+                src={
+                  isCatActive("Meals", "meals")
+                    ? "/meals-icon-selected.png"
+                    : "/meals-icon.png"
+                }
+                alt="Meals"
+                width={48}
+                height={48}
+                className={styles.icon + " " + styles.iconLarge}
+                unoptimized
+              />
+            </Link>
+          )}
         </div>
 
         {/* Coffee */}
         <div className="flex flex-col items-center">
-          <Link
-            href={
-              tableId && sessionId
-                ? `/customer/${tableId}/session/${sessionId}/coffee`
-                : tableId
-                ? `/customer/${tableId}/coffee`
-                : "/customer/coffee"
-            }
-            className={styles.link}
-          >
-            <Image
-              src={
-                isPathActive("coffee")
-                  ? "/coffee-meals-icon-selected.png"
-                  : "/coffee-meals-icon.png"
+          {onGoToCoffee ? (
+            <button
+              type="button"
+              className={styles.link}
+              onClick={onGoToCoffee}
+              aria-label="Go to Coffee"
+            >
+              <Image
+                src={
+                  isCatActive("Coffee", "coffee")
+                    ? "/coffee-meals-icon-selected.png"
+                    : "/coffee-meals-icon.png"
+                }
+                alt="Coffee"
+                width={40}
+                height={40}
+                className={styles.icon}
+                unoptimized
+              />
+            </button>
+          ) : (
+            <Link
+              href={
+                tableId && sessionId
+                  ? `/customer/${tableId}/session/${sessionId}/coffee`
+                  : tableId
+                  ? `/customer/${tableId}/coffee`
+                  : "/customer/coffee"
               }
-              alt="Coffee"
-              width={40}
-              height={40}
-              className={styles.icon}
-              unoptimized
-            />
-            {/* icon-only: label removed per design */}
-          </Link>
+              className={styles.link}
+            >
+              <Image
+                src={
+                  isCatActive("Coffee", "coffee")
+                    ? "/coffee-meals-icon-selected.png"
+                    : "/coffee-meals-icon.png"
+                }
+                alt="Coffee"
+                width={40}
+                height={40}
+                className={styles.icon}
+                unoptimized
+              />
+            </Link>
+          )}
         </div>
 
         {/* Cart */}
@@ -190,7 +246,13 @@ export default function MenuTaskbar({
           >
             <button
               className="rounded-full shadow-lg flex items-center justify-center relative hover:bg-orange-900"
-              style={{ width: "64px", height: "64px", background: "#E59C53", position: "relative", top: "-30px" }}
+              style={{
+                width: "64px",
+                height: "64px",
+                background: "#E59C53",
+                position: "relative",
+                top: "-30px",
+              }}
             >
               <Image
                 src="/shopping-cart-icon.png"
@@ -216,58 +278,100 @@ export default function MenuTaskbar({
 
         {/* Drinks */}
         <div className="flex flex-col items-center">
-          <Link
-            href={
-              tableId && sessionId
-                ? `/customer/${tableId}/session/${sessionId}/drinks`
-                : tableId
-                ? `/customer/${tableId}/drinks`
-                : "/customer/drinks"
-            }
-            className={styles.link}
-          >
-            <Image
-              src={
-                isPathActive("drinks")
-                  ? "/drinks-icon-selected.png"
-                  : "/drinks-icon.png"
+          {onGoToDrinks ? (
+            <button
+              type="button"
+              className={styles.link}
+              onClick={onGoToDrinks}
+              aria-label="Go to Drinks"
+            >
+              <Image
+                src={
+                  isCatActive("Drinks", "drinks")
+                    ? "/drinks-icon-selected.png"
+                    : "/drinks-icon.png"
+                }
+                alt="Drinks"
+                width={48}
+                height={48}
+                className={styles.icon + " " + styles.iconLarge}
+                unoptimized
+              />
+            </button>
+          ) : (
+            <Link
+              href={
+                tableId && sessionId
+                  ? `/customer/${tableId}/session/${sessionId}/drinks`
+                  : tableId
+                  ? `/customer/${tableId}/drinks`
+                  : "/customer/drinks"
               }
-              alt="Drinks"
-              width={48}
-              height={48}
-              className={styles.icon + " " + styles.iconLarge}
-              unoptimized
-            />
-            {/* icon-only: label removed per design */}
-          </Link>
+              className={styles.link}
+            >
+              <Image
+                src={
+                  isCatActive("Drinks", "drinks")
+                    ? "/drinks-icon-selected.png"
+                    : "/drinks-icon.png"
+                }
+                alt="Drinks"
+                width={48}
+                height={48}
+                className={styles.icon + " " + styles.iconLarge}
+                unoptimized
+              />
+            </Link>
+          )}
         </div>
 
         {/* Desserts (replaces previous Favorites) */}
         <div className="flex flex-col items-center">
-          <Link
-            href={
-              tableId && sessionId
-                ? `/customer/${tableId}/session/${sessionId}/desserts`
-                : tableId
-                ? `/customer/${tableId}/desserts`
-                : "/customer/desserts"
-            }
-            className={styles.link}
-          >
-            <Image
-              src={
-                isPathActive("desserts")
-                  ? "/desserts-icon-selected.png"
-                  : "/desserts-icon.png"
+          {onGoToDesserts ? (
+            <button
+              type="button"
+              className={styles.link}
+              onClick={onGoToDesserts}
+              aria-label="Go to Desserts"
+            >
+              <Image
+                src={
+                  isCatActive("Desserts", "desserts")
+                    ? "/desserts-icon-selected.png"
+                    : "/desserts-icon.png"
+                }
+                alt="Desserts"
+                width={40}
+                height={40}
+                className={styles.icon}
+                unoptimized
+              />
+            </button>
+          ) : (
+            <Link
+              href={
+                tableId && sessionId
+                  ? `/customer/${tableId}/session/${sessionId}/desserts`
+                  : tableId
+                  ? `/customer/${tableId}/desserts`
+                  : "/customer/desserts"
               }
-              alt="Desserts"
-              width={40}
-              height={40}
-              className={styles.icon}
-              unoptimized
-            />
-            {/* icon-only: label removed per design */}
-          </Link>
+              className={styles.link}
+            >
+              <Image
+                src={
+                  isCatActive("Desserts", "desserts")
+                    ? "/desserts-icon-selected.png"
+                    : "/desserts-icon.png"
+                }
+                alt="Desserts"
+                width={40}
+                height={40}
+                className={styles.icon}
+                unoptimized
+              />
+            </Link>
+          )}
         </div>
       </div>
     </footer>

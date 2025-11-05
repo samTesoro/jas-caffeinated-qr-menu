@@ -18,10 +18,26 @@ export default function EditAccountPage() {
   const [viewOrderHistory, setViewOrderHistory] = useState(false);
   const [viewMenu, setViewMenu] = useState(false);
   const [viewReviews, setViewReviews] = useState(false);
-  const [viewTables, setViewTables] = useState(false);
+  const [isSuper, setIsSuper] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  // Small yellow star for super accounts indicator
+  const StarSmall = ({ className = "w-3.5 h-3.5" }: { className?: string }) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="#E5D453"
+      stroke="#000"
+      strokeWidth="0.5"
+      className={className}
+      aria-label="Super account"
+      role="img"
+    >
+      <polygon points="12,2 15,9 22,9.5 17,14.5 18.5,22 12,18 5.5,22 7,14.5 2,9.5 9,9" />
+    </svg>
+  );
 
   useEffect(() => {
     const fetchAccount = async () => {
@@ -37,7 +53,7 @@ export default function EditAccountPage() {
         setViewOrderHistory(!!data.view_history);
         setViewMenu(!!data.view_menu);
         setViewReviews(!!data.view_reviews);
-        setViewTables(!!(data as any).view_tables);
+        setIsSuper(!!(data as any).view_super);
       }
       if (error) setError(error.message);
     };
@@ -56,7 +72,6 @@ export default function EditAccountPage() {
         view_history: viewOrderHistory,
         view_menu: viewMenu,
         view_reviews: viewReviews,
-        view_tables: viewTables,
       })
       .eq("user_id", id);
     setLoading(false);
@@ -83,7 +98,10 @@ export default function EditAccountPage() {
           Edit Account
         </h2>
         <div>
-          <label className="block text-lg text-black mb-1.5">Username</label>
+          <label className="text-lg text-black mb-1.5 flex items-center gap-2">
+            Username
+            {isSuper && <StarSmall className="w-4 h-4" />}
+          </label>
           <input
             type="text"
             value={username}
@@ -109,6 +127,7 @@ export default function EditAccountPage() {
               type="checkbox"
               checked={viewOrders}
               onChange={() => setViewOrders(!viewOrders)}
+              disabled={isSuper}
             />
             Allow “View Orders”
           </label>
@@ -117,6 +136,7 @@ export default function EditAccountPage() {
               type="checkbox"
               checked={viewOrderHistory}
               onChange={() => setViewOrderHistory(!viewOrderHistory)}
+              disabled={isSuper}
             />
             Allow “View Order History”
           </label>
@@ -125,31 +145,24 @@ export default function EditAccountPage() {
               type="checkbox"
               checked={viewMenu}
               onChange={() => setViewMenu(!viewMenu)}
+              disabled={isSuper}
             />
             Allow “View and Edit Menu”
           </label>
           <label className="flex gap-2 text-lg text-black">
             <input
               type="checkbox"
-              checked={viewReviews}
-              onChange={() => setViewReviews(!viewReviews)}
+              checked={viewMenu}
+              onChange={() => setViewMenu(!viewMenu)}
             />
             Allow “View Reviews”
-          </label>
-          <label className="flex gap-2 text-lg text-black">
-            <input
-              type="checkbox"
-              checked={viewTables}
-              onChange={() => setViewTables(!viewTables)}
-            />
-            Allow “View Tables”
           </label>
         </div>
         {error && <p className="text-red-600 text-sm">{error}</p>}
         <div className="flex justify-center gap-10">
           <button
             type="submit"
-            className="px-2 border bg-[#ebebeb] text-black mt-10 focus:outline-none focus:ring-0"
+            className="px-2 border bg-[#A7F586] hover:bg-gray-400 text-black mt-10 focus:outline-none focus:ring-0"
             disabled={loading}
           >
             {loading ? "Updating..." : "Update"}
@@ -157,7 +170,7 @@ export default function EditAccountPage() {
           <button
             type="button"
             onClick={() => router.push("/admin/view-accounts")}
-            className="px-2 border bg-[#ebebeb] text-black mt-10 w-[80px] focus:outline-none focus:ring-0"
+            className="px-2 border bg-[#E59C53] hover:bg-gray-400 text-black mt-10 w-[80px] focus:outline-none focus:ring-0"
           >
             Back
           </button>
@@ -170,9 +183,12 @@ export default function EditAccountPage() {
             <p className="text-lg font-bold text-black">Confirm changes?</p>
 
             <div className="text-left text-black">
-              <p>
+              <p className="flex items-center gap-2">
                 <span>Username:</span>{" "}
-                <span className="font-bold">{username}</span>
+                <span className="font-bold flex items-center gap-1">
+                  {isSuper && <StarSmall className="w-3.5 h-3.5" />}
+                  <span>{username}</span>
+                </span>
               </p>
               <p className="mb-3">
                 <span>Password:</span>{" "}
@@ -195,10 +211,6 @@ export default function EditAccountPage() {
               <p>
                 <span>Allow &quot;View Reviews&quot;:</span>{" "}
                 <span className="font-bold">{viewReviews ? "Yes" : "No"}</span>
-              </p>
-              <p>
-                <span>Allow &quot;View Tables&quot;:</span>{" "}
-                <span className="font-bold">{viewTables ? "Yes" : "No"}</span>
               </p>
             </div>
 

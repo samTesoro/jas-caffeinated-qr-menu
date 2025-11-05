@@ -44,8 +44,9 @@ export default function MenuItemForm({
     thumbnail: item?.thumbnail || "",
     // Prefer explicit mapping from is_favorites boolean when present
     favorites:
-      item?.favorites ?? (item?.is_favorites ? "Yes" : item?.is_favorites === false ? "No" : "No"),
-    estimatedTime: item?.estimatedTime ?? 0,
+      item?.favorites ??
+      (item?.is_favorites ? "Yes" : item?.is_favorites === false ? "No" : "No"),
+    estimatedTime: item?.estimatedTime || 0,
     description: item?.description || "",
   });
 
@@ -65,7 +66,13 @@ export default function MenuItemForm({
         status: item.status || "Available",
         thumbnail: item.thumbnail || "",
         // Map boolean is_favorites to the Yes/No select used by the form
-        favorites: item.favorites ?? (item.is_favorites ? "Yes" : item.is_favorites === false ? "No" : "No"),
+        favorites:
+          item.favorites ??
+          (item.is_favorites
+            ? "Yes"
+            : item.is_favorites === false
+            ? "No"
+            : "No"),
         // Use est_time if present, fallback to estimatedTime, fallback to 0
         estimatedTime: (item as any).est_time ?? item.estimatedTime ?? 0,
         description: item.description || "",
@@ -75,7 +82,9 @@ export default function MenuItemForm({
   }, [item]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
   ) => {
     const { name, value } = e.target;
     if (name === "price") {
@@ -113,7 +122,9 @@ export default function MenuItemForm({
         console.log("Public URL:", url);
         setForm({ ...form, thumbnail: url });
       } else if (error) {
-        setErrorMsg("Thumbnail upload failed: " + (error.message || "Unknown error"));
+        setErrorMsg(
+          "Thumbnail upload failed: " + (error.message || "Unknown error")
+        );
         console.error("Supabase upload error:", error);
       }
     } catch (err) {
@@ -207,7 +218,7 @@ export default function MenuItemForm({
           {errorMsg}
         </div>
       )}
-  <DashboardHeader />
+      <DashboardHeader />
 
       <form
         onSubmit={(e) => {
@@ -231,7 +242,7 @@ export default function MenuItemForm({
               name="name"
               value={form.name}
               onChange={handleChange}
-              className="w-full py-1 px-2 border-2 border-black bg-white text-black h-8"
+              className="w-full rounded-md py-1 px-2 border-2 border-gray-300 bg-white text-black h-8 mb-3"
               required
             />
           </div>
@@ -239,11 +250,13 @@ export default function MenuItemForm({
             <label className="block text-black mb-2 font-bold text-sm">
               Description
             </label>
-            <input
+            <textarea
               name="description"
               value={form.description ?? ""}
               onChange={handleChange}
-              className="w-full py-1 px-2 border-2 border-black bg-white text-black h-8"
+              className="w-full rounded-md py-2 px-3 border-2 border-gray-300 bg-white text-black h-32 resize-none overflow-y-auto"
+              maxLength={500}
+              placeholder="Enter description (optional)"
             />
           </div>
 
@@ -256,7 +269,7 @@ export default function MenuItemForm({
                 name="category"
                 value={form.category}
                 onChange={handleChange}
-                className="max-w-xs w-full py-1 px-2 border-2 border-black bg-white text-black h-8"
+                className="max-w-xs w-full py-1 px-2 rounded-md border-2 border-gray-300 bg-white text-black h-8"
                 required
               >
                 <option value=""></option>
@@ -276,7 +289,7 @@ export default function MenuItemForm({
                 type="number"
                 value={form.price === "" ? "" : (form.price as number)}
                 onChange={handleChange}
-                className="max-w-xs w-full py-1 px-2 border-2 border-black bg-white text-black h-8"
+                className="max-w-xs w-full py-1 px-2 rounded-md border-2 border-gray-300 bg-white text-black h-8"
                 required
               />
             </div>
@@ -291,7 +304,7 @@ export default function MenuItemForm({
                 name="status"
                 value={form.status}
                 onChange={handleChange}
-                className="max-w-xs w-full py-1 px-2 border-2 border-black bg-white text-black h-8"
+                className="max-w-xs w-full py-1 px-2 rounded-md border-2 border-gray-300 bg-white text-black h-8"
               >
                 {statuses.map((s) => (
                   <option key={s} value={s}>
@@ -308,7 +321,7 @@ export default function MenuItemForm({
                 name="favorites"
                 value={form.favorites}
                 onChange={handleChange}
-                className="max-w-xs w-full py-1 px-2 border-2 border-black bg-white text-black h-8"
+                className="max-w-xs w-full py-1 px-2 rounded-md border-2 border-gray-300 bg-white text-black h-8"
               >
                 {favoritesOptions.map((opt) => (
                   <option key={opt} value={opt}>
@@ -369,7 +382,7 @@ export default function MenuItemForm({
                 type="number"
                 value={form.estimatedTime === "" ? "" : (form.estimatedTime as number)}
                 onChange={handleChange}
-                className="w-12 text-center py-1 px-2 border-2 border-black bg-white text-black h-8"
+                className="w-[75px] text-center rounded-mdpy-1 px-2 border-2 border-gray-300 bg-white text-black h-8"
                 required
               />
               <span className="text-sm text-black">mins</span>

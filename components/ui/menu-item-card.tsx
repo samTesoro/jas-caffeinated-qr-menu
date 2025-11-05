@@ -1,6 +1,8 @@
 "use client";
 
+import React from "react";
 import Image from "next/image";
+import { ChefHat } from "lucide-react";
 
 export interface MenuItem {
   menuitem_id: number;
@@ -60,23 +62,40 @@ export default function ItemCard({
   mode,
 }: MenuItemCardProps) {
   const displayPrice = (price: number) => price.toFixed(2);
+  const DEFAULT_IMG = "/logo-caffeinated.png";
+  const [imgSrc, setImgSrc] = React.useState<string>(
+    item.thumbnail && item.thumbnail.trim() !== ""
+      ? item.thumbnail
+      : DEFAULT_IMG
+  );
+  React.useEffect(() => {
+    setImgSrc(
+      item.thumbnail && item.thumbnail.trim() !== ""
+        ? item.thumbnail
+        : DEFAULT_IMG
+    );
+  }, [item.thumbnail]);
 
   return (
     <div
       key={item.menuitem_id}
       className={`bg-gray-100 rounded-lg shadow p-1.5 flex flex-col w-full max-w-[180px] sm:max-w-[220px] md:max-w-[380px] md:mb-[30px] relative ${
-        mode === "customer" && item.status !== "Available" ? "opacity-60" : ""
+        item.status !== "Available" ? "opacity-60" : ""
       }`}
     >
       {/* Favorite badge (absolute on top of card) */}
-      {mode === "customer" && item.is_favorites && (
+      {item.is_favorites && (
         <div
           title="Favorite"
           className="absolute -top-2 -left-2 w-11 h-11 rounded-full bg-[#E59C53] flex items-center justify-center shadow z-20 transform transition-transform duration-150 hover:scale-110"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="35" height="35" fill="#ffffff" aria-hidden>
-            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-          </svg>
+          <ChefHat
+            width={28}
+            height={28}
+            color="#ffffff"
+            strokeWidth={2.2}
+            aria-hidden
+          />
         </div>
       )}
 
@@ -86,11 +105,15 @@ export default function ItemCard({
         onClick={() => setModalItem(item)}
       >
         <Image
-          src={item.thumbnail || "/default-food.png"}
+          src={imgSrc}
           alt={item.name}
           width={300}
           height={400}
           className="object-cover w-full h-full"
+          unoptimized
+          onError={() => {
+            if (imgSrc !== DEFAULT_IMG) setImgSrc(DEFAULT_IMG);
+          }}
         />
       </div>
 
