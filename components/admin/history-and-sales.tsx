@@ -282,14 +282,6 @@ export default function HistoryAndSales() {
               >
                 Reset
               </Button>
-
-              <Button
-                onClick={() => setShowPicker(false)}
-                variant="green"
-                className="px-1 py-3 rounded text-black border-transparent"
-              >
-                Generate
-              </Button>
             </div>
           </div>
         </div>

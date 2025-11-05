@@ -42,7 +42,9 @@ export default function NotificationModal({
   const [now, setNow] = React.useState<number>(Date.now());
   const [noteOpen, setNoteOpen] = React.useState(false);
   const [noteText, setNoteText] = React.useState<string | undefined>(undefined);
-  const [noteItemName, setNoteItemName] = React.useState<string | undefined>(undefined);
+  const [noteItemName, setNoteItemName] = React.useState<string | undefined>(
+    undefined
+  );
 
   // Utility to get or set the cancel window start time in localStorage
   const getCancelStart = React.useCallback((orderId: string) => {
@@ -188,7 +190,9 @@ export default function NotificationModal({
                       <div key={idx} className="truncate w-full max-w-[150px]">
                         <div
                           className={`${
-                            item.note ? "text-blue-600 cursor-pointer underline" : "text-black"
+                            item.note
+                              ? "text-blue-600 cursor-pointer underline"
+                              : "text-black"
                           }`}
                           title={item.note ? "View note" : item.item_name}
                           onClick={() => {
@@ -313,14 +317,14 @@ export default function NotificationModal({
                 <Button
                   variant="red"
                   onClick={cancelCancel}
-                  className="min-w-[100px] text-lg py-2"
+                  className="border-transparent min-w-[100px] text-md font-semibold py-2"
                 >
                   No
                 </Button>
                 <Button
                   variant="green"
                   onClick={confirmCancel}
-                  className="min-w-[100px] text-lg py-2"
+                  className="border-transparent min-w-[100px] text-md font-semibold py-2"
                 >
                   Yes
                 </Button>

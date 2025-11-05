@@ -4,7 +4,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { Search } from "lucide-react";
 import { Plus } from "lucide-react";
-import ItemCard, { MenuItem as UIMenuItem } from "@/components/ui/menu-item-card";
+import ItemCard, {
+  MenuItem as UIMenuItem,
+} from "@/components/ui/menu-item-card";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "../ui/button";
 
@@ -42,7 +44,7 @@ export default function MenuItemList({
   const filteredItems = useMemo(() => {
     const query = search.trim().toLowerCase();
     const tokens = query ? query.split(/\s+/) : [];
-    return items.filter((item) => {
+    const res = items.filter((item) => {
       const haystack = item.name.toLowerCase();
       const matchesSearch =
         tokens.length === 0 || tokens.every((t) => haystack.includes(t));
@@ -55,6 +57,14 @@ export default function MenuItemList({
       }
 
       return matchesSearch && matchesCategory;
+    });
+
+    // Sort: Available first, then by name A–Z
+    const statusRank = (s: string) => (s === "Available" ? 0 : 1);
+    return res.sort((a, b) => {
+      const sr = statusRank(a.status) - statusRank(b.status);
+      if (sr !== 0) return sr;
+      return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
     });
   }, [items, search, category]);
 

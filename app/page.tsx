@@ -31,7 +31,7 @@ export default function LandingPage() {
 
         <Link
           href="/auth/login"
-          className="bg-[#E59C53] text-white font-semibold px-10 py-2 rounded-full shadow-lg transition"
+          className="bg-[#E59C53] hover:bg-orange-700 text-white font-semibold px-10 py-2 rounded-md shadow-lg transition"
         >
           Login
         </Link>

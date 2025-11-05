@@ -30,10 +30,12 @@ function StarIcon({ className = "", ...props }: React.SVGProps<SVGSVGElement>) {
 // Review Modal Component (above MenuList)
 function ReviewModal({
   onClose,
+  onReviewed,
   tableId,
   sessionId,
 }: {
   onClose: () => void;
+  onReviewed?: () => void;
   tableId?: string;
   sessionId?: string;
 }) {
@@ -67,6 +69,21 @@ function ReviewModal({
         console.error("Supabase insert error:", error);
         throw error;
       }
+      try {
+        const sid =
+          sessionId ||
+          (typeof window !== "undefined"
+            ? sessionStorage.getItem("sessionId") || undefined
+            : undefined);
+        if (sid) {
+          sessionStorage.setItem(`reviewSubmitted:${sid}`, "true");
+        } else {
+          sessionStorage.setItem("reviewSubmitted", "true"); // legacy fallback
+        }
+      } catch {
+        // ignore storage errors
+      }
+      onReviewed?.();
       setShowThankYou(true);
     } catch (err) {
       console.error("Review submit error:", err);
@@ -181,7 +198,14 @@ type CartItem = {
   menuitem_id: number;
 };
 interface MenuListProps {
-  activeTab: "All" | "Meals" | "Coffee" | "Drinks" | "Favorites" | "Desserts" | string;
+  activeTab:
+    | "All"
+    | "Meals"
+    | "Coffee"
+    | "Drinks"
+    | "Favorites"
+    | "Desserts"
+    | string;
   cart: CartItem[];
   setCart: (cart: CartItem[]) => void;
   sessionId?: string;
@@ -212,7 +236,7 @@ export default function MenuList({
   const [notifOpen, setNotifOpen] = useState(false); //state for modal
   const [reviewsOpen, setReviewsOpen] = useState(false); // state for reviews modal
   const [ongoingCount, setOngoingCount] = useState(0);
-  const [canOpenReviews, setCanOpenReviews] = useState(false); // disabled until after first checkout
+  const [canOpenReviews, setCanOpenReviews] = useState(false); // enabled after first checkout and until a review is submitted
 
   // Session-based: enable reviews after first checkout in THIS session; auto-open once
   useEffect(() => {
@@ -225,12 +249,15 @@ export default function MenuList({
       const hasOrdered = sid
         ? sessionStorage.getItem(`hasOrderedBefore:${sid}`) === "true"
         : sessionStorage.getItem("hasOrderedBefore") === "true"; // legacy fallback
-      setCanOpenReviews(!!hasOrdered);
+      const submitted = sid
+        ? sessionStorage.getItem(`reviewSubmitted:${sid}`) === "true"
+        : sessionStorage.getItem("reviewSubmitted") === "true"; // legacy fallback
+      setCanOpenReviews(!!hasOrdered && !submitted);
 
       const hasShown = sid
         ? sessionStorage.getItem(`firstReviewPromptShown:${sid}`) === "true"
         : sessionStorage.getItem("firstReviewPromptShown") === "true"; // legacy fallback
-      if (hasOrdered && !hasShown) {
+      if (hasOrdered && !submitted && !hasShown) {
         setReviewsOpen(true);
         if (sid)
           sessionStorage.setItem(`firstReviewPromptShown:${sid}`, "true");
@@ -359,10 +386,53 @@ export default function MenuList({
     filtered = menuItems;
   }
 
+  // Group by categories and sort within each category with the rule:
+  // 1) Available favorites (A–Z)
+  // 2) Other available (A–Z)
+  // 3) Unavailable (A–Z)
+  const CATEGORIES = ["Meals", "Coffee", "Drinks", "Desserts"] as const;
+  type Cat = (typeof CATEGORIES)[number];
+  const normalizeCategory = (raw?: string): Cat | null => {
+    if (!raw) return null;
+    const s = String(raw).trim().toLowerCase();
+    if (s === "meals" || s === "meal") return "Meals";
+    if (s === "coffee") return "Coffee";
+    if (s === "drinks" || s === "drink") return "Drinks";
+    if (s === "desserts" || s === "dessert") return "Desserts";
+    return null;
+  };
+  const rank = (i: MenuItem) =>
+    i.status !== "Available" ? 2 : i.is_favorites ? 0 : 1;
+  const grouped = new Map<Cat, MenuItem[]>();
+  CATEGORIES.forEach((c) => grouped.set(c, []));
+  for (const i of filtered) {
+    const cat = normalizeCategory(i.category);
+    if (cat) grouped.get(cat)!.push(i);
+  }
+  const sortedByCat: Record<Cat, MenuItem[]> = {
+    Meals: [],
+    Coffee: [],
+    Drinks: [],
+    Desserts: [],
+  };
+  CATEGORIES.forEach((c) => {
+    const arr = grouped.get(c) || [];
+    sortedByCat[c] = arr.slice().sort((a, b) => {
+      const r = rank(a) - rank(b);
+      if (r !== 0) return r;
+      return (a.name || "").localeCompare(b.name || "", undefined, {
+        sensitivity: "base",
+      });
+    });
+  });
+
   return (
     <div>
       {/* Search + Actions: make sticky below header */}
-      <div className="mb-6 flex flex-col sm:flex-row gap-2 justify-center items-center sticky top-[170px] z-40 bg-[#ebebeb] py-2">
+      <div
+        id="menu-sticky-bar"
+        className="mb-6 flex flex-col sm:flex-row gap-2 justify-center items-center sticky top-[170px] z-40 bg-[#ebebeb] py-2 md:px-[500px]"
+      >
         <div className="flex items-center gap-3 w-full">
           {/* Notification bell (left) */}
           <div
@@ -400,7 +470,7 @@ export default function MenuList({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-[45px] pl-8 pr-4 py-2 rounded-3xl border-white bg-white text-sm text-black"
+              className="w-full h-[45px] pl-8 pr-4 py-2 rounded-md border-white bg-white text-sm text-black"
             />
           </div>
 
@@ -430,31 +500,33 @@ export default function MenuList({
           {filtered.length === 0 ? (
             <div className="text-center text-gray-500 py-8">No items found</div>
           ) : (
-            <div className="grid grid-cols-2 gap-7 sm:gap-2 place-items-center mb-40">
-              {filtered.map((item) => (
-                <MenuItemCard
-                  key={item.menuitem_id ? String(item.menuitem_id) : item.name}
-                  item={item}
-                  // Wrap setSelectedItem so we can log the exact object passed when opening the modal
-                  setModalItem={(it) => {
-                    try {
-                      console.debug("[menu-list] open modal item:", it);
-                    } catch {
-                      /* ignore */
-                    }
-                    setSelectedItem(it);
-                  }}
-                  mode="customer"
-                  onAdd={() => {
-                    try {
-                      console.debug("[menu-list] add-click item:", item);
-                    } catch {
-                      /* ignore */
-                    }
-                    setSelectedItem(item);
-                  }}
-                />
-              ))}
+            <div className="mb-40 space-y-8 md:px-[500px]">
+              {CATEGORIES.map((cat) => {
+                const list = sortedByCat[cat];
+                if (!list || list.length === 0) return null;
+                return (
+                  <section key={cat} id={`category-${cat}`}>
+                    <h2 className="text-black font-bold text-2xl mb-4 px-2">
+                      {cat}
+                    </h2>
+                    <div className="grid grid-cols-2 gap-7 sm:gap-2 place-items-center">
+                      {list.map((item) => (
+                        <MenuItemCard
+                          key={
+                            item.menuitem_id
+                              ? String(item.menuitem_id)
+                              : item.name
+                          }
+                          item={item}
+                          setModalItem={(it) => setSelectedItem(it)}
+                          mode="customer"
+                          onAdd={() => setSelectedItem(item)}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
             </div>
           )}
         </div>
@@ -480,6 +552,7 @@ export default function MenuList({
       {reviewsOpen && (
         <ReviewModal
           onClose={() => setReviewsOpen(false)}
+          onReviewed={() => setCanOpenReviews(false)}
           tableId={tableId}
           sessionId={sessionId}
         />

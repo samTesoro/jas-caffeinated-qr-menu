@@ -33,6 +33,24 @@ export default function CustomerMenu({
   >(initialTab);
   const [cart, setCart] = useState<MenuCartItem[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [currentCategory, setCurrentCategory] = useState<
+    "Meals" | "Coffee" | "Drinks" | "Desserts" | null
+  >(null);
+  const scrollToCategory = React.useCallback(
+    (cat: "Meals" | "Coffee" | "Drinks" | "Desserts") => {
+      if (typeof window === "undefined") return;
+      const el = document.getElementById(`category-${cat}`);
+      if (!el) return;
+      // Account for sticky header height (compute sticky bar bottom if available)
+      const sticky = document.getElementById("menu-sticky-bar");
+      const headerOffset = sticky ? sticky.getBoundingClientRect().bottom : 170; // fallback aligns with sticky top
+      const rect = el.getBoundingClientRect();
+      const scrollTop = window.pageYOffset + rect.top - headerOffset;
+      window.scrollTo({ top: Math.max(scrollTop, 0), behavior: "smooth" });
+      setCurrentCategory(cat);
+    },
+    []
+  );
 
   // Handle tab from URL
   useEffect(() => {
@@ -134,6 +152,73 @@ export default function CustomerMenu({
     ensureCart();
   }, [sessionId, tableId]);
 
+  // If a category tab is indicated (via URL or initialTab), auto-scroll to that section
+  useEffect(() => {
+    if (activeTab && activeTab !== "All" && activeTab !== "Favorites") {
+      const cat = activeTab as "Meals" | "Coffee" | "Drinks" | "Desserts";
+      const t = setTimeout(() => scrollToCategory(cat), 50);
+      return () => clearTimeout(t);
+    }
+  }, [activeTab, scrollToCategory]);
+
+  // Track which category section is in view on scroll and highlight the corresponding icon
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const cats = ["Meals", "Coffee", "Drinks", "Desserts"] as const;
+    const getTargetOffset = () => {
+      const sticky = document.getElementById("menu-sticky-bar");
+      if (sticky) return sticky.getBoundingClientRect().bottom;
+      return 170;
+    };
+
+    const getSections = () =>
+      cats
+        .map((c) => ({ c, el: document.getElementById(`category-${c}`) }))
+        .filter(
+          (x): x is { c: (typeof cats)[number]; el: HTMLElement } => !!x.el
+        );
+
+    const pickCurrent = () => {
+      const sections = getSections();
+      if (sections.length === 0) return;
+      // Choose the section whose top is closest to the header offset
+      const target = getTargetOffset();
+      let best: { c: (typeof cats)[number]; delta: number } | null = null;
+      for (const { c, el } of sections) {
+        const rect = el.getBoundingClientRect();
+        const delta = Math.abs(rect.top - target);
+        if (!best || delta < best.delta) best = { c, delta };
+      }
+      if (best) setCurrentCategory(best.c);
+    };
+
+    const onScroll = () => {
+      // Batch updates with rAF for smoothness
+      if (typeof window.requestAnimationFrame === "function") {
+        window.requestAnimationFrame(pickCurrent);
+      } else {
+        pickCurrent();
+      }
+    };
+
+    // Attach listeners immediately; sections can appear later after data load
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    // Fire a few times post-mount to catch late-rendered sections
+    pickCurrent();
+    const t1 = setTimeout(pickCurrent, 100);
+    const t2 = setTimeout(pickCurrent, 300);
+    const t3 = setTimeout(pickCurrent, 1000);
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#ebebeb]">
       <DashboardHeader mode="customer" tableId={tableId} />
@@ -148,7 +233,15 @@ export default function CustomerMenu({
         {showConfirm && <ConfirmModal onClose={() => setShowConfirm(false)} />}
       </div>
       {/* Dashboard-style taskbar */}
-      <MenuTaskbar tableId={tableId} sessionId={sessionId} />
+      <MenuTaskbar
+        tableId={tableId}
+        sessionId={sessionId}
+        currentCategory={currentCategory || undefined}
+        onGoToMeals={() => scrollToCategory("Meals")}
+        onGoToCoffee={() => scrollToCategory("Coffee")}
+        onGoToDrinks={() => scrollToCategory("Drinks")}
+        onGoToDesserts={() => scrollToCategory("Desserts")}
+      />
     </div>
   );
 }
