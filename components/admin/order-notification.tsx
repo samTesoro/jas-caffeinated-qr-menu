@@ -11,11 +11,13 @@ interface Order {
   items: OrderItem[];
   paymentMethod: string;
   iscancelled?: boolean;
+  orderTotal?: number;
 }
 interface OrderItem {
   name: string;
   quantity: number;
   note?: string | null;
+  subtotal_price?: number | null;
 }
 import NotesModal from "./note-modal";
 import { createClient } from "@/lib/supabase/client";
@@ -44,6 +46,7 @@ export default function OrderNotification() {
           item_name: string;
           quantity: number;
           note?: string | null;
+          subtotal_price?: number | null;
         }
         interface Order {
           order_id: string;
@@ -81,8 +84,13 @@ export default function OrderNotification() {
                 name: item.item_name,
                 quantity: item.quantity,
                 note: item.note ?? null,
+                subtotal_price: item.subtotal_price ?? null,
               })) ?? [],
             paymentMethod: order.payment_type ?? "",
+            orderTotal: (order.items || []).reduce(
+              (sum, it) => sum + (typeof it.subtotal_price === "number" ? it.subtotal_price : 0),
+              0
+            ),
           }))
           .sort((a, b) => {
             const to24HourDate = (time: string) => {
@@ -231,22 +239,24 @@ export default function OrderNotification() {
 
           <hr className="border-black my-2" />
 
-          <div className="grid grid-cols-[50px_1fr_2fr_auto] md:grid-cols-[1fr_2fr_3fr_1fr] lg:grid-cols-[1fr_2fr_3fr_1fr] gap-2 mb-2 font-semibold text-black text-sm md:text-lg">
+          <div className="grid grid-cols-[50px_1fr_2fr_auto_auto] md:grid-cols-[1fr_2fr_3fr_1fr_1fr] lg:grid-cols-[1fr_2fr_3fr_1fr_1fr] gap-2 mb-2 font-semibold text-black text-sm md:text-lg">
             <div className="text-center">Table No.</div>
             <div className="text-center">Time</div>
             <div className="text-center">Order</div>
+            <div className="text-center">Subtotal</div>
             <div className="text-center">Qty.</div>
           </div>
 
           <hr className="border-black my-2" />
 
-          <div className="grid grid-cols-[50px_1fr_2fr_auto] md:grid-cols-[1fr_2fr_3fr_1fr] lg:grid-cols-[1fr_2fr_3fr_1fr] gap-2 mb-2 text-black text-sm md:text-lg">
+          <div className="grid grid-cols-[50px_1fr_2fr_auto_auto] md:grid-cols-[1fr_2fr_3fr_1fr_1fr] lg:grid-cols-[1fr_2fr_3fr_1fr_1fr] gap-2 mb-2 text-black text-sm md:text-lg">
             <div className="flex justify-center items-center row-span-full text-center">
               {order.tableNo}
             </div>
             <div className="flex justify-center items-center row-span-full text-center">
               {order.time}
             </div>
+            {/* Order names */}
             <div className="flex flex-col gap-1 md:text-center">
               <div>
                 {order.items.map((item, idx) => (
@@ -269,6 +279,17 @@ export default function OrderNotification() {
                 ))}
               </div>
             </div>
+            {/* Subtotal column (between Order and Qty) */}
+            <div className="flex flex-col items-end gap-1 pr-1">
+              {order.items.map((item, idx) => (
+                <div key={idx} className="px-2 py-1">
+                  {typeof item.subtotal_price === "number"
+                    ? new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(item.subtotal_price)
+                    : "-"}
+                </div>
+              ))}
+            </div>
+            {/* Qty column (last) */}
             <div className="flex flex-col items-center gap-1">
               {order.items.map((item, idx) => (
                 <div key={idx} className="px-2 py-1">
@@ -277,20 +298,28 @@ export default function OrderNotification() {
               ))}
             </div>
           </div>
-
           <hr className="border-blacks my-2" />
 
-          <div className="flex justify-end items-center text-black text-sm md:text-lg mb-10">
-            <span>Payment: </span>
-            <span
-              className={`ml-2 ${
-                order.paymentMethod.toLowerCase() === "gcash"
-                  ? "text-blue-600 font-bold"
-                  : "text-black font-bold"
-              }`}
-            >
-              {order.paymentMethod}
-            </span>
+          {/* Bottom summary row centered: Payment then Total (subtotal column unchanged above) */}
+          <div className="flex justify-end items-center gap-6 text-black text-sm md:text-lg mb-10 w-full pr-2 md:pr-4">
+            <div>
+              <span className="font-semibold">Payment: </span>
+              <span
+                className={
+                  order.paymentMethod.toLowerCase() === "gcash"
+                    ? "text-blue-600 font-bold"
+                    : "text-black font-bold"
+                }
+              >
+                {order.paymentMethod}
+              </span>
+            </div>
+            <div>
+              <span className="font-semibold">Total: </span>
+              <span className="font-bold text-red-600">
+                {new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(order.orderTotal || 0)}
+              </span>
+            </div>
           </div>
         </div>
       ))}

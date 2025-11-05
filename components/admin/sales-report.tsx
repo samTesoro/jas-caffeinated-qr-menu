@@ -148,15 +148,27 @@ export default function SalesReport({
         <div className="bg-white rounded-md border border-gray-200 shadow-sm p-5">
           <div className="text-black font-semibold mb-3">Summary</div>
           <div className="flex justify-center items-center">
-            <PieChart
-              size={220}
-              segments={[
-                { color: "#E59C53", value: data?.summary?.Meals || 0 },
-                { color: "#B5651D", value: data?.summary?.Drinks || 0 },
-                { color: "#7A4A2F", value: data?.summary?.Coffee || 0 },
-                { color: "#F19C9C", value: data?.summary?.Desserts || 0 },
-              ]}
-            />
+            {(() => {
+              const s: any = data?.summary || {};
+              const valOf = (keys: string[]) => {
+                for (const k of keys) {
+                  const v = s?.[k];
+                  if (typeof v === "number" && !Number.isNaN(v)) return v;
+                }
+                return 0;
+              };
+              return (
+                <PieChart
+                  size={220}
+                  segments={[
+                    { color: "#E59C53", value: valOf(["Meals", "Meal", "meals"]) },
+                    { color: "#B5651D", value: valOf(["Drinks", "Drink", "drinks", "Beverages"]) },
+                    { color: "#7A4A2F", value: valOf(["Coffee", "coffee"]) },
+                    { color: "#F19C9C", value: valOf(["Desserts", "Dessert", "desserts"]) },
+                  ]}
+                />
+              );
+            })()}
           </div>
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mt-2 text-sm">
             <Legend color="#E59C53" label="Meals" />

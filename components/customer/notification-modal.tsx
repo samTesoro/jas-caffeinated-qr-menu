@@ -10,6 +10,7 @@ interface OrderItem {
   quantity: number;
   note?: string | null;
   est_time?: number | null;
+  subtotal_price?: number | null;
 }
 interface Order {
   order_id: string;
@@ -187,34 +188,43 @@ export default function NotificationModal({
             {orders.map((order) => (
               <div key={order.order_id} className="border-b border-black pb-2">
                 <div className="grid grid-cols-[2fr_1fr_2fr] gap-0 text-black text-sm items-start">
+                  {/* Names column */}
                   <div className="flex flex-col gap-1">
                     {order.items.map((item, idx) => (
-                      <div key={idx} className="truncate w-full max-w-[150px]">
-                        <div
-                          className={`${
-                            item.note ? "text-blue-600 cursor-pointer underline" : "text-black"
-                          }`}
-                          title={item.note ? "View note" : item.item_name}
-                          onClick={() => {
-                            if (item.note) {
-                              setNoteText(item.note || undefined);
-                              setNoteItemName(item.item_name);
-                              setNoteOpen(true);
-                            }
-                          }}
-                        >
-                          {item.item_name}
+                      <div key={idx} className="w-full max-w-[220px]">
+                        <div className="truncate">
+                          <div
+                            className={`${item.note ? "text-blue-600 cursor-pointer underline" : "text-black"}`}
+                            title={item.note ? "View note" : item.item_name}
+                            onClick={() => {
+                              if (item.note) {
+                                setNoteText(item.note || undefined);
+                                setNoteItemName(item.item_name);
+                                setNoteOpen(true);
+                              }
+                            }}
+                          >
+                            {item.item_name}
+                          </div>
+                        </div>
+                        {/* Subtotal under item name */}
+                        <div className="text-xs text-gray-700">
+                          {typeof (item as any).subtotal_price === "number"
+                            ? new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format((item as any).subtotal_price as number)
+                            : "-"}
                         </div>
                       </div>
                     ))}
                   </div>
 
+                  {/* Qty column */}
                   <div className="flex flex-col gap-1 items-center">
                     {order.items.map((item, idx) => (
                       <span key={idx}>{item.quantity}</span>
                     ))}
                   </div>
 
+                  {/* Status/actions column */}
                   <div className="flex flex-col items-start gap-2 min-h-[60px]">
                     <span className="text-xs">
                       Status:{" "}
@@ -293,6 +303,22 @@ export default function NotificationModal({
                       </div>
                     )}
                   </div>
+                </div>
+
+                {/* Divider below subtotals */}
+                <hr className="border-black mt-2" />
+
+                {/* Total (shown below divider) */}
+                <div className="flex items-center justify-end mt-1 pr-1 text-black">
+                  <span className="text-xs mr-2 font-semibold">Total:</span>
+                  <span className="text-sm font-bold">
+                    {new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(
+                      (order.items || []).reduce(
+                        (sum, it: any) => sum + (typeof it?.subtotal_price === "number" ? (it.subtotal_price as number) : 0),
+                        0
+                      )
+                    )}
+                  </span>
                 </div>
 
                 <div className="flex items-center justify-between mt-1">

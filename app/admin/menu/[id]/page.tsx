@@ -32,6 +32,7 @@ export default function EditMenuItemPage({ params }: { params: Promise<{ id: str
           .from("menuitem")
           .select("*")
           .eq("menuitem_id", Number(id))
+          .eq("is_deleted", false)
           .single();
         if (error) console.error("Supabase fetch error:", error);
         setItem(data);

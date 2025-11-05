@@ -15,9 +15,32 @@ export async function POST(request: NextRequest) {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Guard: Table must be active before allowing order creation
+    const tableNum = table_number !== undefined && table_number !== null && `${table_number}` !== ""
+      ? parseInt(String(table_number), 10)
+      : NaN;
+    if (!Number.isFinite(tableNum)) {
+      return NextResponse.json({ error: "Table number is required" }, { status: 400 });
+    }
+    {
+      const { data: trow, error: tErr } = await supabase
+        .from('customer')
+        .select('is_active')
+        .eq('table_num', tableNum)
+        .maybeSingle();
+      if (tErr) {
+        console.error('Failed to verify table active state:', tErr);
+        return NextResponse.json({ error: 'Failed to verify table status' }, { status: 500 });
+      }
+      const isActive = trow?.is_active === true;
+      if (!isActive) {
+        return NextResponse.json({ error: 'Table is inactive. Please ask staff for assistance.' }, { status: 403 });
+      }
+    }
+
     // Find or create customer record using session_id, fallback to table_number
     let customer_id = null;
-    if (session_id) {
+  if (session_id) {
       // Prefer session binding: one customer per session_id
       const { data: bySession } = await supabase
         .from('customer')
@@ -47,17 +70,13 @@ export async function POST(request: NextRequest) {
             .eq('customer_id', customer_id)
             .is('session_id', null);
         } else {
-          // Create a new active customer and bind session_id
+          // Do NOT create a new customer when table is inactive; guard above ensures table is active.
+          // If none exists, create a new active customer and bind session_id
           const { data: newCustomer, error: customerCreateError } = await supabase
             .from('customer')
-            .insert({
-              table_num: tableNum,
-              is_active: true,
-              session_id
-            })
+            .insert({ table_num: tableNum, is_active: true, session_id })
             .select('customer_id')
             .single();
-
           if (customerCreateError) {
             console.error('Error creating customer:', customerCreateError);
           } else {
@@ -230,6 +249,7 @@ export async function GET(request: NextRequest) {
               cartitem (
                 quantity,
                 note,
+                subtotal_price,
                 menuitem (
                   name
                 )
@@ -268,6 +288,7 @@ export async function GET(request: NextRequest) {
               cartitem (
                 quantity,
                 note,
+                subtotal_price,
                 menuitem (
                   name
                 )
@@ -309,6 +330,7 @@ export async function GET(request: NextRequest) {
             cartitem (
               quantity,
               note,
+              subtotal_price,
               menuitem (
                 name
               )
@@ -330,7 +352,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    type OrderItem = { item_name: string; quantity: number; note?: string | null };
+    type OrderItem = { item_name: string; quantity: number; note?: string | null; subtotal_price?: number | null };
     type OrderRow = {
       order_id: number | string;
       isfinished: boolean;
@@ -338,7 +360,7 @@ export async function GET(request: NextRequest) {
       customer_id: number | null;
       time_ordered: string;
       payment_type: string;
-      cart?: { table_number?: number | null; cartitem?: Array<{ quantity: number; note?: string | null; menuitem?: { name?: string | null } | null }> } | null;
+      cart?: { table_number?: number | null; cartitem?: Array<{ quantity: number; note?: string | null; subtotal_price?: number | null; menuitem?: { name?: string | null } | null }> } | null;
     };
     const transformedOrders = ((orders as unknown as OrderRow[]) || []).map((order) => ({
       order_id: order.order_id.toString(),
@@ -352,7 +374,13 @@ export async function GET(request: NextRequest) {
         item_name: item.menuitem?.name || 'Unknown Item',
         quantity: item.quantity,
         note: item.note ?? null,
+        subtotal_price: item.subtotal_price ?? null,
       }))
+    })).map((o) => ({
+      ...o,
+      order_total: Array.isArray(o.items)
+        ? o.items.reduce((sum, it) => sum + (typeof it.subtotal_price === 'number' ? it.subtotal_price : 0), 0)
+        : 0,
     }));
 
     return NextResponse.json(transformedOrders);

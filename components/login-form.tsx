@@ -46,6 +46,7 @@ export function LoginForm() {
         view_menu: data.view_menu,
         view_reviews: data.view_reviews,
         view_super: data.view_super,
+        view_tables: (data as any).view_tables,
       };
 
       console.log("User permissions:", permissions); // Debugging log to verify permissions
@@ -54,6 +55,7 @@ export function LoginForm() {
       const redirectionOrder = [
         { perm: permissions.view_orders, href: "/admin/orders" },
         { perm: permissions.view_menu, href: "/admin/menu" },
+        { perm: (permissions as any).view_tables, href: "/admin/table" },
         { perm: permissions.view_history, href: "/admin/history" },
         { perm: permissions.view_reviews, href: "/admin/reviews" },
         { perm: permissions.view_super, href: "/admin/view-accounts" },

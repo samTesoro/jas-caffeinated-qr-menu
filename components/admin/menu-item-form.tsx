@@ -11,14 +11,14 @@ interface MenuItem {
   menuitem_id?: number;
   name: string;
   category: string;
-  price: number;
+  price: number | "";
   status: string;
   thumbnail?: string;
   // Supabase stores this as a boolean column `is_favorites`.
   // The admin form exposes a string select ('Yes' / 'No') and maps to/from this boolean.
   favorites?: string;
   is_favorites?: boolean;
-  estimatedTime?: number;
+  estimatedTime?: number | "";
   description?: string | null;
 }
 
@@ -39,13 +39,13 @@ export default function MenuItemForm({
   const [form, setForm] = useState<MenuItem>({
     name: item?.name || "",
     category: item?.category || "",
-    price: item?.price || 0,
+    price: item?.price ?? 0,
     status: item?.status || "Available",
     thumbnail: item?.thumbnail || "",
     // Prefer explicit mapping from is_favorites boolean when present
     favorites:
       item?.favorites ?? (item?.is_favorites ? "Yes" : item?.is_favorites === false ? "No" : "No"),
-    estimatedTime: item?.estimatedTime || 0,
+    estimatedTime: item?.estimatedTime ?? 0,
     description: item?.description || "",
   });
 
@@ -61,7 +61,7 @@ export default function MenuItemForm({
       setForm({
         name: item.name || "",
         category: item.category || "",
-        price: item.price || 0,
+        price: item.price ?? 0,
         status: item.status || "Available",
         thumbnail: item.thumbnail || "",
         // Map boolean is_favorites to the Yes/No select used by the form
@@ -78,7 +78,18 @@ export default function MenuItemForm({
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setForm({ ...form, [name]: name === "price" ? parseFloat(value) : value });
+    if (name === "price") {
+      setForm({ ...form, price: value === "" ? "" : parseFloat(value) });
+      return;
+    }
+    if (name === "estimatedTime") {
+      setForm({
+        ...form,
+        estimatedTime: value === "" ? "" : parseInt(value, 10),
+      });
+      return;
+    }
+    setForm({ ...form, [name]: value });
   };
 
   const handleImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -154,23 +165,31 @@ export default function MenuItemForm({
   };
 
   const deleteItem = async () => {
+    // Soft delete: mark is_deleted = true and hide from views
     setSaving(true);
     setErrorMsg(null);
     const supabase = createClient();
-    let error;
-    if (item?.menuitem_id) {
-      ({ error } = await supabase
-        .from("menuitem")
-        .delete()
-        .eq("menuitem_id", item.menuitem_id));
-    }
-    setSaving(false);
-    if (error) {
-      setErrorMsg(error.message || "Failed to delete item.");
+    try {
+      if (item?.menuitem_id) {
+        const { error } = await supabase
+          .from("menuitem")
+          .update({ is_deleted: true, is_favorites: false })
+          .eq("menuitem_id", item.menuitem_id);
+        setSaving(false);
+        setShowDeleteModal(false);
+        if (error) {
+          setErrorMsg(error.message || "Failed to delete item.");
+          return;
+        }
+        onSaved();
+        return;
+      }
+    } catch {
+      setSaving(false);
+      setErrorMsg("Unexpected error while deleting item.");
       return;
     }
-    setShowDeleteModal(false);
-    onSaved();
+    setSaving(false);
   };
 
   return (
@@ -255,7 +274,7 @@ export default function MenuItemForm({
               <input
                 name="price"
                 type="number"
-                value={form.price}
+                value={form.price === "" ? "" : (form.price as number)}
                 onChange={handleChange}
                 className="max-w-xs w-full py-1 px-2 border-2 border-black bg-white text-black h-8"
                 required
@@ -348,7 +367,7 @@ export default function MenuItemForm({
               <input
                 name="estimatedTime"
                 type="number"
-                value={form.estimatedTime}
+                value={form.estimatedTime === "" ? "" : (form.estimatedTime as number)}
                 onChange={handleChange}
                 className="w-12 text-center py-1 px-2 border-2 border-black bg-white text-black h-8"
                 required

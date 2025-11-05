@@ -28,6 +28,7 @@ export default function MenuItemList({
     supabase
       .from("menuitem")
       .select("*")
+      .eq("is_deleted", false)
       .then(({ data }) => {
         setItems(data || []);
         if (data) {

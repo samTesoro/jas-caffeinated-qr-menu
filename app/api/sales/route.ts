@@ -79,6 +79,8 @@ export async function GET(request: NextRequest) {
           ? "Drinks"
           : /coffee/i.test(categoryRaw)
           ? "Coffee"
+          : /dessert/i.test(categoryRaw)
+          ? "Desserts"
           : categoryRaw || "Other";
 
         const current = itemsMap.get(id) || {
@@ -122,6 +124,7 @@ export async function GET(request: NextRequest) {
         Meals: catTotals["Meals"] || 0,
         Drinks: catTotals["Drinks"] || 0,
         Coffee: catTotals["Coffee"] || 0,
+        Desserts: catTotals["Desserts"] || 0,
         Other: catTotals["Other"] || 0,
       },
     };

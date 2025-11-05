@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "../ui/button";
+// Clear functionality removed; no Button import needed
 import { ChevronLeft, ChevronRight } from "lucide-react";
 interface ReviewListProps {
   permissions: {
@@ -10,9 +10,11 @@ interface ReviewListProps {
     view_history: boolean;
     view_reviews: boolean;
   };
+  start?: string; // YYYY-MM-DD
+  end?: string;   // YYYY-MM-DD
 }
 
-export default function ReviewList({ permissions }: ReviewListProps) {
+export default function ReviewList({ permissions, start, end }: ReviewListProps) {
   const [reviews, setReviews] = useState<
     Array<{
       id: number;
@@ -24,33 +26,10 @@ export default function ReviewList({ permissions }: ReviewListProps) {
     }>
   >([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
-  // Local clear state removed in favor of DB-backed clear
-
-  const [showClearModal, setShowClearModal] = useState(false);
+  // Clear functionality removed; always show all reviews
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
   const [total, setTotal] = useState(0);
-
-  // Clear reviews (local only NOT IN DATABASE, remain in localStorage)
-  const clearReviews = async () => {
-    try {
-      const supabase = createClient();
-      // Mark ALL non-cleared reviews as cleared
-      const { error } = await supabase
-        .from("reviews")
-        .update({ iscleared: true })
-        .eq("iscleared", false);
-      if (error) throw error;
-      // Refresh UI to reflect no reviews remaining
-      setPage(1);
-      setReviews([]);
-      setTotal(0);
-    } catch (e) {
-      console.error("Failed to clear reviews:", e);
-    } finally {
-      setShowClearModal(false);
-    }
-  };
 
   useEffect(() => {
     const fetchReviews = async () => {
@@ -58,14 +37,24 @@ export default function ReviewList({ permissions }: ReviewListProps) {
       const supabase = createClient();
       const from = (page - 1) * pageSize;
       const to = from + pageSize - 1;
-      const { data, error, count } = await supabase
+      let query = supabase
         .from("reviews")
         .select("id, rating, comment, created_at, table_id, session_id", {
           count: "exact",
         })
-        .eq("iscleared", false)
-        .order("created_at", { ascending: false })
-        .range(from, to);
+        .order("created_at", { ascending: false });
+
+      // Apply inclusive date range if provided (YYYY-MM-DD on created_at date part)
+      if (start && start.length >= 10) {
+        // Include entire start day at 00:00:00
+        query = query.gte("created_at", `${start}T00:00:00`);
+      }
+      if (end && end.length >= 10) {
+        // Include entire end day up to 23:59:59
+        query = query.lte("created_at", `${end}T23:59:59.999`);
+      }
+
+      const { data, error, count } = await query.range(from, to);
       if (!error && data) {
         setReviews(data);
         setTotal(count || 0);
@@ -76,7 +65,7 @@ export default function ReviewList({ permissions }: ReviewListProps) {
       setReviewsLoading(false);
     };
     if (permissions.view_reviews) fetchReviews();
-  }, [permissions.view_reviews, page, pageSize]);
+  }, [permissions.view_reviews, page, pageSize, start, end]);
 
   // DB-filtered: reviews already exclude cleared ones
   const filteredReviews = reviews;
@@ -100,23 +89,7 @@ export default function ReviewList({ permissions }: ReviewListProps) {
 
   return (
     <div className="flex flex-col w-full min-h-screen py-3 pb-20 px-7 md:px-24 lg:px-[300px]">
-      <div className="flex justify-between items-center mb-2">
-        <h2 className="text-2xl md:text-3xl font-bold text-black">
-          View Reviews
-        </h2>
-        <button
-          onClick={() => setShowClearModal(true)}
-          disabled={Math.max(0, total) === 0}
-          className={`bg-[#d9d9d9] hover:bg-red-500 transition-colors px-3 border text-black text-md md:text-lg ${
-            Math.max(0, total) === 0
-              ? "opacity-50 cursor-not-allowed pointer-events-none"
-              : ""
-          }`}
-        >
-          Clear
-        </button>
-      </div>
-      <hr className="border-black my-2" />
+      {/* Removed extra empty heading row */}
       {/* Table header */}
       <div className="grid grid-cols-[1fr_3.5fr_1fr] gap-2 font-semibold text-black text-sm md:text-lg lg:text-xl">
         <div className="text-center">Date/Time</div>
@@ -223,35 +196,7 @@ export default function ReviewList({ permissions }: ReviewListProps) {
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
-
-      {/* Confirm Clear Modal */}
-      {showClearModal && (
-        <div className="fixed inset-0 bg-white/50 flex items-center justify-center transition-opacity duration-300 z-[9999]">
-          <div className="bg-white rounded-md p-6 w-[90vw] max-w-[250px] text-center space-y-4 shadow-lg">
-            <p className="text-md text-black font-bold mt-3">
-              Clear all reviews?
-            </p>
-            <div className="flex justify-between font-bold">
-              <Button
-                variant="red"
-                type="button"
-                onClick={() => setShowClearModal(false)}
-                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
-              >
-                No
-              </Button>
-              <Button
-                variant="green"
-                type="button"
-                onClick={clearReviews}
-                className="border-transparent hover:bg-gray-200 w-[90px] py-3 rounded-lg transition-colors"
-              >
-                Yes
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Clear functionality removed */}
     </div>
   );
 }

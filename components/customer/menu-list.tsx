@@ -251,7 +251,8 @@ export default function MenuList({
         .from("menuitem")
         .select(
           "menuitem_id, name, price, thumbnail, category, status, description, is_favorites"
-        );
+        )
+        .eq("is_deleted", false);
       if (activeTab === "Favorites") {
         // Favorites tab: filter by the boolean column is_favorites
         query = query.eq("is_favorites", true);
@@ -297,6 +298,7 @@ export default function MenuList({
           .select(
             "menuitem_id, name, price, thumbnail, category, status, description, is_favorites"
           )
+          .eq("is_deleted", false)
           .or(`name.ilike.${ilikeTerm},description.ilike.${ilikeTerm}`)
           .limit(50);
         if (error) {
