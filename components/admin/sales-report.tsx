@@ -88,19 +88,21 @@ export default function SalesReport({
     return items;
   }, [data]);
 
-  // Unique categories from current page of items (plus known defaults)
+  // Unique categories for dropdown — include base ones; exclude "Other"
   const categories = useMemo(() => {
-    const set = new Set<string>();
-    (data?.items || []).forEach((i) => set.add(i.category));
-    // Ensure common ones appear predictably if present in summary
-    const ordered: string[] = [];
-    ["Meals", "Drinks", "Coffee", "Desserts", "Other"].forEach((c) => {
-      if (set.has(c)) ordered.push(c);
+    const base = ["Meals", "Drinks", "Coffee", "Desserts"];
+    const set = new Set<string>(base);
+    (data?.items || []).forEach((i) => {
+      const cat = String(i.category ?? "").trim();
+      // Exclude any variant of "Other"/"Others"
+      if (cat && !/^other(s)?$/i.test(cat)) set.add(cat);
     });
-    // Add any remaining categories (sorted alpha for stability)
-    const remaining = Array.from(set).filter((c) => !ordered.includes(c));
-    remaining.sort((a, b) => a.localeCompare(b));
-    return ["All", ...ordered, ...remaining];
+    const all = Array.from(set);
+    // Keep base in order, then any additional categories alphabetically
+    const extra = all
+      .filter((c) => !base.includes(c))
+      .sort((a, b) => a.localeCompare(b));
+    return ["All", ...base, ...extra];
   }, [data]);
 
   // Apply in-list filters only to the current page of items

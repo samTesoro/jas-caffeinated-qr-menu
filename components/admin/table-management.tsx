@@ -165,7 +165,8 @@ export default function TableManagement() {
   };
 
   const deleteTable = async (table_num: number) => {
-    if (table_num <= 1) return;
+    const maxNum = tables.reduce((m, t) => Math.max(m, t.table_num), 0);
+    if (table_num <= 1 || table_num !== maxNum) return; // only last table can be deleted
     try {
       const supabase = createClient();
       const { error } = await supabase
@@ -348,6 +349,10 @@ export default function TableManagement() {
                 Generate QR
               </Button>
 
+              {(() => {
+                const maxNum = tables.reduce((m, t) => Math.max(m, t.table_num), 0);
+                const canDelete = (selectedTable || 0) === maxNum && (selectedTable || 0) > 1;
+                return (
               <button
                 type="button"
                 aria-label="Delete table"
@@ -356,14 +361,15 @@ export default function TableManagement() {
                   closeAllModals();
                   if (t) setConfirmDeleteTable(t);
                 }}
-                disabled={selectedTable <= 1}
+                disabled={!canDelete}
                 className={`bg-red-500 hover:bg-red-600 w-9 h-9 rounded-md flex items-center justify-center shadow ${
-                  selectedTable <= 1 ? "opacity-50 cursor-not-allowed" : ""
+                  !canDelete ? "opacity-50 cursor-not-allowed" : ""
                 }`}
-                title="Delete"
+                title={canDelete ? "Delete" : "Only the most recently added table can be deleted"}
               >
                 <TrashIcon />
               </button>
+                ); })()}
             </div>
           </div>
         </div>

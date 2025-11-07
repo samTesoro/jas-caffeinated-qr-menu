@@ -110,7 +110,6 @@ export default function ItemCard({
           width={300}
           height={400}
           className="object-cover w-full h-full"
-          unoptimized
           onError={() => {
             if (imgSrc !== DEFAULT_IMG) setImgSrc(DEFAULT_IMG);
           }}

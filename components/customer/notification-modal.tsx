@@ -189,48 +189,48 @@ export default function NotificationModal({
           <div className="space-y-6">
             {orders.map((order) => (
               <div key={order.order_id} className="border-b border-black pb-2">
-                <div className="grid grid-cols-[2fr_1fr_2fr] gap-0 text-black text-sm items-start">
-                  {/* Names column */}
-                  <div className="flex flex-col gap-1">
-                    {order.items.map((item, idx) => (
-                      <div key={idx} className="w-full max-w-[150px]">
-                        <div className="truncate">
-                          <div
-                            className={`${
-                              item.note
-                                ? "text-blue-600 cursor-pointer underline"
-                                : "text-black"
-                            }`}
-                            title={item.note ? "View note" : item.item_name}
-                            onClick={() => {
-                              if (item.note) {
-                                setNoteText(item.note || undefined);
-                                setNoteItemName(item.item_name);
-                                setNoteOpen(true);
-                              }
-                            }}
-                          >
-                            {item.item_name}
+                <div className="grid grid-cols-[3fr_2fr] gap-2 text-black text-sm items-start">
+                  {/* Items (name + qty, aligned per row) */}
+                  <div className="col-span-1">
+                    <div className="grid grid-cols-[2fr_1fr] gap-y-1">
+                      {order.items.map((item, idx) => (
+                        <React.Fragment key={idx}>
+                          <div className="w-full max-w-[200px] pr-2">
+                            <div className="truncate">
+                              <div
+                                className={`${
+                                  item.note
+                                    ? "text-blue-600 cursor-pointer underline"
+                                    : "text-black"
+                                }`}
+                                title={item.note ? "View note" : item.item_name}
+                                onClick={() => {
+                                  if (item.note) {
+                                    setNoteText(item.note || undefined);
+                                    setNoteItemName(item.item_name);
+                                    setNoteOpen(true);
+                                  }
+                                }}
+                              >
+                                {item.item_name}
+                              </div>
+                            </div>
+                            {/* Subtotal under item name */}
+                            <div className="text-xs text-gray-700">
+                              {typeof (item as any).subtotal_price === "number"
+                                ? new Intl.NumberFormat("en-PH", {
+                                    style: "currency",
+                                    currency: "PHP",
+                                  }).format((item as any).subtotal_price as number)
+                                : "-"}
+                            </div>
                           </div>
-                        </div>
-                        {/* Subtotal under item name (merged change) */}
-                        <div className="text-xs text-gray-700">
-                          {typeof (item as any).subtotal_price === "number"
-                            ? new Intl.NumberFormat("en-PH", {
-                                style: "currency",
-                                currency: "PHP",
-                              }).format((item as any).subtotal_price as number)
-                            : "-"}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Qty column */}
-                  <div className="flex flex-col gap-1 items-center">
-                    {order.items.map((item, idx) => (
-                      <span key={idx}>{item.quantity}</span>
-                    ))}
+                          <div className="flex items-center justify-center">
+                            <span>{item.quantity}</span>
+                          </div>
+                        </React.Fragment>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Status/actions column */}

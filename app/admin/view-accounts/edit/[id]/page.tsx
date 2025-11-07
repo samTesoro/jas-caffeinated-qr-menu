@@ -18,6 +18,7 @@ export default function EditAccountPage() {
   const [viewOrderHistory, setViewOrderHistory] = useState(false);
   const [viewMenu, setViewMenu] = useState(false);
   const [viewReviews, setViewReviews] = useState(false);
+  const [viewTables, setViewTables] = useState(false);
   const [isSuper, setIsSuper] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +53,8 @@ export default function EditAccountPage() {
         setViewOrders(!!data.view_orders);
         setViewOrderHistory(!!data.view_history);
         setViewMenu(!!data.view_menu);
-        setViewReviews(!!data.view_reviews);
+  setViewReviews(!!data.view_reviews);
+  setViewTables(!!(data as any).view_tables);
         setIsSuper(!!(data as any).view_super);
       }
       if (error) setError(error.message);
@@ -72,6 +74,7 @@ export default function EditAccountPage() {
         view_history: viewOrderHistory,
         view_menu: viewMenu,
         view_reviews: viewReviews,
+        view_tables: viewTables,
       })
       .eq("user_id", id);
     setLoading(false);
@@ -152,10 +155,20 @@ export default function EditAccountPage() {
           <label className="flex gap-2 text-lg text-black">
             <input
               type="checkbox"
-              checked={viewMenu}
-              onChange={() => setViewMenu(!viewMenu)}
+              checked={viewReviews}
+              onChange={() => setViewReviews(!viewReviews)}
+              disabled={isSuper}
             />
             Allow “View Reviews”
+          </label>
+          <label className="flex gap-2 text-lg text-black">
+            <input
+              type="checkbox"
+              checked={viewTables}
+              onChange={() => setViewTables(!viewTables)}
+              disabled={isSuper}
+            />
+            Allow “View Tables”
           </label>
         </div>
         {error && <p className="text-red-600 text-sm">{error}</p>}
@@ -211,6 +224,10 @@ export default function EditAccountPage() {
               <p>
                 <span>Allow &quot;View Reviews&quot;:</span>{" "}
                 <span className="font-bold">{viewReviews ? "Yes" : "No"}</span>
+              </p>
+              <p>
+                <span>Allow &quot;View Tables&quot;:</span>{" "}
+                <span className="font-bold">{viewTables ? "Yes" : "No"}</span>
               </p>
             </div>
 

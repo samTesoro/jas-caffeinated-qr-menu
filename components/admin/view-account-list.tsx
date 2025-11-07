@@ -97,6 +97,17 @@ export default function ViewAccounts() {
   // Block a user by setting is_blocked to true in Supabase
   const handleBlock = async (user_id: string) => {
     const supabase = createClient();
+    // Guard: never allow blocking a super admin
+    const { data: toBlock } = await supabase
+      .from("adminusers")
+      .select("view_super")
+      .eq("user_id", user_id)
+      .maybeSingle();
+    if (toBlock?.view_super) {
+      console.warn("Refusing to block a superadmin account");
+      setBlockUser(null);
+      return;
+    }
     const { error } = await supabase
       .from("adminusers")
       .update({ is_blocked: true })
@@ -116,6 +127,17 @@ export default function ViewAccounts() {
   // Unblock a user by setting is_blocked to false in Supabase
   const handleUnblock = async (user_id: string) => {
     const supabase = createClient();
+    // Guard not strictly needed, but keep symmetry
+    const { data: toUnblock } = await supabase
+      .from("adminusers")
+      .select("view_super")
+      .eq("user_id", user_id)
+      .maybeSingle();
+    if (toUnblock?.view_super) {
+      console.warn("Superadmin should never be blocked");
+      setUnblockUser(null);
+      return;
+    }
     const { error } = await supabase
       .from("adminusers")
       .update({ is_blocked: false })
@@ -241,6 +263,20 @@ export default function ViewAccounts() {
 
   const handleDelete = async (user_id: string) => {
     const supabase = createClient();
+    // Prevent deleting superadmin accounts
+    const { data: toDelete, error: fetchErr } = await supabase
+      .from("adminusers")
+      .select("view_super")
+      .eq("user_id", user_id)
+      .maybeSingle();
+    if (fetchErr) {
+      console.error("Pre-delete fetch error:", fetchErr.message);
+    }
+    if (toDelete?.view_super) {
+      console.warn("Refusing to delete superadmin account");
+      setDeleteUser(null);
+      return;
+    }
     const { error } = await supabase
       .from("adminusers")
       .delete()
@@ -435,9 +471,12 @@ export default function ViewAccounts() {
                             username: user.username,
                           })
                         }
+                        disabled={user.view_super === true}
                         className="bg-red-400 w-6 h-6 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shadow"
                       >
-                        <TrashIcon />
+                        <span className={`${user.view_super ? 'opacity-50 cursor-not-allowed' : ''}`} title={user.view_super ? 'Super admin cannot be deleted' : 'Delete'}>
+                          <TrashIcon />
+                        </span>
                       </button>
                       <button
                         onClick={() => {
@@ -468,7 +507,7 @@ export default function ViewAccounts() {
                             : "Block User"
                         }
                       >
-                        <BlockIcon />
+                        <BlockIcon color={user.view_super ? "#808080" : "#000000"} />
                       </button>
                     </div>
                   </div>

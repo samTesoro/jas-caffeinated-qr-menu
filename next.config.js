@@ -1,7 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = (() => {
   // Allow images from production Supabase storage
+  
   const remotePatterns = [
+    
     {
       protocol: 'https',
       hostname: 'keyhmmvzbukozvvyntil.supabase.co',
@@ -34,10 +36,15 @@ const nextConfig = (() => {
   }
 
   return {
+    // Disable the Next.js dev activity indicator overlay in the corner
+    devIndicators: {
+      buildActivity: false,
+    },
     images: {
       remotePatterns,
     },
   };
+  
 })();
 
 module.exports = nextConfig;

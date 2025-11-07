@@ -49,6 +49,54 @@ export async function updateSession(request: NextRequest) {
 
   // Check for custom admin session cookie
   const adminSession = request.cookies.get('admin_session');
+  const pathname = request.nextUrl.pathname;
+  const isProtectedAdminPath =
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/protected') ||
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/notes');
+
+  // If using custom admin session, validate it's not blocked on protected admin paths
+  if (adminSession && isProtectedAdminPath) {
+    try {
+      const { data: adminUser } = await supabase
+        .from('adminusers')
+        .select('user_id, is_blocked')
+        .eq('user_id', adminSession.value)
+        .single();
+
+      if (!adminUser || (adminUser as any).is_blocked) {
+        // Clear cookie and redirect to login with a hint
+        const url = request.nextUrl.clone();
+        url.pathname = '/auth/login';
+        url.searchParams.set('blocked', '1');
+        const redirectResponse = NextResponse.redirect(url);
+        // Copy over supabase cookies to avoid session desync
+        for (const c of supabaseResponse.cookies.getAll()) {
+          redirectResponse.cookies.set(c.name, c.value);
+        }
+        // Explicitly clear the custom admin cookie
+        redirectResponse.cookies.set('admin_session', '', {
+          expires: new Date(0),
+          path: '/',
+        });
+        return redirectResponse;
+      }
+    } catch {
+      // On error validating admin session, be safe and redirect to login
+      const url = request.nextUrl.clone();
+      url.pathname = '/auth/login';
+      const redirectResponse = NextResponse.redirect(url);
+      for (const c of supabaseResponse.cookies.getAll()) {
+        redirectResponse.cookies.set(c.name, c.value);
+      }
+      redirectResponse.cookies.set('admin_session', '', {
+        expires: new Date(0),
+        path: '/',
+      });
+      return redirectResponse;
+    }
+  }
 
   if (
     request.nextUrl.pathname !== "/" &&

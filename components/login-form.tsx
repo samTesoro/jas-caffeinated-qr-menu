@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import DashboardHeader from "@/components/ui/header";
@@ -11,6 +11,17 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("blocked") === "1") {
+        setError(
+          "Your account is blocked or your access was revoked. Please contact the administrator.",
+        );
+      }
+    } catch {}
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,8 +42,18 @@ export function LoginForm() {
     if (error || !data) {
       setError("Invalid username or password");
     } else {
-      // Set admin_session cookie for middleware authentication
-      document.cookie = `admin_session=${data.id}; path=/;`;
+      // Prevent login for blocked accounts
+      if ((data as any).is_blocked) {
+        try {
+          // Ensure any stale admin cookie is cleared
+          document.cookie =
+            "admin_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        } catch {}
+        setError("Your account is blocked. Please contact the administrator.");
+        return;
+      }
+  // Set admin_session cookie for middleware authentication (use correct PK)
+  document.cookie = `admin_session=${(data as any).user_id}; path=/;`;
       // Store identifiers in localStorage for quicker UI personalization
       localStorage.setItem("user_id", data.user_id);
       try {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { Button } from "../ui/button";
 interface Order {
@@ -34,9 +34,15 @@ export default function OrderNotification() {
   const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
 
   useEffect(() => {
+      let inFlight: AbortController | null = null;
       const fetchOrders = async () => {
         try {
-          const response = await fetch("/api/orders");
+          // Abort any previous in-flight request to avoid queueing
+          if (inFlight) {
+            try { inFlight.abort(); } catch {}
+          }
+          inFlight = new AbortController();
+          const response = await fetch("/api/orders", { signal: inFlight.signal });
           if (!response.ok) {
             throw new Error("Failed to fetch orders");
           }
@@ -117,37 +123,49 @@ export default function OrderNotification() {
         setOrders([]);
       }
     };
-    fetchOrders();
+  fetchOrders();
 
-    // Start polling as a fallback (every 30s)
-    const interval = setInterval(fetchOrders, 30000);
+    // Start polling as a fallback (every 3s)
+    let interval = setInterval(fetchOrders, 3000);
+
+    // Pause polling when tab is hidden; resume when visible
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') {
+        clearInterval(interval);
+      } else {
+        fetchOrders();
+        interval = setInterval(fetchOrders, 3000);
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
 
     // Set up Supabase realtime subscription so the list refreshes immediately
     // when orders are inserted or updated.
     try {
-      const supabase = createClient();
+  const supabase = createClient();
 
       const channel = supabase
         .channel("public:order")
         .on(
           "postgres_changes",
           { event: "INSERT", schema: "public", table: "order" },
-          () => {
-            fetchOrders();
-          }
+          () => { fetchOrders(); }
         )
         .on(
           "postgres_changes",
           { event: "UPDATE", schema: "public", table: "order" },
-          () => {
-            // If an order was marked finished or cancelled, refresh
-            fetchOrders();
-          }
+          () => { fetchOrders(); }
+        )
+        .on(
+          "postgres_changes",
+          { event: "DELETE", schema: "public", table: "order" },
+          () => { fetchOrders(); }
         )
         .subscribe();
 
       return () => {
         clearInterval(interval);
+        document.removeEventListener('visibilitychange', onVis);
         try {
           if (channel && typeof (channel as any).unsubscribe === "function") {
             (channel as any).unsubscribe();
@@ -158,7 +176,10 @@ export default function OrderNotification() {
       };
     } catch {
       // If realtime setup fails, just rely on polling
-      return () => clearInterval(interval);
+      return () => {
+        clearInterval(interval);
+        document.removeEventListener('visibilitychange', onVis);
+      };
     }
   }, []);
 
@@ -243,28 +264,25 @@ export default function OrderNotification() {
             <div className="text-center">Table No.</div>
             <div className="text-center">Time</div>
             <div className="text-center">Order</div>
-            <div className="text-center">Subtotal</div>
+            <div className="text-center pl-4">Subtotal</div>
             <div className="text-center">Qty.</div>
           </div>
 
           <hr className="border-black my-2" />
 
           <div className="grid grid-cols-[50px_1fr_2fr_auto_auto] md:grid-cols-[1fr_2fr_3fr_1fr_1fr] lg:grid-cols-[1fr_2fr_3fr_1fr_1fr] gap-2 mb-2 text-black text-sm md:text-lg">
-            <div className="flex justify-center items-center row-span-full text-center">
-              {order.tableNo}
-            </div>
-            <div className="flex justify-center items-center row-span-full text-center">
-              {order.time}
-            </div>
-            {/* Order names */}
-            <div className="flex flex-col gap-1 md:text-center">
-              <div>
-                {order.items.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className={`truncate px-2 py-1 ${
-                      item.note ? "text-blue-600 cursor-pointer underline" : ""
-                    }`}
+            {order.items.map((item, idx) => (
+              <React.Fragment key={`row-${order.order_id}-${idx}`}>
+                <div className="flex justify-center items-center text-center" key={`t-${idx}`}>
+                  {idx === 0 ? order.tableNo : ""}
+                </div>
+                <div className="flex justify-center items-center text-center" key={`ti-${idx}`}>
+                  {idx === 0 ? order.time : ""}
+                </div>
+                {/* Item name */}
+                <div className="px-2 py-1 truncate md:text-center" key={`n-${idx}`}>
+                  <span
+                    className={`${item.note ? "text-blue-600 cursor-pointer underline" : ""}`}
                     title={item.note ? "View note" : item.name}
                     onClick={() => {
                       if (item.note) {
@@ -275,28 +293,20 @@ export default function OrderNotification() {
                     }}
                   >
                     {item.name}
-                  </div>
-                ))}
-              </div>
-            </div>
-            {/* Subtotal column (between Order and Qty) */}
-            <div className="flex flex-col items-end gap-1 pr-1">
-              {order.items.map((item, idx) => (
-                <div key={idx} className="px-2 py-1">
+                  </span>
+                </div>
+                {/* Subtotal aligned with name */}
+                <div className="px-2 py-1 text-right" key={`s-${idx}`}>
                   {typeof item.subtotal_price === "number"
                     ? new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(item.subtotal_price)
                     : "-"}
                 </div>
-              ))}
-            </div>
-            {/* Qty column (last) */}
-            <div className="flex flex-col items-center gap-1">
-              {order.items.map((item, idx) => (
-                <div key={idx} className="px-2 py-1">
+                {/* Quantity aligned with name */}
+                <div className="px-2 py-1 text-center" key={`q-${idx}`}>
                   {item.quantity}
                 </div>
-              ))}
-            </div>
+              </React.Fragment>
+            ))}
           </div>
           <hr className="border-blacks my-2" />
 
@@ -308,7 +318,7 @@ export default function OrderNotification() {
                 className={
                   order.paymentMethod.toLowerCase() === "gcash"
                     ? "text-blue-600 font-bold"
-                    : "text-black font-bold"
+                    : "text-orange-600 font-bold"
                 }
               >
                 {order.paymentMethod}
