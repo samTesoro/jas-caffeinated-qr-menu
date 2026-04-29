@@ -34,7 +34,7 @@ Run the SQL script in `sql/storage_setup.sql` to create the storage bucket and p
 
 ### Step 2: Replace Upload Function
 
-Replace the `handleImage` function in `menu-item-form.tsx` with the code from `components/admin/supabase-storage-upload.js`.
+Replace the `handleImage` function in `menu-item-form.tsx` with the Supabase storage upload implementation found in `components/admin/menu-item-form.tsx` (the file already contains a ready-to-use example).
 
 ### Step 3: Update Database Schema
 
